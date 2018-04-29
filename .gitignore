@@ -1,4 +1,5 @@
 # Prerequisites
+.depend
 *.d
 
 # Object files
