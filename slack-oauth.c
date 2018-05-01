@@ -19,13 +19,13 @@ static struct lws_context *context = NULL;
 
 static struct t_hook *slack_oauth_hook_timer = NULL;
 
-static int json_valid(json_object *object)
+static inline int json_valid(json_object *object)
 {
     if (!object)
     {
         weechat_printf(
             NULL,
-            _("%s%s: Error retrieving token: unexpected response from server"),
+            _("%s%s: error retrieving token: unexpected response from server"),
             weechat_prefix("error"), SLACK_PLUGIN_NAME);
         return 0;
     }
@@ -54,7 +54,7 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
         status = lws_http_client_http_response(wsi);
         weechat_printf(
             NULL,
-            _("%s%s: Retrieving token... (%d)"),
+            _("%s%s: retrieving token... (%d)"),
             weechat_prefix("network"), SLACK_PLUGIN_NAME,
             status);
         break;
@@ -67,7 +67,7 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
             weechat_printf(
                 NULL,
-                _("%s%s: Got token: %s"),
+                _("%s%s: got response: %s"),
                 weechat_prefix("network"), SLACK_PLUGIN_NAME,
                 json_string);
             
@@ -92,7 +92,7 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
                 weechat_printf(
                     NULL,
-                    _("%s%s: Retrieved token: %s"),
+                    _("%s%s: retrieved token: %s"),
                     weechat_prefix("network"), SLACK_PLUGIN_NAME,
                     json_object_get_string(token));
 
@@ -110,7 +110,7 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
                 weechat_printf(
                     NULL,
-                    _("%s%s: Failed to retrieve token: %s"),
+                    _("%s%s: failed to retrieve token: %s"),
                     weechat_prefix("error"), SLACK_PLUGIN_NAME,
                     json_object_get_string(error));
             }
@@ -133,10 +133,6 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
         return 0; /* don't passthru */
 
     case LWS_CALLBACK_COMPLETED_CLIENT_HTTP:
-        client_wsi = NULL;
-        lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
-        break;
-
     case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
         client_wsi = NULL;
         lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
@@ -161,6 +157,10 @@ static const struct lws_protocols protocols[] = {
 
 int slack_oauth_timer_cb(const void *pointer, void *data, int remaining_calls)
 {
+    (void) pointer;
+    (void) data;
+    (void) remaining_calls;
+
     if (n >= 0 && client_wsi)
     {
         n = lws_service(context, 0);
@@ -183,11 +183,18 @@ void slack_oauth_request_token(char *code, void (*callback)(char *token))
     struct lws_context_creation_info info;
     struct lws_client_connect_info i;
 
+    if (client_wsi)
+    {
+        weechat_printf(
+            NULL,
+            _("%s%s: error: a registration is already in progress"),
+            weechat_prefix("error"), SLACK_PLUGIN_NAME);
+        return;
+    }
+
     size_t urilen = snprintf(NULL, 0, endpoint, SLACK_CLIENT_ID, SLACK_CLIENT_SECRET, code) + 1;
     uri = malloc(urilen);
     snprintf(uri, urilen, endpoint, SLACK_CLIENT_ID, SLACK_CLIENT_SECRET, code);
-
-    lws_set_log_level(0, NULL);
 
     memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
     info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
@@ -207,7 +214,7 @@ void slack_oauth_request_token(char *code, void (*callback)(char *token))
     {
         weechat_printf(
             NULL,
-            _("%s%s: Contacting slack.com:443"),
+            _("%s%s: contacting slack.com:443"),
             weechat_prefix("network"), SLACK_PLUGIN_NAME);
     }
 

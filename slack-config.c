@@ -17,17 +17,27 @@ int slack_config_workspace_check_value_cb(const void *pointer, void *data,
    	                                      struct t_config_option *option,
                                           const char *value)
 {
+    (void) pointer;
+    (void) data;
+    (void) option;
+    (void) value;
 	return 1;
 }
 
 void slack_config_workspace_change_cb(const void *pointer, void *data,
                                       struct t_config_option *option)
 {
+    (void) pointer;
+    (void) data;
+    (void) option;
 }
 
 void slack_config_workspace_default_change_cb(const void *pointer, void *data,
                                               struct t_config_option *option)
 {
+    (void) pointer;
+    (void) data;
+    (void) option;
 }
 
 struct t_config_option *
@@ -125,7 +135,7 @@ int slack_config_workspace_read_cb (const void *pointer, void *data,
 {
     struct t_slack_workspace *ptr_workspace;
     int index_option, rc, i;
-    char *pos_option, *workspace_name;
+    char *pos_option, *workspace_domain;
 
     /* make C compiler happy */
     (void) pointer;
@@ -140,17 +150,17 @@ int slack_config_workspace_read_cb (const void *pointer, void *data,
         pos_option = strrchr(option_name, '.');
         if (pos_option)
         {
-            workspace_name = weechat_strndup(option_name,
-                                             pos_option - option_name);
+            workspace_domain = weechat_strndup(option_name,
+                                               pos_option - option_name);
             pos_option++;
-            if (workspace_name)
+            if (workspace_domain)
             {
                 index_option = slack_workspace_search_option(pos_option);
                 if (index_option >= 0)
                 {
-                    ptr_workspace = slack_workspace_search(workspace_name);
+                    ptr_workspace = slack_workspace_search(workspace_domain);
                     if (!ptr_workspace)
-                        ptr_workspace = slack_workspace_alloc(workspace_name);
+                        ptr_workspace = slack_workspace_alloc(workspace_domain);
                     if (ptr_workspace)
                     {
                         if (ptr_workspace->reloading_from_config
@@ -172,10 +182,10 @@ int slack_config_workspace_read_cb (const void *pointer, void *data,
                             NULL,
                             _("%s%s: error adding workspace \"%s\""),
                             weechat_prefix("error"), SLACK_PLUGIN_NAME,
-                            workspace_name);
+                            workspace_domain);
                     }
                 }
-                free(workspace_name);
+                free(workspace_domain);
             }
         }
     }
@@ -272,12 +282,16 @@ int slack_config_init()
 
 int slack_config_read()
 {
-    return 1;
+	int rc;
+
+    rc = weechat_config_read(slack_config_file);
+
+    return rc;
 }
 
 int slack_config_write()
 {
-    return 1;
+    return weechat_config_write(slack_config_file);
 }
 
 void slack_config_free()

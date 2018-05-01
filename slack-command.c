@@ -5,6 +5,7 @@
 #include "slack.h"
 #include "slack-command.h"
 #include "slack-oauth.h"
+#include "slack-teaminfo.h"
 #include "slack-workspace.h"
 
 void slack_command_display_workspace(struct t_slack_workspace *workspace)
@@ -17,10 +18,15 @@ void slack_command_display_workspace(struct t_slack_workspace *workspace)
         num_pv = 0;//slack_workspace_get_pv_count(workspace);
         weechat_printf(
             NULL,
-            " %s %s%s %s[%s%s%s]%s, %d %s, %d pv",
+            " %s %s%s%s.slack.com %s(%s%s%s) [%s%s%s]%s, %d %s, %d pv",
             (workspace->is_connected) ? "*" : " ",
-            weechat_color("chat_workspace"),
-            workspace->name,
+            weechat_color("chat_server"),
+            workspace->domain,
+            weechat_color("reset"),
+            weechat_color("chat_delimiters"),
+            weechat_color("chat_server"),
+            (workspace->name) ?
+			workspace->name : "???",
             weechat_color("chat_delimiters"),
             weechat_color("reset"),
             (workspace->is_connected) ?
@@ -35,9 +41,15 @@ void slack_command_display_workspace(struct t_slack_workspace *workspace)
     {
         weechat_printf(
             NULL,
-            "   %s%s%s",
-            weechat_color("chat_workspace"),
-            workspace->name,
+            "   %s%s%s.slack.com %s(%s%s%s)%s",
+            weechat_color("chat_server"),
+            workspace->domain,
+            weechat_color("reset"),
+            weechat_color("chat_delimiters"),
+            weechat_color("chat_server"),
+            (workspace->name) ?
+			workspace->name : "???",
+            weechat_color("chat_delimiters"),
             weechat_color("reset"));
     }
 }
@@ -94,8 +106,56 @@ void slack_command_workspace_list(int argc, char **argv)
     }
 }
 
-void slack_command_add_workspace(char *token)
+void slack_command_add_workspace(struct t_slack_teaminfo *slack_teaminfo)
 {
+    struct t_slack_workspace *workspace;
+
+    workspace = slack_workspace_casesearch(slack_teaminfo->domain);
+    if (workspace)
+    {
+        weechat_printf(
+            NULL,
+            _("%s%s: workspace \"%s\" already exists, can't add it!"),
+            weechat_prefix("error"), SLACK_PLUGIN_NAME,
+            slack_teaminfo->domain);
+        return;
+    }
+
+    workspace = slack_workspace_alloc(slack_teaminfo->domain);
+    if (!workspace)
+    {
+        weechat_printf(
+            NULL,
+            _("%s%s: unable to add workspace"),
+            weechat_prefix("error"), SLACK_PLUGIN_NAME);
+        return;
+    }
+
+    workspace->id = strdup(slack_teaminfo->id);
+    workspace->name = strdup(slack_teaminfo->name);
+    weechat_config_option_set(workspace->options[SLACK_WORKSPACE_OPTION_TOKEN],
+            slack_teaminfo->token, 1);
+
+	weechat_printf (
+		NULL,
+		_("%s: workspace %s%s%s.slack.com %s(%s%s%s)%s added"),
+		SLACK_PLUGIN_NAME,
+		weechat_color("chat_server"),
+		workspace->domain,
+		weechat_color("reset"),
+		weechat_color("chat_delimiters"),
+		weechat_color("chat_server"),
+		workspace->name,
+		weechat_color("chat_delimiters"),
+		weechat_color("reset"));
+
+    free_teaminfo(slack_teaminfo);
+}
+
+void slack_command_fetch_workspace(char *token)
+{
+    slack_teaminfo_fetch(token, &slack_command_add_workspace);
+
     free(token);
 }
 
@@ -107,13 +167,13 @@ void slack_command_workspace_register(int argc, char **argv)
     {
         code = argv[2];
         
-        if (weechat_strncasecmp("xoxp", code, 4) == 0)
+        if (strncmp("xoxp", code, 4) == 0)
         {
-            slack_command_add_workspace(strdup(code));
+            slack_command_fetch_workspace(strdup(code));
         }
         else
         {
-            slack_oauth_request_token(code, &slack_command_add_workspace);
+            slack_oauth_request_token(code, &slack_command_fetch_workspace);
         }
     }
     else
@@ -121,7 +181,7 @@ void slack_command_workspace_register(int argc, char **argv)
         weechat_printf(NULL,
                        _("\n#### Retrieving a Slack token via OAUTH ####\n"
                          "1) Paste this into a browser: https://slack.com/oauth/authorize?client_id=%s&scope=client\n"
-                         "2) Select the team you wish to access from wee-slack in your browser.\n"
+                         "2) Select the team you wish to access from weechat in your browser.\n"
                          "3) Click \"Authorize\" in the browser **IMPORTANT: the redirect will fail, this is expected**\n"
                          "4) Copy the \"code\" portion of the URL to your clipboard\n"
                          "5) Return to weechat and run `/slack register [code]`\n"),
@@ -129,8 +189,109 @@ void slack_command_workspace_register(int argc, char **argv)
     }
 }
 
+int slack_command_connect_workspace(struct t_slack_workspace *workspace)
+{
+    if (!workspace)
+        return 0;
+
+    if (workspace->is_connected)
+    {
+        weechat_printf(
+            NULL,
+            _("%s%s: already connected to workspace \"%s\"!"),
+            weechat_prefix("error"), SLACK_PLUGIN_NAME,
+            workspace->domain);
+    }
+
+    slack_workspace_connect(workspace);
+
+    return 1;
+}
+
+int slack_command_workspace_connect(int argc, char **argv)
+{
+	int i, nb_connect, connect_ok;
+	struct t_slack_workspace *ptr_workspace;
+
+    (void) argc;
+    (void) argv;
+
+    connect_ok = 1;
+
+    nb_connect = 0;
+	for (i = 2; i < argc; i++)
+	{
+        nb_connect++;
+		ptr_workspace = slack_workspace_search(argv[i]);
+		if (ptr_workspace)
+		{
+            if (!slack_command_connect_workspace(ptr_workspace))
+            {
+                connect_ok = 0;
+            }
+		}
+        else
+        {
+            weechat_printf(
+                NULL,
+                _("%s%s: workspace not found \"%s\" "
+                  "(register first with: /slack register)"),
+                weechat_prefix("error"), SLACK_PLUGIN_NAME,
+                argv[i]);
+        }
+	}
+
+    return (connect_ok) ? WEECHAT_RC_OK : WEECHAT_RC_ERROR;
+}
+
 void slack_command_workspace_delete(int argc, char **argv)
 {
+    struct t_slack_workspace *workspace;
+    char *workspace_domain;
+
+    if (argc < 3)
+    {
+        weechat_printf(
+            NULL,
+            _("%sToo few arguments for command\"%s %s\" "
+              "(help on command: /help %s)"),
+            weechat_prefix("error"),
+            argv[0], argv[1], argv[0] + 1);
+        return;
+    }
+
+    workspace = slack_workspace_search(argv[2]);
+    if (!workspace)
+    {
+        weechat_printf(
+            NULL,
+            _("%s%s: workspace \"%s\" not found for \"%s\" command"),
+            weechat_prefix("error"), SLACK_PLUGIN_NAME,
+            argv[2], "slack delete");
+        return;
+    }
+    if (workspace->is_connected)
+    {
+        weechat_printf(
+            NULL,
+            _("%s%s: you cannot delete workspace \"%s\" because you"
+              "are connected. Try \"/slack disconnect %s\" first."),
+            weechat_prefix("error"), SLACK_PLUGIN_NAME,
+            argv[2], argv[2]);
+        return;
+    }
+
+    workspace_domain = strdup(workspace->domain);
+    slack_workspace_free(workspace);
+    weechat_printf (
+        NULL,
+        _("%s: workspace %s%s%s has been deleted"),
+        SLACK_PLUGIN_NAME,
+        weechat_color("chat_server"),
+        (workspace_domain) ? workspace_domain : "???",
+        weechat_color("reset"));
+    if (workspace_domain)
+        free(workspace_domain);
 }
 
 int slack_command_slack(const void *pointer, void *data,
@@ -142,17 +303,23 @@ int slack_command_slack(const void *pointer, void *data,
     (void) data;
     (void) buffer;
 
+	if (argc <= 1 || weechat_strcasecmp(argv[1], "list") == 0)
+	{
+		slack_command_workspace_list(argc, argv);
+		return WEECHAT_RC_OK;
+	}
+
     if (argc > 1)
     {
-        if (weechat_strcasecmp(argv[1], "list") == 0)
-        {
-            slack_command_workspace_list(argc, argv);
-            return WEECHAT_RC_OK;
-        }
-
         if (weechat_strcasecmp(argv[1], "register") == 0)
         {
             slack_command_workspace_register(argc, argv);
+            return WEECHAT_RC_OK;
+        }
+
+        if (weechat_strcasecmp(argv[1], "connect") == 0)
+        {
+            slack_command_workspace_connect(argc, argv);
             return WEECHAT_RC_OK;
         }
 
@@ -175,12 +342,15 @@ void slack_command_init()
         N_("slack control"),
         N_("list"
            " || register [token]"
+           " || connect <workspace>"
            " || delete <workspace>"),
         N_("    list: list workspaces\n"
            "register: add a slack workspace\n"
+           " connect: connect to a slack workspace\n"
            "  delete: delete a slack workspace\n"),
         "list"
         " || register %(slack_token)"
+        " || connect %(slack_workspace)"
         " || delete %(slack_workspace)",
         &slack_command_slack, NULL, NULL);
 }
