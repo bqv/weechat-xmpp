@@ -34,7 +34,7 @@ static inline int json_valid(json_object *object)
     {
         weechat_printf(
             NULL,
-            _("%s%s: Error retrieving workspace info: unexpected response from server"),
+            _("%s%s: error retrieving workspace info: unexpected response from server"),
             weechat_prefix("error"), SLACK_PLUGIN_NAME);
         return 0;
     }

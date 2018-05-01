@@ -29,7 +29,7 @@ static inline int json_valid(json_object *object, struct t_slack_workspace *work
     {
         weechat_printf(
             workspace->buffer,
-            _("%s%s: Error requesting websocket: unexpected response from server"),
+            _("%s%s: error requesting websocket: unexpected response from server"),
             weechat_prefix("error"), SLACK_PLUGIN_NAME);
         return 0;
     }

@@ -3,7 +3,7 @@ CXX=clang++
 RM=rm -f
 CFLAGS=-fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -I libwebsockets/include -I json-c
 LDFLAGS=-shared -g
-LDLIBS=-lssl
+LDLIBS=-lgnutls
 
 SRCS=slack.c \
 	 slack-api.c \

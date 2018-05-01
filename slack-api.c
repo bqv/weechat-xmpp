@@ -1,4 +1,5 @@
 #include <libwebsockets.h>
+#include <json.h>
 #include <string.h>
 
 #include "weechat-plugin.h"
@@ -32,7 +33,7 @@ static int callback_ws(struct lws* wsi, enum lws_callback_reasons reason,
             weechat_prefix("network"), SLACK_PLUGIN_NAME);
         break;
 
-    /* chunks of chunked content, with header removed */
+    /* data is never chunked */
     case LWS_CALLBACK_CLIENT_RECEIVE:
         weechat_printf(
             workspace->buffer,
@@ -40,25 +41,25 @@ static int callback_ws(struct lws* wsi, enum lws_callback_reasons reason,
             weechat_prefix("network"), SLACK_PLUGIN_NAME,
             (const char *)in);
         {
-            struct t_json_chunk *new_chunk, *last_chunk;
+            char *json_string;
+            json_object *response, *type;
 
-            new_chunk = malloc(sizeof(*new_chunk));
-            new_chunk->data = malloc((1024 * sizeof(char)) + 1);
-            new_chunk->data[0] = '\0';
-            new_chunk->next = NULL;
+            json_string = strdup((const char *)in);
 
-            strncat(new_chunk->data, in, (int)len);
-
-            if (workspace->json_chunks)
+            response = json_tokener_parse(json_string);
+            type = json_object_object_get(response, "type");
+            if (!type)
             {
-                for (last_chunk = workspace->json_chunks; last_chunk->next;
-                     last_chunk = last_chunk->next);
-                last_chunk->next = new_chunk;
+                weechat_printf(
+                    workspace->buffer,
+                    _("%s%s: unexpected data received from websocket: closing"),
+                    weechat_prefix("error"), SLACK_PLUGIN_NAME);
+                json_object_put(response);
+                free(json_string);
+                return -1;
             }
-            else
-            {
-                workspace->json_chunks = new_chunk;
-            }
+
+            free(json_string);
         }
         return 0; /* don't passthru */
 
