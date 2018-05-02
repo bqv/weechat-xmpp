@@ -17,6 +17,7 @@ struct t_slack_request *slack_request_alloc(
     memset(request, 0, sizeof(struct t_slack_request));
 
     request->workspace = workspace;
+    request->idx = workspace->idx++;
 
     return request;
 }

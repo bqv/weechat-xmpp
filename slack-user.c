@@ -5,6 +5,7 @@
 #include "slack.h"
 #include "slack-workspace.h"
 #include "slack-user.h"
+#include "slack-channel.h"
 
 struct t_slack_user *slack_user_search(struct t_slack_workspace *workspace,
                                        const char *id)
@@ -24,17 +25,43 @@ struct t_slack_user *slack_user_search(struct t_slack_workspace *workspace,
     return NULL;
 }
 
+void slack_user_nicklist_add(struct t_slack_workspace *workspace,
+                             struct t_slack_channel *channel,
+                             struct t_slack_user *user)
+{
+    struct t_gui_nick_group *ptr_group;
+    struct t_gui_buffer *ptr_buffer;
+
+    ptr_buffer = channel ? channel->buffer : workspace->buffer;
+
+    ptr_group = weechat_nicklist_search_group(ptr_buffer, NULL,
+                                              user->is_away ?
+                                              "+" : "...");
+    weechat_nicklist_add_nick(ptr_buffer, ptr_group,
+                              user->profile.display_name,
+                              weechat_color(user->is_away ? 
+                                            "weechat.color.nicklist_away" :
+                                            "bar_fg"),
+                              user->is_away ? "+" : "",
+                              weechat_color(""),
+                              1);
+}
+
 struct t_slack_user *slack_user_new(struct t_slack_workspace *workspace,
-                                    const char *id)
+                                    const char *id, const char *display_name)
 {
     struct t_slack_user *new_user, *ptr_user;
 
-    if (!workspace || !id)
+    if (!workspace || !id || !display_name || !display_name[0])
         return NULL;
+
+    if (!workspace->users)
+        slack_channel_add_nicklist_groups(workspace, NULL);
 
     ptr_user = slack_user_search(workspace, id);
     if (ptr_user)
     {
+        slack_user_nicklist_add(workspace, NULL, ptr_user);
         return ptr_user;
     }
 
@@ -42,7 +69,11 @@ struct t_slack_user *slack_user_new(struct t_slack_workspace *workspace,
         return NULL;
 
     new_user->prev_user = workspace->last_user;
-    (workspace->last_user)->next_user = new_user;
+    new_user->next_user = NULL;
+    if (workspace->last_user)
+        (workspace->last_user)->next_user = new_user;
+    else
+        workspace->users = new_user;
     workspace->last_user = new_user;
 
     new_user->id = strdup(id);
@@ -61,11 +92,12 @@ struct t_slack_user *slack_user_new(struct t_slack_workspace *workspace,
     new_user->profile.status_text = NULL;
     new_user->profile.status_emoji = NULL;
     new_user->profile.real_name = NULL;
-    new_user->profile.display_name = NULL;
+    new_user->profile.display_name = strdup(display_name);
     new_user->profile.real_name_normalized = NULL;
     new_user->profile.email = NULL;
     new_user->profile.team = NULL;
     new_user->updated = 0;
+    new_user->is_away = 0;
 
     new_user->is_admin = 0;
     new_user->is_owner = 0;
@@ -77,8 +109,7 @@ struct t_slack_user *slack_user_new(struct t_slack_workspace *workspace,
     new_user->is_app_user = 0;
     new_user->has_2fa = 0;
 
-    new_user->prev_user = NULL;
-    new_user->next_user = NULL;
+    slack_user_nicklist_add(workspace, NULL, new_user);
 
     return new_user;
 }

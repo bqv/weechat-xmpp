@@ -29,12 +29,14 @@ struct t_slack_workspace
 	int is_connected;
 	int disconnected;
 
+    int idx;
     char *uri;
     char *ws_url;
     struct lws *client_wsi;
     struct lws_context *context;
     struct t_json_chunk *json_chunks;
     struct t_slack_request *requests;
+    struct t_slack_request *last_request;
 
     char *user;
     char *nick;

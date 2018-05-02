@@ -7,11 +7,12 @@
 #include "../slack.h"
 #include "../slack-workspace.h"
 #include "../slack-request.h"
+#include "../slack-user.h"
 #include "../request/slack-request-users-list.h"
 
 static const char *const endpoint = "/api/users.list?"
     "token=%s&cursor=%s&"
-    "exclude_archived=false&exclude_members=true&limit=0";
+    "exclude_archived=false&exclude_members=true&limit=20";
 
 static inline int json_valid(json_object *object, struct t_slack_workspace *workspace)
 {
@@ -41,8 +42,8 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
     case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
         weechat_printf(
             request->workspace->buffer,
-            _("%s%s: error connecting to slack: %s"),
-            weechat_prefix("error"), SLACK_PLUGIN_NAME,
+            _("%s%s: (%d) error connecting to slack: %s"),
+            weechat_prefix("error"), SLACK_PLUGIN_NAME, request->idx,
             in ? (char *)in : "(null)");
         request->client_wsi = NULL;
         break;
@@ -51,8 +52,8 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
         status = lws_http_client_http_response(wsi);
         weechat_printf(
             request->workspace->buffer,
-            _("%s%s: retrieving users... (%d)"),
-            weechat_prefix("network"), SLACK_PLUGIN_NAME,
+            _("%s%s: (%d) retrieving users... (%d)"),
+            weechat_prefix("network"), SLACK_PLUGIN_NAME, request->idx,
             status);
         break;
 
@@ -97,8 +98,9 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
         {
             int chunk_count, i;
             char *json_string;
-            json_object *response, *ok, *error, *members;
-            json_object *user, *id, *name;
+            char cursor[64];
+            json_object *response, *ok, *error, *members, *metadata;
+            json_object *user, *id, *name, *profile, *display_name, *next_cursor;
             struct t_json_chunk *chunk_ptr;
 
             chunk_count = 0;
@@ -128,8 +130,8 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
             weechat_printf(
                 request->workspace->buffer,
-                _("%s%s: got response: %s"),
-                weechat_prefix("network"), SLACK_PLUGIN_NAME,
+                _("%s%s: (%d) got response: %s"),
+                weechat_prefix("network"), SLACK_PLUGIN_NAME, request->idx,
                 json_string);
             
             response = json_tokener_parse(json_string);
@@ -153,6 +155,8 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
                 for (i = json_object_array_length(members); i > 0; i--)
                 {
+                    struct t_slack_user *new_user;
+
                     user = json_object_array_get_idx(members, i - 1);
                     if (!json_valid(user, request->workspace))
                     {
@@ -177,12 +181,54 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                         return 0;
                     }
 
-                    weechat_printf(
-                        request->workspace->buffer,
-                        _("%s%s: got user: %s (%s)"),
-                        weechat_prefix("network"), SLACK_PLUGIN_NAME,
-                        json_object_get_string(name),
-                        json_object_get_string(id));
+                    profile = json_object_object_get(user, "profile");
+                    if (!json_valid(profile, request->workspace))
+                    {
+                        json_object_put(response);
+                        free(json_string);
+                        return 0;
+                    }
+
+                    display_name = json_object_object_get(profile, "display_name");
+                    if (!json_valid(display_name, request->workspace))
+                    {
+                        json_object_put(response);
+                        free(json_string);
+                        return 0;
+                    }
+
+                    new_user = slack_user_new(request->workspace,
+                                              json_object_get_string(id),
+                                              json_object_get_string(display_name));
+                }
+
+                metadata = json_object_object_get(response, "response_metadata");
+                if (!json_valid(metadata, request->workspace))
+                {
+                    json_object_put(response);
+                    free(json_string);
+                    return 0;
+                }
+
+                next_cursor = json_object_object_get(metadata, "next_cursor");
+                if (!json_valid(next_cursor, request->workspace))
+                {
+                    json_object_put(response);
+                    free(json_string);
+                    return 0;
+                }
+                lws_urlencode(cursor, json_object_get_string(next_cursor), sizeof(cursor));
+
+                if (cursor[0])
+                {
+                    struct t_slack_request *next_request;
+
+                    next_request = slack_request_users_list(request->workspace,
+                            weechat_config_string(
+                                request->workspace->options[SLACK_WORKSPACE_OPTION_TOKEN]),
+                            cursor);
+                    if (next_request)
+                        slack_workspace_register_request(request->workspace, next_request);
                 }
             }
             else
@@ -197,8 +243,8 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
                 weechat_printf(
                     request->workspace->buffer,
-                    _("%s%s: failed to retrieve users: %s"),
-                    weechat_prefix("error"), SLACK_PLUGIN_NAME,
+                    _("%s%s: (%d) failed to retrieve users: %s"),
+                    weechat_prefix("error"), SLACK_PLUGIN_NAME, request->idx,
                     json_object_get_string(error));
             }
 
@@ -251,16 +297,16 @@ struct t_slack_request *slack_request_users_list(
     {
         weechat_printf(
             workspace->buffer,
-            _("%s%s: error connecting to slack: lws init failed"),
-            weechat_prefix("error"), SLACK_PLUGIN_NAME);
+            _("%s%s: (%d) error connecting to slack: lws init failed"),
+            weechat_prefix("error"), SLACK_PLUGIN_NAME, request->idx);
         return NULL;
     }
     else
     {
         weechat_printf(
             workspace->buffer,
-            _("%s%s: contacting slack.com:443"),
-            weechat_prefix("network"), SLACK_PLUGIN_NAME);
+            _("%s%s: (%d) contacting slack.com:443"),
+            weechat_prefix("network"), SLACK_PLUGIN_NAME, request->idx);
     }
 
     memset(&ccinfo, 0, sizeof(ccinfo)); /* otherwise uninitialized garbage */

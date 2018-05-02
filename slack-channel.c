@@ -152,6 +152,29 @@ struct t_gui_buffer *slack_channel_create_buffer(struct t_slack_workspace *works
     return ptr_buffer;
 }
 
+void slack_channel_add_nicklist_groups(struct t_slack_workspace *workspace,
+                                       struct t_slack_channel *channel)
+{
+    struct t_gui_buffer *ptr_buffer;
+    char str_group[32];
+
+    if (channel && channel->type == SLACK_CHANNEL_TYPE_MPIM)
+        return;
+    if (channel && channel->type == SLACK_CHANNEL_TYPE_IM)
+        return;
+
+    ptr_buffer = channel ? channel->buffer : workspace->buffer;
+
+    snprintf(str_group, sizeof(str_group), "%03d|%s",
+             000, "+");
+    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+                               "weechat.color.nicklist_group", 1);
+    snprintf(str_group, sizeof(str_group), "%03d|%s",
+             999, "...");
+    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+                               "weechat.color.nicklist_group", 1);
+}
+
 struct t_slack_channel *slack_channel_new(struct t_slack_workspace *workspace,
                                           enum t_slack_channel_type type,
                                           const char *id, const char *name)
@@ -159,7 +182,7 @@ struct t_slack_channel *slack_channel_new(struct t_slack_workspace *workspace,
     struct t_slack_channel *new_channel, *ptr_channel;
     struct t_gui_buffer *ptr_buffer;
 
-    if (!workspace || !id)
+    if (!workspace || !id || !name || !name[0])
         return NULL;
 
     ptr_channel = slack_channel_search(workspace, id);
@@ -206,12 +229,12 @@ struct t_slack_channel *slack_channel_new(struct t_slack_workspace *workspace,
     new_channel->buffer = ptr_buffer;
     new_channel->buffer_as_string = NULL;
 
-    new_channel->prev_channel = NULL;
-    new_channel->next_channel = NULL;
-
     new_channel->prev_channel = workspace->last_channel;
+    new_channel->next_channel = NULL;
     if (workspace->last_channel)
         (workspace->last_channel)->next_channel = new_channel;
+    else
+        workspace->channels = new_channel;
     workspace->last_channel = new_channel;
 
     return new_channel;

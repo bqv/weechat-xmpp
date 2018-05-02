@@ -364,12 +364,14 @@ struct t_slack_workspace *slack_workspace_alloc(const char *domain)
     new_workspace->is_connected = 0;
     new_workspace->disconnected = 0;
 
+    new_workspace->idx = 0;
     new_workspace->uri = NULL;
     new_workspace->ws_url = NULL;
     new_workspace->client_wsi = NULL;
     new_workspace->context = NULL;
     new_workspace->json_chunks = NULL;
     new_workspace->requests = NULL;
+    new_workspace->last_request = NULL;
 
     new_workspace->user = NULL;
     new_workspace->nick = NULL;
@@ -433,8 +435,9 @@ void slack_workspace_free_data(struct t_slack_workspace *workspace)
     }
     slack_redirect_free_all(workspace);
     slack_notify_free_all(workspace);
-    slack_channel_free_all(workspace);
     */
+    slack_channel_free_all(workspace);
+    slack_user_free_all(workspace);
 
     /* free hashtables */
     /*
@@ -472,8 +475,19 @@ void slack_workspace_free_data(struct t_slack_workspace *workspace)
     }
     while (workspace->requests)
     {
-        struct t_slack_request *request_ptr = workspace->requests->next;
+        struct t_slack_request *request_ptr = workspace->requests->next_request;
 
+        workspace->requests->client_wsi = NULL;
+        if (workspace->requests->context)
+        {
+            lws_context_destroy(workspace->requests->context);
+            workspace->requests->context = NULL;
+            if (workspace->requests->uri)
+            {
+                free(workspace->requests->uri);
+                workspace->requests->uri = NULL;
+            }
+        }
         free(workspace->requests);
         workspace->requests = request_ptr;
     }
@@ -548,28 +562,19 @@ void slack_workspace_disconnect(struct t_slack_workspace *workspace,
          * remove all nicks and write disconnection message on each
          * channel/private buffer
          */
-		/*
+        slack_user_free_all(workspace);
         for (ptr_channel = workspace->channels; ptr_channel;
              ptr_channel = ptr_channel->next_channel)
         {
-            slack_nick_free_all(workspace, ptr_channel);
-            if (ptr_channel->hook_autorejoin)
-            {
-                weechat_unhook(ptr_channel->hook_autorejoin);
-                ptr_channel->hook_autorejoin = NULL;
-            }
-            weechat_buffer_set(ptr_channel->buffer, "localvar_del_away", "");
             weechat_printf(
                 ptr_channel->buffer,
                 _("%s%s: disconnected from workspace"),
                 weechat_prefix("network"), SLACK_PLUGIN_NAME);
         }
-		*/
         /* remove away status on workspace buffer */
         //weechat_buffer_set(workspace->buffer, "localvar_del_away", "");
     }
 
-	/*
     slack_workspace_close_connection(workspace);
 
     if (workspace->buffer)
@@ -580,6 +585,7 @@ void slack_workspace_disconnect(struct t_slack_workspace *workspace,
             weechat_prefix ("network"), SLACK_PLUGIN_NAME);
     }
 
+    /*
     workspace->current_retry = 0;
 
     if (switch_address)
@@ -785,7 +791,7 @@ int slack_workspace_timer_cb(const void *pointer, void *data, int remaining_call
             continue;
 
         for (ptr_request = ptr_workspace->requests; ptr_request;
-             ptr_request = ptr_request->next)
+             ptr_request = ptr_request->next_request)
         {
             if (ptr_request->client_wsi)
             {
@@ -793,6 +799,8 @@ int slack_workspace_timer_cb(const void *pointer, void *data, int remaining_call
             }
             else if (ptr_request->context)
             {
+                struct t_slack_request *new_requests;
+
                 lws_context_destroy(ptr_request->context);
                 ptr_request->context = NULL;
                 if (ptr_request->uri)
@@ -800,6 +808,22 @@ int slack_workspace_timer_cb(const void *pointer, void *data, int remaining_call
                     free(ptr_request->uri);
                     ptr_request->uri = NULL;
                 }
+
+                /* remove request from requests list */
+                if (ptr_workspace->last_request == ptr_request)
+                    ptr_workspace->last_request = ptr_request->prev_request;
+                if (ptr_request->prev_request)
+                {
+                    (ptr_request->prev_request)->next_request = ptr_request->next_request;
+                    new_requests = ptr_workspace->requests;
+                }
+                else
+                    new_requests = ptr_request->next_request;
+
+                if (ptr_request->next_request)
+                    (ptr_request->next_request)->prev_request = ptr_request->prev_request;
+
+                ptr_workspace->requests = new_requests;
             }
         }
 
@@ -831,7 +855,11 @@ int slack_workspace_timer_cb(const void *pointer, void *data, int remaining_call
 void slack_workspace_register_request(struct t_slack_workspace *workspace,
                                       struct t_slack_request *request)
 {
-    struct t_slack_request *new_tail = workspace->requests;
-    workspace->requests = request;
-    workspace->requests->next = new_tail;
+    request->prev_request = workspace->last_request;
+    request->next_request = NULL;
+    if (workspace->last_request)
+        (workspace->last_request)->next_request = request;
+    else
+        workspace->requests = request;
+    workspace->last_request = request;
 }

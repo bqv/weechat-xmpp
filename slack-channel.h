@@ -71,10 +71,13 @@ struct t_slack_channel
 struct t_slack_channel *slack_channel_search(struct t_slack_workspace *workspace,
                                              const char *id);
 
+void slack_channel_add_nicklist_groups(struct t_slack_workspace *workspace,
+                                       struct t_slack_channel *channel);
+
 struct t_slack_channel *slack_channel_new(struct t_slack_workspace *workspace,
                                           enum t_slack_channel_type type,
                                           const char *id, const char *name);
 
-void slack_user_free_all(struct t_slack_workspace *workspace);
+void slack_channel_free_all(struct t_slack_workspace *workspace);
 
 #endif /*SLACK_CHANNEL_H*/

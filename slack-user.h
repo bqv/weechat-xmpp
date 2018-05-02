@@ -29,6 +29,7 @@ struct t_slack_user
 
     struct t_slack_user_profile profile;
     int updated;
+    int is_away;
 
     int is_admin;
     int is_owner;
@@ -48,8 +49,8 @@ struct t_slack_user *slack_user_search(struct t_slack_workspace *workspace,
                                        const char *id);
 
 struct t_slack_user *slack_user_new(struct t_slack_workspace *workspace,
-                                    const char *id);
+                                    const char *id, const char *display_name);
 
-void slack_channel_free_all(struct t_slack_workspace *workspace);
+void slack_user_free_all(struct t_slack_workspace *workspace);
 
 #endif /*SLACK_USER_H*/
