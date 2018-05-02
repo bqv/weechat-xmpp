@@ -181,6 +181,7 @@ struct t_slack_channel *slack_channel_new(struct t_slack_workspace *workspace,
 {
     struct t_slack_channel *new_channel, *ptr_channel;
     struct t_gui_buffer *ptr_buffer;
+    char buffer_name[SLACK_CHANNEL_NAME_MAX_LEN + 2];
 
     if (!workspace || !id || !name || !name[0])
         return NULL;
@@ -191,7 +192,10 @@ struct t_slack_channel *slack_channel_new(struct t_slack_workspace *workspace,
         return ptr_channel;
     }
 
-    ptr_buffer = slack_channel_create_buffer(workspace, type, name);
+    buffer_name[0] = '#';
+    strncpy(&buffer_name[1], name, SLACK_CHANNEL_NAME_MAX_LEN + 1);
+
+    ptr_buffer = slack_channel_create_buffer(workspace, type, buffer_name);
     if (!ptr_buffer)
         return NULL;
 

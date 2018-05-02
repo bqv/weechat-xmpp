@@ -87,7 +87,7 @@ int slack_buffer_close_cb(const void *pointer, void *data,
         if (!ptr_workspace->disconnected)
         {
             //slack_command_quit_workspace(ptr_workspace, NULL);
-            slack_workspace_disconnect(ptr_workspace, 0, 0);
+            slack_workspace_disconnect(ptr_workspace, 0);
         }
 
         ptr_workspace->buffer = NULL;

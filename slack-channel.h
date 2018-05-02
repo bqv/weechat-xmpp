@@ -1,6 +1,8 @@
 #ifndef _SLACK_CHANNEL_H_
 #define _SLACK_CHANNEL_H_
 
+#define SLACK_CHANNEL_NAME_MAX_LEN 22
+
 enum t_slack_channel_type
 {
     SLACK_CHANNEL_TYPE_CHANNEL,

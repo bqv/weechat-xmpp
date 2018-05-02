@@ -9,6 +9,7 @@
 #include "slack-api.h"
 #include "api/slack-api-hello.h"
 #include "api/slack-api-error.h"
+#include "api/slack-api-message.h"
 
 struct stringcase
 {
@@ -18,8 +19,9 @@ struct stringcase
 };
 
 struct stringcase cases[] =
-{ { "hello", slack_api_hello }
-, { "error", slack_api_error }
+{ { "hello", &slack_api_hello }
+, { "error", &slack_api_error }
+, { "message", &slack_api_message }
 };
 
 static int stringcase_cmp(const void *p1, const void *p2)
@@ -80,6 +82,9 @@ static int callback_ws(struct lws* wsi, enum lws_callback_reasons reason,
                     workspace->buffer,
                     _("%s%s: unexpected data received from websocket: closing"),
                     weechat_prefix("error"), SLACK_PLUGIN_NAME);
+
+                slack_workspace_disconnect(workspace, 0);
+
                 json_object_put(response);
                 free(json_string);
                 return -1;
@@ -88,6 +93,18 @@ static int callback_ws(struct lws* wsi, enum lws_callback_reasons reason,
             if (!slack_api_route_message(workspace,
                     json_object_get_string(type), response))
             {
+                weechat_printf(
+                    workspace->buffer,
+                    _("%s%s: error while handling message: %s"),
+                    weechat_prefix("error"), SLACK_PLUGIN_NAME,
+                    json_string);
+                weechat_printf(
+                    workspace->buffer,
+                    _("%s%s: closing connection."),
+                    weechat_prefix("error"), SLACK_PLUGIN_NAME);
+
+                slack_workspace_disconnect(workspace, 0);
+
                 json_object_put(response);
                 free(json_string);
                 return -1;

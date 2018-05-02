@@ -61,7 +61,7 @@ void slack_workspace_free_data(struct t_slack_workspace *workspace);
 void slack_workspace_free(struct t_slack_workspace *workspace);
 void slack_workspace_free_all();
 void slack_workspace_disconnect(struct t_slack_workspace *workspace,
-								int switch_address, int reconnect);
+								int reconnect);
 void slack_workspace_disconnect_all();
 void slack_workspace_close_connection(struct t_slack_workspace *workspace);
 int slack_workspace_connect(struct t_slack_workspace *workspace);

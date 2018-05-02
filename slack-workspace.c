@@ -249,7 +249,8 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
         }
     case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
         workspace->client_wsi = NULL;
-        lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
+        /* Does not doing this cause a leak?
+        lws_cancel_service(lws_get_context(wsi));*/ /* abort poll wait */
         break;
 
     default:
@@ -548,9 +549,8 @@ void slack_workspace_free_all()
 }
 
 void slack_workspace_disconnect(struct t_slack_workspace *workspace,
-								int switch_address, int reconnect)
+								int reconnect)
 {
-	(void) switch_address;
 	(void) reconnect;
 
     struct t_slack_channel *ptr_channel;
@@ -563,9 +563,11 @@ void slack_workspace_disconnect(struct t_slack_workspace *workspace,
          * channel/private buffer
          */
         slack_user_free_all(workspace);
+        weechat_nicklist_remove_all(workspace->buffer);
         for (ptr_channel = workspace->channels; ptr_channel;
              ptr_channel = ptr_channel->next_channel)
         {
+            weechat_nicklist_remove_all(ptr_channel->buffer);
             weechat_printf(
                 ptr_channel->buffer,
                 _("%s%s: disconnected from workspace"),
@@ -650,7 +652,7 @@ void slack_workspace_disconnect_all()
     for (ptr_workspace = slack_workspaces; ptr_workspace;
          ptr_workspace = ptr_workspace->next_workspace)
     {
-        slack_workspace_disconnect(ptr_workspace, 0, 0);
+        slack_workspace_disconnect(ptr_workspace, 0);
     }
 }
 
@@ -690,9 +692,44 @@ struct t_gui_buffer *slack_workspace_create_buffer(struct t_slack_workspace *wor
 
 void slack_workspace_close_connection(struct t_slack_workspace *workspace)
 {
+    struct t_slack_request *ptr_request;
+
     workspace->is_connected = 0;
     workspace->client_wsi = NULL;
     workspace->context = NULL;
+
+    for (ptr_request = workspace->requests; ptr_request;
+         ptr_request = ptr_request->next_request)
+    {
+        if (ptr_request->context)
+        {
+            struct t_slack_request *new_requests;
+
+            lws_context_destroy(ptr_request->context);
+            ptr_request->context = NULL;
+            if (ptr_request->uri)
+            {
+                free(ptr_request->uri);
+                ptr_request->uri = NULL;
+            }
+
+            /* remove request from requests list */
+            if (workspace->last_request == ptr_request)
+                workspace->last_request = ptr_request->prev_request;
+            if (ptr_request->prev_request)
+            {
+                (ptr_request->prev_request)->next_request = ptr_request->next_request;
+                new_requests = workspace->requests;
+            }
+            else
+                new_requests = ptr_request->next_request;
+
+            if (ptr_request->next_request)
+                (ptr_request->next_request)->prev_request = ptr_request->prev_request;
+
+            workspace->requests = new_requests;
+        }
+    }
 }
 
 void slack_workspace_websocket_create(struct t_slack_workspace *workspace)

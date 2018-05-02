@@ -230,7 +230,8 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
         }
     case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
         client_wsi = NULL;
-        lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
+        /* Does not doing this cause a leak?
+        lws_cancel_service(lws_get_context(wsi));*/ /* abort poll wait */
         break;
 
     default:

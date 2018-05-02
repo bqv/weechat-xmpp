@@ -19,6 +19,8 @@ SRCS=slack.c \
 	 slack-workspace.c \
 	 api/slack-api-hello.c \
 	 api/slack-api-error.c \
+	 api/slack-api-message.c \
+	 api/message/slack-api-message-unimplemented.c \
 	 request/slack-request-channels-list.c \
 	 request/slack-request-users-list.c
 OBJS=$(subst .c,.o,$(SRCS)) libwebsockets/lib/libwebsockets.a json-c/libjson-c.a

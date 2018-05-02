@@ -22,7 +22,7 @@ static inline int json_valid(json_object *object, struct t_slack_workspace *work
             workspace->buffer,
             _("%s%s: error retrieving users: unexpected response from server"),
             weechat_prefix("error"), SLACK_PLUGIN_NAME);
-        __asm__("int3");
+        //__asm__("int3");
         return 0;
     }
 
@@ -253,7 +253,8 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
         }
     case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
         request->client_wsi = NULL;
-        lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
+        /* Does not doing this cause a leak?
+        lws_cancel_service(lws_get_context(wsi));*/ /* abort poll wait */
         break;
 
     default:
