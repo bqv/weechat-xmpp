@@ -34,12 +34,17 @@ struct t_slack_workspace
     struct lws *client_wsi;
     struct lws_context *context;
     struct t_json_chunk *json_chunks;
+    struct t_slack_request *requests;
 
     char *user;
     char *nick;
 
 	struct t_gui_buffer *buffer;
     char *buffer_as_string;
+    struct t_slack_user *users;
+    struct t_slack_user *last_user;
+    struct t_slack_channel *channels;
+    struct t_slack_channel *last_channel;
 	struct t_slack_workspace *prev_workspace;
     struct t_slack_workspace *next_workspace;
 };
@@ -59,5 +64,7 @@ void slack_workspace_disconnect_all();
 void slack_workspace_close_connection(struct t_slack_workspace *workspace);
 int slack_workspace_connect(struct t_slack_workspace *workspace);
 int slack_workspace_timer_cb(const void *pointer, void *data, int remaining_calls);
+void slack_workspace_register_request(struct t_slack_workspace *workspace,
+                                      struct t_slack_request *request);
 
 #endif /*SLACK_WORKSPACE_H*/

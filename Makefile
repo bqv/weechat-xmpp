@@ -8,12 +8,19 @@ LDLIBS=-lgnutls
 SRCS=slack.c \
 	 slack-api.c \
 	 slack-buffer.c \
+	 slack-channel.c \
 	 slack-config.c \
 	 slack-command.c \
 	 slack-input.c \
 	 slack-oauth.c \
+	 slack-request.c \
 	 slack-teaminfo.c \
-	 slack-workspace.c
+	 slack-user.c \
+	 slack-workspace.c \
+	 api/slack-api-hello.c \
+	 api/slack-api-error.c \
+	 request/slack-request-channels-list.c \
+	 request/slack-request-users-list.c
 OBJS=$(subst .c,.o,$(SRCS)) libwebsockets/lib/libwebsockets.a json-c/libjson-c.a
 
 all: libwebsockets/lib/libwebsockets.a json-c/libjson-c.a weechat-slack

@@ -2,12 +2,14 @@
 #include <string.h>
 #include <time.h>
 #include <libwebsockets.h>
+#include <json.h>
 
 #include "weechat-plugin.h"
 #include "slack.h"
 #include "slack-config.h"
 #include "slack-command.h"
 #include "slack-workspace.h"
+#include "slack-api.h"
 
 
 WEECHAT_PLUGIN_NAME(SLACK_PLUGIN_NAME);
@@ -15,7 +17,7 @@ WEECHAT_PLUGIN_DESCRIPTION(N_("Slack (slack.com) protocol"));
 WEECHAT_PLUGIN_AUTHOR("Tony Olagbaiye <frony0@gmail.com>");
 WEECHAT_PLUGIN_VERSION(SLACK_PLUGIN_VERSION);
 WEECHAT_PLUGIN_LICENSE("MPL2");
-WEECHAT_PLUGIN_PRIORITY(6000);
+WEECHAT_PLUGIN_PRIORITY(5500);
 
 struct t_weechat_plugin *weechat_slack_plugin = NULL;
 
@@ -51,6 +53,8 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
     slack_config_read();
 
     slack_command_init();
+
+    slack_api_init();
 
     slack_hook_timer = weechat_hook_timer(1 * 1000, 0, 0,
                                           &slack_workspace_timer_cb,

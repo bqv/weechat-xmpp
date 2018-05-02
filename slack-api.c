@@ -1,11 +1,37 @@
 #include <libwebsockets.h>
 #include <json.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "weechat-plugin.h"
 #include "slack.h"
 #include "slack-workspace.h"
 #include "slack-api.h"
+#include "api/slack-api-hello.h"
+#include "api/slack-api-error.h"
+
+struct stringcase
+{
+    const char *string;
+    int (*func)(struct t_slack_workspace *workspace,
+                json_object *message);
+};
+
+struct stringcase cases[] =
+{ { "hello", slack_api_hello }
+, { "error", slack_api_error }
+};
+
+static int stringcase_cmp(const void *p1, const void *p2)
+{
+    return strcasecmp(((struct stringcase*)p1)->string, ((struct stringcase*)p2)->string);
+}
+
+void slack_api_init()
+{
+    size_t case_count = sizeof(cases) / sizeof(cases[0]);
+    qsort(cases, case_count, sizeof(struct stringcase), stringcase_cmp);
+}
 
 static int callback_ws(struct lws* wsi, enum lws_callback_reasons reason,
                        void *user, void* in, size_t len)
@@ -59,6 +85,15 @@ static int callback_ws(struct lws* wsi, enum lws_callback_reasons reason,
                 return -1;
             }
 
+            if (!slack_api_route_message(workspace,
+                    json_object_get_string(type), response))
+            {
+                json_object_put(response);
+                free(json_string);
+                return -1;
+            }
+
+            json_object_put(response);
             free(json_string);
         }
         return 0; /* don't passthru */
@@ -156,4 +191,30 @@ void slack_api_connect(struct t_slack_workspace *workspace)
     ccinfo.userdata = workspace;
 
     lws_client_connect_via_info(&ccinfo);
+}
+
+int slack_api_route_message(struct t_slack_workspace *workspace,
+                            const char *type, json_object *message)
+{
+    struct stringcase key;
+    key.string = type;
+
+    size_t case_count = sizeof(cases) / sizeof(cases[0]);
+    void *entry_ptr = bsearch(&key, cases, case_count,
+            sizeof(struct stringcase), stringcase_cmp);
+
+    if (entry_ptr)
+    {
+        struct stringcase *entry = (struct stringcase *)entry_ptr;
+        return (*entry->func)(workspace, message);
+    }
+    else
+    {
+        weechat_printf(
+            workspace->buffer,
+            _("%s%s: got unhandled message of type: %s"),
+            weechat_prefix("error"), SLACK_PLUGIN_NAME,
+            type);
+        return 1;
+    }
 }

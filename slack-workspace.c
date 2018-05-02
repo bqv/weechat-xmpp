@@ -12,6 +12,9 @@
 #include "slack-input.h"
 #include "slack-workspace.h"
 #include "slack-api.h"
+#include "slack-request.h"
+#include "slack-user.h"
+#include "slack-channel.h"
 
 struct t_slack_workspace *slack_workspaces = NULL;
 struct t_slack_workspace *last_slack_workspace = NULL;
@@ -21,7 +24,7 @@ char *slack_workspace_options[SLACK_WORKSPACE_NUM_OPTIONS][2] =
 };
 
 static const char *const endpoint = "/api/rtm.connect?"
-    "token=%s&batch_presence_aware=true&presence_sub=false";
+    "token=%s&batch_presence_aware=true&presence_sub=false&";
 
 static inline int json_valid(json_object *object, struct t_slack_workspace *workspace)
 {
@@ -222,7 +225,6 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                     free(json_string);
                     return 0;
                 }
-
                 workspace->ws_url = strdup(json_object_get_string(url));
             }
             else
@@ -367,12 +369,17 @@ struct t_slack_workspace *slack_workspace_alloc(const char *domain)
     new_workspace->client_wsi = NULL;
     new_workspace->context = NULL;
     new_workspace->json_chunks = NULL;
+    new_workspace->requests = NULL;
 
     new_workspace->user = NULL;
     new_workspace->nick = NULL;
 
     new_workspace->buffer = NULL;
     new_workspace->buffer_as_string = NULL;
+    new_workspace->users = NULL;
+    new_workspace->last_user = NULL;
+    new_workspace->channels = NULL;
+    new_workspace->last_channel = NULL;
 
     /* create options with null value */
     for (i = 0; i < SLACK_WORKSPACE_NUM_OPTIONS; i++)
@@ -453,10 +460,8 @@ void slack_workspace_free_data(struct t_slack_workspace *workspace)
         free(workspace->uri);
     if (workspace->ws_url)
         free(workspace->ws_url);
-    if (workspace->client_wsi)
-        free(workspace->client_wsi);
     if (workspace->context)
-        free(workspace->context);
+        lws_context_destroy(workspace->context);
     while (workspace->json_chunks)
     {
         struct t_json_chunk *chunk_ptr = workspace->json_chunks->next;
@@ -464,6 +469,13 @@ void slack_workspace_free_data(struct t_slack_workspace *workspace)
         free(workspace->json_chunks->data);
         free(workspace->json_chunks);
         workspace->json_chunks = chunk_ptr;
+    }
+    while (workspace->requests)
+    {
+        struct t_slack_request *request_ptr = workspace->requests->next;
+
+        free(workspace->requests);
+        workspace->requests = request_ptr;
     }
 
     if (workspace->user)
@@ -473,6 +485,9 @@ void slack_workspace_free_data(struct t_slack_workspace *workspace)
 
     if (workspace->buffer_as_string)
         free(workspace->buffer_as_string);
+
+    slack_channel_free_all(workspace);
+    slack_user_free_all(workspace);
 }
 
 void slack_workspace_free(struct t_slack_workspace *workspace)
@@ -638,7 +653,7 @@ struct t_gui_buffer *slack_workspace_create_buffer(struct t_slack_workspace *wor
     char buffer_name[256], charset_modifier[256];
 
     snprintf(buffer_name, sizeof(buffer_name),
-             "slack.%s", workspace->domain);
+             "workspace.%s", workspace->domain);
     workspace->buffer = weechat_buffer_new(buffer_name,
                                            &slack_input_data_cb, NULL, NULL,
                                            &slack_buffer_close_cb, NULL, NULL);
@@ -651,11 +666,18 @@ struct t_gui_buffer *slack_workspace_create_buffer(struct t_slack_workspace *wor
     weechat_buffer_set(workspace->buffer, "localvar_set_server", workspace->domain);
     weechat_buffer_set(workspace->buffer, "localvar_set_channel", workspace->domain);
     snprintf(charset_modifier, sizeof (charset_modifier),
-             "slack.%s", workspace->domain);
+             "workspace.%s", workspace->domain);
     weechat_buffer_set(workspace->buffer, "localvar_set_charset_modifier",
                        charset_modifier);
     weechat_buffer_set(workspace->buffer, "title",
                        (workspace->name) ? workspace->name : "");
+
+    weechat_buffer_set(workspace->buffer, "nicklist", "1");
+    weechat_buffer_set(workspace->buffer, "nicklist_display_groups", "0");
+    weechat_buffer_set_pointer(workspace->buffer, "nicklist_callback",
+                               &slack_buffer_nickcmp_cb);
+    weechat_buffer_set_pointer(workspace->buffer, "nicklist_callback_pointer",
+                               workspace);
 
     return workspace->buffer;
 }
@@ -749,6 +771,7 @@ int slack_workspace_connect(struct t_slack_workspace *workspace)
 int slack_workspace_timer_cb(const void *pointer, void *data, int remaining_calls)
 {
     struct t_slack_workspace *ptr_workspace;
+    struct t_slack_request *ptr_request;
 
     /* make C compiler happy */
     (void) pointer;
@@ -760,6 +783,25 @@ int slack_workspace_timer_cb(const void *pointer, void *data, int remaining_call
     {
         if (!ptr_workspace->is_connected)
             continue;
+
+        for (ptr_request = ptr_workspace->requests; ptr_request;
+             ptr_request = ptr_request->next)
+        {
+            if (ptr_request->client_wsi)
+            {
+                lws_service(ptr_request->context, 0);
+            }
+            else if (ptr_request->context)
+            {
+                lws_context_destroy(ptr_request->context);
+                ptr_request->context = NULL;
+                if (ptr_request->uri)
+                {
+                    free(ptr_request->uri);
+                    ptr_request->uri = NULL;
+                }
+            }
+        }
 
         if (ptr_workspace->client_wsi)
         {
@@ -784,4 +826,12 @@ int slack_workspace_timer_cb(const void *pointer, void *data, int remaining_call
     }
 
     return WEECHAT_RC_OK;
+}
+
+void slack_workspace_register_request(struct t_slack_workspace *workspace,
+                                      struct t_slack_request *request)
+{
+    struct t_slack_request *new_tail = workspace->requests;
+    workspace->requests = request;
+    workspace->requests->next = new_tail;
 }
