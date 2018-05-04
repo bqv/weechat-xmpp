@@ -1,8 +1,8 @@
 CC=clang
 CXX=clang++
 RM=rm -f
-CFLAGS=-fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -I libwebsockets/include -I json-c
-LDFLAGS=-shared -g
+CFLAGS=-fsanitize=address -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -I libwebsockets/include -I json-c
+LDFLAGS=-shared -g -fsanitize=address
 LDLIBS=-lgnutls
 
 SRCS=slack.c \
@@ -12,6 +12,7 @@ SRCS=slack.c \
 	 slack-config.c \
 	 slack-command.c \
 	 slack-input.c \
+	 slack-message.c \
 	 slack-oauth.c \
 	 slack-request.c \
 	 slack-teaminfo.c \
@@ -21,6 +22,7 @@ SRCS=slack.c \
 	 api/slack-api-error.c \
 	 api/slack-api-message.c \
 	 api/message/slack-api-message-unimplemented.c \
+	 request/slack-request-chat-postmessage.c \
 	 request/slack-request-channels-list.c \
 	 request/slack-request-users-list.c
 OBJS=$(subst .c,.o,$(SRCS)) libwebsockets/lib/libwebsockets.a json-c/libjson-c.a
@@ -51,5 +53,13 @@ clean:
 
 distclean: clean
 	$(RM) *~ .depend
+
+.PHONY: tags cs
+
+tags:
+	ctags -f .git/tags -R *.c *.h
+	
+cs:
+	cscope -RUbq
 
 include .depend

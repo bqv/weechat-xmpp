@@ -1,6 +1,10 @@
 #ifndef _SLACK_BUFFER_H_
 #define _SLACK_BUFFER_H_
 
+void slack_buffer_get_workspace_and_channel(struct t_gui_buffer *buffer,
+                                            struct t_slack_workspace **workspace,
+                                            struct t_slack_channel **channel);
+
 int slack_buffer_nickcmp_cb(const void *pointer, void *data,
                             struct t_gui_buffer *buffer,
                             const char *nick1,

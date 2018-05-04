@@ -7,7 +7,6 @@
 
 #include "weechat-plugin.h"
 #include "slack.h"
-#include "slack-buffer.h"
 #include "slack-config.h"
 #include "slack-input.h"
 #include "slack-workspace.h"
@@ -15,6 +14,7 @@
 #include "slack-request.h"
 #include "slack-user.h"
 #include "slack-channel.h"
+#include "slack-buffer.h"
 
 struct t_slack_workspace *slack_workspaces = NULL;
 struct t_slack_workspace *last_slack_workspace = NULL;

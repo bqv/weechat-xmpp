@@ -18,7 +18,7 @@ struct stringcase
                 json_object *message);
 };
 
-struct stringcase cases[] =
+static struct stringcase cases[] =
 { { "hello", &slack_api_hello }
 , { "error", &slack_api_error }
 , { "message", &slack_api_message }
@@ -33,6 +33,8 @@ void slack_api_init()
 {
     size_t case_count = sizeof(cases) / sizeof(cases[0]);
     qsort(cases, case_count, sizeof(struct stringcase), stringcase_cmp);
+
+    slack_api_message_init();
 }
 
 static int callback_ws(struct lws* wsi, enum lws_callback_reasons reason,

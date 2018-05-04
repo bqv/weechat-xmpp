@@ -1,8 +1,8 @@
 #include "weechat-plugin.h"
 #include "slack.h"
-#include "slack-buffer.h"
 #include "slack-workspace.h"
 #include "slack-channel.h"
+#include "slack-buffer.h"
 
 void slack_buffer_get_workspace_and_channel(struct t_gui_buffer *buffer,
                                             struct t_slack_workspace **workspace,

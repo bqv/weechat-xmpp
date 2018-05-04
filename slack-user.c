@@ -1,11 +1,31 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "weechat-plugin.h"
 #include "slack.h"
 #include "slack-workspace.h"
 #include "slack-user.h"
 #include "slack-channel.h"
+
+const char *slack_user_get_colour(struct t_slack_user *user)
+{
+    return weechat_info_get("nick_color", user->profile.display_name);
+}
+
+const char *slack_user_as_prefix(struct t_slack_workspace *workspace,
+                                 struct t_slack_user *user)
+{
+    static char result[256];
+
+    (void) workspace;
+
+    snprintf(result, sizeof(result), "%s%s\t",
+             slack_user_get_colour(user),
+             user->profile.display_name);
+
+    return result;
+}
 
 struct t_slack_user *slack_user_search(struct t_slack_workspace *workspace,
                                        const char *id)

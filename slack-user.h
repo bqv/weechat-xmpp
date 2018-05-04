@@ -45,6 +45,9 @@ struct t_slack_user
     struct t_slack_user *next_user;
 };
 
+const char *slack_user_as_prefix(struct t_slack_workspace *workspace,
+                                 struct t_slack_user *user);
+
 struct t_slack_user *slack_user_search(struct t_slack_workspace *workspace,
                                        const char *id);
 

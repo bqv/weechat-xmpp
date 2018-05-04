@@ -56,7 +56,7 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 
     slack_api_init();
 
-    slack_hook_timer = weechat_hook_timer(1 * 1000, 0, 0,
+    slack_hook_timer = weechat_hook_timer(0.1 * 1000, 0, 0,
                                           &slack_workspace_timer_cb,
                                           NULL, NULL);
 

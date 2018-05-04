@@ -7,6 +7,7 @@
 #include "../slack-api.h"
 #include "../slack-channel.h"
 #include "../slack-user.h"
+#include "../slack-message.h"
 #include "slack-api-message.h"
 #include "message/slack-api-message-unimplemented.h"
 
@@ -82,8 +83,6 @@ int slack_api_message_message_handle(struct t_slack_workspace *workspace,
     struct t_slack_channel *ptr_channel;
     struct t_slack_user *ptr_user;
 
-    (void) ts;
-
     ptr_channel = slack_channel_search(workspace, channel);
     if (!ptr_channel)
         return 1; /* silently ignore if channel hasn't been loaded yet */
@@ -91,11 +90,15 @@ int slack_api_message_message_handle(struct t_slack_workspace *workspace,
     if (!ptr_user)
         return 1; /* silently ignore if user hasn't been loaded yet */
 
-    weechat_printf(
-        workspace->buffer,
-        _("%s%s: message [%s]: <%s> %s"),
-        weechat_prefix("error"), SLACK_PLUGIN_NAME,
-        ptr_channel->name, ptr_user->profile.display_name, text);
+    char *message = slack_message_decode(workspace, text);
+    weechat_printf_date_tags(
+        ptr_channel->buffer,
+        (time_t)atof(ts),
+        "slack_message",
+        _("%s%s"),
+        slack_user_as_prefix(workspace, ptr_user),
+        message);
+    free(message);
 
     return 1;
 }
