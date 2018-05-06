@@ -222,7 +222,6 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                         new_channel->is_member = json_object_get_boolean(is_member);
                     }
 
-                    /*
                     topic = json_object_object_get(channel, "topic");
                     if (json_valid(topic, request->workspace))
                     {
@@ -264,7 +263,6 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                                     json_object_get_int(sub_last_set) :
                                     0);
                     }
-                    */
 
                     is_archived = json_object_object_get(response, "is_archived");
                     if (json_valid(is_archived, request->workspace))

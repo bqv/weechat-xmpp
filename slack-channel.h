@@ -15,7 +15,7 @@ struct t_slack_channel_typing
 {
     char *id;
     char *name;
-    time_t ts;
+    long ts;
 
     struct t_slack_channel_typing *prev_typing;
     struct t_slack_channel_typing *next_typing;
@@ -33,14 +33,14 @@ struct t_slack_channel_topic
 {
     char *value;
     char *creator;
-    time_t last_set;
+    long last_set;
 };
 
 struct t_slack_channel_purpose
 {
     char *value;
     char *creator;
-    time_t last_set;
+    long last_set;
 };
 
 struct t_slack_channel
@@ -48,7 +48,7 @@ struct t_slack_channel
     enum t_slack_channel_type type; 
     char *id;
     char *name;
-    time_t created;
+    int created;
 
     /* channel */
     int is_general;
