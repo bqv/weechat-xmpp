@@ -185,7 +185,6 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                                     json_object_get_string(id),
                                     json_object_get_string(name));
 
-                    /*
                     created = json_object_object_get(channel, "created");
                     if (json_valid(created, request->workspace))
                     {
@@ -223,6 +222,7 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                         new_channel->is_member = json_object_get_boolean(is_member);
                     }
 
+                    /*
                     topic = json_object_object_get(channel, "topic");
                     if (json_valid(topic, request->workspace))
                     {
@@ -264,6 +264,7 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                                     json_object_get_int(sub_last_set) :
                                     0);
                     }
+                    */
 
                     is_archived = json_object_object_get(response, "is_archived");
                     if (json_valid(is_archived, request->workspace))
@@ -276,7 +277,6 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                     {
                         new_channel->creator = strdup(json_object_get_string(creator));
                     }
-                    */
                 }
 
                 metadata = json_object_object_get(response, "response_metadata");
