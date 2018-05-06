@@ -1,3 +1,4 @@
+#include <libwebsockets.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -46,6 +47,51 @@ char *slack_message_translate_code(struct t_slack_workspace *workspace,
         default: /* url */
             return strdup(code);
     }
+}
+
+void slack_message_htmldecode(char *dest, const char *src, size_t n)
+{
+    size_t i, j;
+
+    for (i = 0, j = 0; i < n; i++, j++)
+        switch (src[i])
+        {
+            case '\0':
+                dest[j] = '\0';
+                return;
+            case '&':
+                if (src[i+1] == 'g' &&
+                    src[i+2] == 't' &&
+                    src[i+3] == ';')
+                {
+                    dest[j] = '>';
+                    i += 3;
+                    break;
+                }
+                else if (src[i+1] == 'l' &&
+                         src[i+2] == 't' &&
+                         src[i+3] == ';')
+                {
+                    dest[j] = '<';
+                    i += 3;
+                    break;
+                }
+                else if (src[i+1] == 'a' &&
+                         src[i+2] == 'm' &&
+                         src[i+3] == 'p' &&
+                         src[i+4] == ';')
+                {
+                    dest[j] = '&';
+                    i += 4;
+                    break;
+                }
+                /* fallthrough */
+            default:
+                dest[j] = src[i];
+                break;
+        }
+    dest[j-1] = '\0';
+    return;
 }
 
 char *slack_message_decode(struct t_slack_workspace *workspace,
@@ -141,6 +187,9 @@ char *slack_message_decode(struct t_slack_workspace *workspace,
     }
     strncat(decoded_text, cursor,
             SLACK_MESSAGE_MAX_LENGTH - strlen(decoded_text) - 1);
+
+    slack_message_htmldecode(decoded_text, decoded_text,
+                             SLACK_MESSAGE_MAX_LENGTH);
 
     regfree(&reg);
     return decoded_text;
