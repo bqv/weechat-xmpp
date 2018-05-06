@@ -296,6 +296,7 @@ int slack_channel_typing_cb(const void *pointer,
 {
     struct t_slack_channel_typing *ptr_typing, *next_typing;
     struct t_slack_channel *channel;
+    const char *localvar;
     unsigned typecount;
     time_t now;
 
@@ -330,9 +331,11 @@ int slack_channel_typing_cb(const void *pointer,
         typecount++;
     }
 
-    weechat_buffer_set(channel->buffer,
-                       "localvar_set_typing",
-                       typecount > 0 ? "1" : "0");
+    localvar = weechat_buffer_get_string(channel->buffer, "localvar_typing");
+    if (!localvar || strncmp(localvar, typecount > 0 ? "1" : "0", 1) != 0)
+        weechat_buffer_set(channel->buffer,
+                           "localvar_set_typing",
+                           typecount > 0 ? "1" : "0");
     weechat_bar_item_update("slack_typing");
 
     return WEECHAT_RC_OK;
@@ -478,4 +481,37 @@ void slack_channel_free_all(struct t_slack_workspace *workspace)
 {
     while (workspace->channels)
         slack_channel_free(workspace, workspace->channels);
+}
+
+void slack_channel_update_topic(struct t_slack_channel *channel,
+                                const char* topic,
+                                const char* creator,
+                                int last_set)
+{
+    if (channel->topic.value)
+        free(channel->topic.value);
+    if (channel->topic.creator)
+        free(channel->topic.creator);
+    channel->topic.value = (topic) ? strdup(topic) : NULL;
+    channel->topic.creator = (creator) ? strdup(creator) : NULL;
+    channel->topic.last_set = last_set;
+
+    if (channel->topic.value)
+        weechat_buffer_set(channel->buffer, "title", topic);
+    else
+        weechat_buffer_set(channel->buffer, "title", "");
+}
+
+void slack_channel_update_purpose(struct t_slack_channel *channel,
+                                  const char* purpose,
+                                  const char* creator,
+                                  int last_set)
+{
+    if (channel->purpose.value)
+        free(channel->purpose.value);
+    if (channel->purpose.creator)
+        free(channel->purpose.creator);
+    channel->purpose.value = (purpose) ? strdup(purpose) : NULL;
+    channel->purpose.creator = (creator) ? strdup(creator) : NULL;
+    channel->purpose.last_set = last_set;
 }
