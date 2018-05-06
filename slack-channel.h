@@ -33,14 +33,14 @@ struct t_slack_channel_topic
 {
     char *value;
     char *creator;
-    int last_set;
+    time_t last_set;
 };
 
 struct t_slack_channel_purpose
 {
     char *value;
     char *creator;
-    int last_set;
+    time_t last_set;
 };
 
 struct t_slack_channel
@@ -48,7 +48,7 @@ struct t_slack_channel
     enum t_slack_channel_type type; 
     char *id;
     char *name;
-    int created;
+    time_t created;
 
     /* channel */
     int is_general;
@@ -110,5 +110,15 @@ void slack_channel_add_typing(struct t_slack_channel *channel,
                               struct t_slack_user *user);
 
 void slack_channel_free_all(struct t_slack_workspace *workspace);
+
+void slack_channel_update_topic(struct t_slack_channel *channel,
+                                const char* title,
+                                const char* creator,
+                                int last_set);
+
+void slack_channel_update_purpose(struct t_slack_channel *channel,
+                                  const char* purpose,
+                                  const char* creator,
+                                  int last_set);
 
 #endif /*SLACK_CHANNEL_H*/
