@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <regex.h>
 
 #include "../weechat-plugin.h"
@@ -9,7 +10,7 @@
 #include "../slack-user.h"
 #include "../slack-message.h"
 
-static const char format_regex[] = "<(.*?)>";
+static const char format_regex[] = "<([^>]*?)>";
 static const size_t max_groups = 2;
 
 char *slack_message_translate_code(struct t_slack_workspace *workspace,
@@ -30,7 +31,12 @@ char *slack_message_translate_code(struct t_slack_workspace *workspace,
         case '@': /* user */
             user = slack_user_search(workspace, code+1);
             if (user)
-                return strdup(user->profile.display_name);
+            {
+                size_t nicklen = snprintf(NULL, 0, "%s@%s%s", weechat_color("chat_nick"), user->profile.display_name, weechat_color("reset")) + 1;
+                char *tag = malloc(nicklen);
+                snprintf(tag, nicklen, "%s@%s%s", weechat_color("chat_nick"), user->profile.display_name, weechat_color("reset"));
+                return tag;
+            }
             else
                 return strdup(code);
         case '!': /* special */
@@ -49,7 +55,7 @@ char *slack_message_decode(struct t_slack_workspace *workspace,
     regex_t reg;
     regmatch_t groups[max_groups];
     char msgbuf[100];
-    char *decoded_text, *pos;
+    char *decoded_text;
     const char *cursor;
     size_t offset;
 
@@ -74,8 +80,7 @@ char *slack_message_decode(struct t_slack_workspace *workspace,
             weechat_prefix("error"), SLACK_PLUGIN_NAME);
         return strdup(text);
     }
-    pos = decoded_text;
-    pos[0] = '\0';
+    decoded_text[0] = '\0';
 
     for (cursor = text; regexec(&reg, cursor, max_groups, groups, 0) == 0; cursor += offset)
     {
@@ -85,6 +90,7 @@ char *slack_message_decode(struct t_slack_workspace *workspace,
         if (!copy)
         {
             regfree(&reg);
+            free(decoded_text);
             weechat_printf(
                 workspace->buffer,
                 _("%s%s: error allocating space for message"),
@@ -98,6 +104,7 @@ char *slack_message_decode(struct t_slack_workspace *workspace,
         {
             free(copy);
             regfree(&reg);
+            free(decoded_text);
             weechat_printf(
                 workspace->buffer,
                 _("%s%s: error allocating space for message"),
@@ -112,6 +119,7 @@ char *slack_message_decode(struct t_slack_workspace *workspace,
             free(match);
             free(copy);
             regfree(&reg);
+            free(decoded_text);
             weechat_printf(
                 workspace->buffer,
                 _("%s%s: error allocating space for message"),
@@ -120,18 +128,18 @@ char *slack_message_decode(struct t_slack_workspace *workspace,
         }
         free(copy);
 
-        pos = strncat(decoded_text, prematch,
+        strncat(decoded_text, prematch,
                 SLACK_MESSAGE_MAX_LENGTH - strlen(decoded_text) - 1);
         free(prematch);
 
         char *replacement = slack_message_translate_code(workspace, match);
         free(match);
 
-        pos = strncat(decoded_text, replacement,
+        strncat(decoded_text, replacement,
                 SLACK_MESSAGE_MAX_LENGTH - strlen(decoded_text) - 1);
         free(replacement);
     }
-    pos = strncat(decoded_text, cursor,
+    strncat(decoded_text, cursor,
             SLACK_MESSAGE_MAX_LENGTH - strlen(decoded_text) - 1);
 
     regfree(&reg);

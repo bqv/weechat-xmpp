@@ -142,7 +142,7 @@ void slack_user_free(struct t_slack_workspace *workspace,
     if (!workspace || !user)
         return;
 
-	/* remove user from users list */
+    /* remove user from users list */
     if (workspace->last_user == user)
         workspace->last_user = user->prev_user;
     if (user->prev_user)
@@ -173,22 +173,22 @@ void slack_user_free(struct t_slack_workspace *workspace,
         free(user->tz_label);
     if (user->locale)
         free(user->locale);
-	if (user->profile.avatar_hash)
-		free(user->profile.avatar_hash);
-	if (user->profile.status_text)
-		free(user->profile.status_text);
-	if (user->profile.status_emoji)
-		free(user->profile.status_emoji);
-	if (user->profile.real_name)
-		free(user->profile.real_name);
-	if (user->profile.display_name)
-		free(user->profile.display_name);
-	if (user->profile.real_name_normalized)
-		free(user->profile.real_name_normalized);
-	if (user->profile.email)
-		free(user->profile.email);
-	if (user->profile.team)
-		free(user->profile.team);
+    if (user->profile.avatar_hash)
+        free(user->profile.avatar_hash);
+    if (user->profile.status_text)
+        free(user->profile.status_text);
+    if (user->profile.status_emoji)
+        free(user->profile.status_emoji);
+    if (user->profile.real_name)
+        free(user->profile.real_name);
+    if (user->profile.display_name)
+        free(user->profile.display_name);
+    if (user->profile.real_name_normalized)
+        free(user->profile.real_name_normalized);
+    if (user->profile.email)
+        free(user->profile.email);
+    if (user->profile.team)
+        free(user->profile.team);
 
     free(user);
 

@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "weechat-plugin.h"
 #include "slack.h"
 #include "slack-workspace.h"
@@ -40,6 +42,67 @@ void slack_buffer_get_workspace_and_channel(struct t_gui_buffer *buffer,
     }
 
     /* no workspace or channel found */
+}
+
+char *slack_buffer_typing_bar_cb(const void *pointer,
+                                 void *data,
+                                 struct t_gui_bar_item *item,
+                                 struct t_gui_window *window,
+                                 struct t_gui_buffer *buffer,
+                                 struct t_hashtable *extra_info)
+{
+    struct t_slack_channel_typing *ptr_typing;
+    struct t_slack_workspace *workspace;
+    struct t_slack_channel *channel;
+    char notification[256];
+    unsigned typecount;
+
+    (void) pointer;
+    (void) data;
+    (void) item;
+    (void) window;
+    (void) extra_info;
+
+    workspace = NULL;
+    channel = NULL;
+
+    slack_buffer_get_workspace_and_channel(buffer, &workspace, &channel);
+
+    if (!channel)
+        return strdup("");
+
+    typecount = 0;
+
+    for (ptr_typing = channel->typings; ptr_typing;
+         ptr_typing = ptr_typing->next_typing)
+    {
+        switch (++typecount)
+        {
+            case 1:
+                strcpy(notification, ptr_typing->name);
+                break;
+            case 2:
+                strcat(notification, ", ");
+                strcat(notification, ptr_typing->name);
+                break;
+            case 3:
+            default:
+                strcpy(notification, "Several people");
+                break;
+        }
+    }
+
+    if (typecount)
+    {
+        strcat(notification, NG_(" is typing...",
+                                 " are typing...",
+                                 typecount));
+        return strdup(notification);
+    }
+    else
+    {
+        return strdup("");
+    }
 }
 
 int slack_buffer_nickcmp_cb(const void *pointer, void *data,

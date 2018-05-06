@@ -10,6 +10,7 @@
 #include "slack-command.h"
 #include "slack-workspace.h"
 #include "slack-api.h"
+#include "slack-buffer.h"
 
 
 WEECHAT_PLUGIN_NAME(SLACK_PLUGIN_NAME);
@@ -22,6 +23,8 @@ WEECHAT_PLUGIN_PRIORITY(5500);
 struct t_weechat_plugin *weechat_slack_plugin = NULL;
 
 struct t_hook *slack_hook_timer = NULL;
+
+struct t_gui_bar_item *slack_typing_bar_item = NULL;
 
 void slack_lwsl_emit_weechat(int level, const char *line)
 {
@@ -60,6 +63,18 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
                                           &slack_workspace_timer_cb,
                                           NULL, NULL);
 
+    if (!weechat_bar_search("typing"))
+    {
+        weechat_bar_new("typing", "off", "400", "window", "${typing}",
+                        "bottom", "horizontal", "vertical",
+                        "1", "1", "default", "default", "default",
+                        "off", "slack_typing");
+    }
+
+    slack_typing_bar_item = weechat_bar_item_new("slack_typing",
+                                                 &slack_buffer_typing_bar_cb,
+                                                 NULL, NULL);
+
     return WEECHAT_RC_OK;
 }
 
@@ -67,6 +82,9 @@ int weechat_plugin_end(struct t_weechat_plugin *plugin)
 {
     /* make C compiler happy */
     (void) plugin;
+
+    if (slack_typing_bar_item)
+        weechat_bar_item_remove(slack_typing_bar_item);
 
     if (slack_hook_timer)
         weechat_unhook(slack_hook_timer);

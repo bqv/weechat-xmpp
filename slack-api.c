@@ -10,6 +10,7 @@
 #include "api/slack-api-hello.h"
 #include "api/slack-api-error.h"
 #include "api/slack-api-message.h"
+#include "api/slack-api-user-typing.h"
 
 struct stringcase
 {
@@ -22,6 +23,7 @@ static struct stringcase cases[] =
 { { "hello", &slack_api_hello }
 , { "error", &slack_api_error }
 , { "message", &slack_api_message }
+, { "user_typing", &slack_api_user_typing }
 };
 
 static int stringcase_cmp(const void *p1, const void *p2)
@@ -71,49 +73,95 @@ static int callback_ws(struct lws* wsi, enum lws_callback_reasons reason,
             weechat_prefix("network"), SLACK_PLUGIN_NAME,
             (const char *)in);
         {
+            int data_size;
             char *json_string;
             json_object *response, *type;
+            struct t_json_chunk *new_chunk, *last_chunk, *chunk_ptr;
 
-            json_string = strdup((const char *)in);
+            new_chunk = malloc(sizeof(*new_chunk));
+            new_chunk->data = malloc(((int)len) + 1);
+            new_chunk->data[0] = '\0';
+            new_chunk->next = NULL;
+
+            strncat(new_chunk->data, in, (int)len);
+
+            if (workspace->json_chunks)
+            {
+                for (last_chunk = workspace->json_chunks; last_chunk->next;
+                     last_chunk = last_chunk->next);
+                last_chunk->next = new_chunk;
+            }
+            else
+            {
+                workspace->json_chunks = new_chunk;
+            }
+
+            data_size = 0;
+            for (chunk_ptr = workspace->json_chunks; chunk_ptr; chunk_ptr = chunk_ptr->next)
+            {
+                data_size += strlen(chunk_ptr->data);
+            }
+
+            json_string = malloc(data_size + 1);
+            json_string[0] = '\0';
+
+            for (chunk_ptr = workspace->json_chunks; chunk_ptr; chunk_ptr = chunk_ptr->next)
+            {
+                strcat(json_string, chunk_ptr->data);
+            }
 
             response = json_tokener_parse(json_string);
-            type = json_object_object_get(response, "type");
-            if (!type)
+            if (response)
             {
-                weechat_printf(
-                    workspace->buffer,
-                    _("%s%s: unexpected data received from websocket: closing"),
-                    weechat_prefix("error"), SLACK_PLUGIN_NAME);
+                for (chunk_ptr = workspace->json_chunks; chunk_ptr; workspace->json_chunks = chunk_ptr)
+                {
+                    chunk_ptr = chunk_ptr->next;
+                    free(workspace->json_chunks->data);
+                    free(workspace->json_chunks);
+                }
 
-                slack_workspace_disconnect(workspace, 0);
+                type = json_object_object_get(response, "type");
+                if (!type)
+                {
+                    weechat_printf(
+                        workspace->buffer,
+                        _("%s%s: unexpected data received from websocket: closing"),
+                        weechat_prefix("error"), SLACK_PLUGIN_NAME);
+
+                    slack_workspace_disconnect(workspace, 0);
+
+                    json_object_put(response);
+                    free(json_string);
+                    return -1;
+                }
+
+                if (!slack_api_route_message(workspace,
+                        json_object_get_string(type), response))
+                {
+                    weechat_printf(
+                        workspace->buffer,
+                        _("%s%s: error while handling message: %s"),
+                        weechat_prefix("error"), SLACK_PLUGIN_NAME,
+                        json_string);
+                    weechat_printf(
+                        workspace->buffer,
+                        _("%s%s: closing connection."),
+                        weechat_prefix("error"), SLACK_PLUGIN_NAME);
+
+                    slack_workspace_disconnect(workspace, 0);
+
+                    json_object_put(response);
+                    free(json_string);
+                    return -1;
+                }
 
                 json_object_put(response);
                 free(json_string);
-                return -1;
             }
-
-            if (!slack_api_route_message(workspace,
-                    json_object_get_string(type), response))
+            else
             {
-                weechat_printf(
-                    workspace->buffer,
-                    _("%s%s: error while handling message: %s"),
-                    weechat_prefix("error"), SLACK_PLUGIN_NAME,
-                    json_string);
-                weechat_printf(
-                    workspace->buffer,
-                    _("%s%s: closing connection."),
-                    weechat_prefix("error"), SLACK_PLUGIN_NAME);
-
-                slack_workspace_disconnect(workspace, 0);
-
-                json_object_put(response);
                 free(json_string);
-                return -1;
             }
-
-            json_object_put(response);
-            free(json_string);
         }
         return 0; /* don't passthru */
 

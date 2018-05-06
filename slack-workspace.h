@@ -6,7 +6,7 @@ extern struct t_slack_workspace *last_slack_workspace;
 
 enum t_slack_workspace_option
 {
-    SLACK_WORKSPACE_OPTION_TOKEN = 0,
+    SLACK_WORKSPACE_OPTION_TOKEN,
     SLACK_WORKSPACE_NUM_OPTIONS,
 };
 

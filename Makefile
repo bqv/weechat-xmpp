@@ -1,8 +1,10 @@
 CC=clang
-CXX=clang++
+CXX=g++
 RM=rm -f
-CFLAGS=-fsanitize=address -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -I libwebsockets/include -I json-c
-LDFLAGS=-shared -g -fsanitize=address
+SANCFLAGS=-fsanitize=address -fsanitize=leak
+SANLDFLAGS=-static-libasan -static-liblsan
+CFLAGS=$(SANCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -I libwebsockets/include -I json-c
+LDFLAGS=-shared -g $(SANCFLAGS) $(SANLDFLAGS)
 LDLIBS=-lgnutls
 
 SRCS=slack.c \
@@ -21,6 +23,7 @@ SRCS=slack.c \
 	 api/slack-api-hello.c \
 	 api/slack-api-error.c \
 	 api/slack-api-message.c \
+	 api/slack-api-user-typing.c \
 	 api/message/slack-api-message-unimplemented.c \
 	 request/slack-request-chat-postmessage.c \
 	 request/slack-request-channels-list.c \
@@ -30,7 +33,7 @@ OBJS=$(subst .c,.o,$(SRCS)) libwebsockets/lib/libwebsockets.a json-c/libjson-c.a
 all: libwebsockets/lib/libwebsockets.a json-c/libjson-c.a weechat-slack
 
 weechat-slack: $(OBJS)
-	$(CC) $(LDFLAGS) -o slack.so $(OBJS) $(LDLIBS) 
+	$(CXX) $(LDFLAGS) -o slack.so $(OBJS) $(LDLIBS) 
 
 libwebsockets/lib/libwebsockets.a:
 	cd libwebsockets && cmake -DLWS_STATIC_PIC=ON -DLWS_WITH_SHARED=OFF -DLWS_WITHOUT_TESTAPPS=ON -DLWS_WITH_LIBEV=OFF -DLWS_WITH_LIBUV=OFF -DLWS_WITH_LIBEVENT=OFF -DCMAKE_BUILD_TYPE=DEBUG .

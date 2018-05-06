@@ -82,6 +82,7 @@ int slack_api_message_message_handle(struct t_slack_workspace *workspace,
 {
     struct t_slack_channel *ptr_channel;
     struct t_slack_user *ptr_user;
+    struct t_slack_channel_typing *ptr_typing;
 
     ptr_channel = slack_channel_search(workspace, channel);
     if (!ptr_channel)
@@ -99,6 +100,14 @@ int slack_api_message_message_handle(struct t_slack_workspace *workspace,
         slack_user_as_prefix(workspace, ptr_user),
         message);
     free(message);
+
+    ptr_typing = slack_channel_typing_search(ptr_channel,
+                                             ptr_user->profile.display_name);
+    if (ptr_typing)
+    {
+        slack_channel_typing_free(ptr_channel, ptr_typing);
+        slack_channel_typing_cb(ptr_channel, NULL, 0);
+    }
 
     return 1;
 }

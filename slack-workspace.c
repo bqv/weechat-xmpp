@@ -247,6 +247,7 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
             json_object_put(response);
             free(json_string);
         }
+        /* fallthrough */
     case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
         workspace->client_wsi = NULL;
         /* Does not doing this cause a leak?
