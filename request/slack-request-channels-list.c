@@ -100,7 +100,11 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
             char *json_string;
             char cursor[64];
             json_object *response, *ok, *error, *channels, *metadata;
-            json_object *channel, *id, *name, *topic, *next_cursor;
+            json_object *channel, *id, *name, *created;
+            json_object *is_general, *name_normalized, *is_shared, *is_org_shared, *is_member;
+            json_object *topic, *purpose, *is_archived;
+            json_object *sub_value, *sub_creator, *sub_last_set;
+            json_object *creator, *next_cursor;
             struct t_json_chunk *chunk_ptr;
 
             chunk_count = 0;
@@ -160,33 +164,19 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                     channel = json_object_array_get_idx(channels, i - 1);
                     if (!json_valid(channel, request->workspace))
                     {
-                        json_object_put(response);
-                        free(json_string);
-                        return 0;
+                        continue;
                     }
 
                     id = json_object_object_get(channel, "id");
                     if (!json_valid(id, request->workspace))
                     {
-                        json_object_put(response);
-                        free(json_string);
-                        return 0;
+                        continue;
                     }
 
                     name = json_object_object_get(channel, "name");
                     if (!json_valid(name, request->workspace))
                     {
-                        json_object_put(response);
-                        free(json_string);
-                        return 0;
-                    }
-
-                    topic = json_object_object_get(channel, "topic");
-                    if (!json_valid(topic, request->workspace))
-                    {
-                        json_object_put(response);
-                        free(json_string);
-                        return 0;
+                        continue;
                     }
 
                     new_channel = slack_channel_new(
@@ -194,6 +184,99 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                                     SLACK_CHANNEL_TYPE_CHANNEL,
                                     json_object_get_string(id),
                                     json_object_get_string(name));
+
+                    /*
+                    created = json_object_object_get(channel, "created");
+                    if (json_valid(created, request->workspace))
+                    {
+                        new_channel->created = json_object_get_int(created);
+                    }
+
+                    is_general = json_object_object_get(channel, "is_general");
+                    if (json_valid(is_general, request->workspace))
+                    {
+                        new_channel->is_general = json_object_get_boolean(is_general);
+                    }
+
+                    name_normalized = json_object_object_get(channel, "name_normalized");
+                    if (json_valid(name_normalized, request->workspace))
+                    {
+                        new_channel->name_normalized = strdup(
+                                json_object_get_string(name_normalized));
+                    }
+
+                    is_shared = json_object_object_get(channel, "is_shared");
+                    if (json_valid(is_shared, request->workspace))
+                    {
+                        new_channel->is_shared = json_object_get_boolean(is_shared);
+                    }
+
+                    is_org_shared = json_object_object_get(channel, "is_org_shared");
+                    if (json_valid(is_org_shared, request->workspace))
+                    {
+                        new_channel->is_org_shared = json_object_get_boolean(is_org_shared);
+                    }
+
+                    is_member = json_object_object_get(channel, "is_member");
+                    if (json_valid(is_member, request->workspace))
+                    {
+                        new_channel->is_member = json_object_get_boolean(is_member);
+                    }
+
+                    topic = json_object_object_get(channel, "topic");
+                    if (json_valid(topic, request->workspace))
+                    {
+                        sub_value = json_object_object_get(topic, "value");
+
+                        sub_creator = json_object_object_get(topic, "creator");
+
+                        sub_last_set = json_object_object_get(topic, "last_set");
+
+                        slack_channel_update_topic(new_channel,
+                                json_valid(sub_value, request->workspace) ?
+                                    json_object_get_string(sub_value) :
+                                    NULL,
+                                json_valid(sub_creator, request->workspace) ?
+                                    json_object_get_string(sub_creator) :
+                                    NULL,
+                                json_valid(sub_last_set, request->workspace) ?
+                                    json_object_get_int(sub_last_set) :
+                                    0);
+                    }
+
+                    purpose = json_object_object_get(channel, "purpose");
+                    if (json_valid(purpose, request->workspace))
+                    {
+                        sub_value = json_object_object_get(topic, "value");
+
+                        sub_creator = json_object_object_get(topic, "creator");
+
+                        sub_last_set = json_object_object_get(topic, "last_set");
+
+                        slack_channel_update_purpose(new_channel,
+                                json_valid(sub_value, request->workspace) ?
+                                    json_object_get_string(sub_value) :
+                                    NULL,
+                                json_valid(sub_creator, request->workspace) ?
+                                    json_object_get_string(sub_creator) :
+                                    NULL,
+                                json_valid(sub_last_set, request->workspace) ?
+                                    json_object_get_int(sub_last_set) :
+                                    0);
+                    }
+
+                    is_archived = json_object_object_get(response, "is_archived");
+                    if (json_valid(is_archived, request->workspace))
+                    {
+                        new_channel->is_archived = json_object_get_boolean(is_archived);
+                    }
+
+                    creator = json_object_object_get(response, "creator");
+                    if (json_valid(creator, request->workspace))
+                    {
+                        new_channel->creator = strdup(json_object_get_string(creator));
+                    }
+                    */
                 }
 
                 metadata = json_object_object_get(response, "response_metadata");
