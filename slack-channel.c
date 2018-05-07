@@ -515,3 +515,29 @@ void slack_channel_update_purpose(struct t_slack_channel *channel,
     channel->purpose.creator = (creator) ? strdup(creator) : NULL;
     channel->purpose.last_set = last_set;
 }
+
+struct t_slack_channel_member *slack_channel_add_member(
+                                struct t_slack_workspace *workspace,
+                                struct t_slack_channel *channel,
+                                const char *id)
+{
+    struct t_slack_channel_member *member;
+    struct t_slack_user *user;
+
+    member = malloc(sizeof(struct t_slack_channel_member));
+    member->id = strdup(id);
+
+    member->prev_member = channel->last_member;
+    member->next_member = NULL;
+    if (channel->last_member)
+        (channel->last_member)->next_member = member;
+    else
+        channel->members = member;
+    channel->last_member = member;
+
+    user = slack_user_search(workspace, id);
+    if (user)
+        slack_user_nicklist_add(workspace, channel, user);
+
+    return member;
+}

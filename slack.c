@@ -45,9 +45,9 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 
     weechat_plugin = plugin;
 
-    lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO | LLL_DEBUG
+    lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE /*| LLL_INFO | LLL_DEBUG
             | LLL_PARSER | LLL_HEADER | LLL_EXT | LLL_CLIENT
-            | LLL_LATENCY | LLL_USER | LLL_COUNT,
+            | LLL_LATENCY | LLL_USER | LLL_COUNT*/,
             slack_lwsl_emit_weechat);
 
 	if (!slack_config_init())

@@ -121,4 +121,9 @@ void slack_channel_update_purpose(struct t_slack_channel *channel,
                                   const char* creator,
                                   int last_set);
 
+struct t_slack_channel_member *slack_channel_add_member(
+                                struct t_slack_workspace *workspace,
+                                struct t_slack_channel *channel,
+                                const char *id);
+
 #endif /*SLACK_CHANNEL_H*/

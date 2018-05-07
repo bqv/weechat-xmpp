@@ -27,6 +27,7 @@ SRCS=slack.c \
 	 api/message/slack-api-message-unimplemented.c \
 	 request/slack-request-chat-postmessage.c \
 	 request/slack-request-channels-list.c \
+	 request/slack-request-conversations-members.c \
 	 request/slack-request-users-list.c
 OBJS=$(subst .c,.o,$(SRCS)) libwebsockets/lib/libwebsockets.a json-c/libjson-c.a
 
@@ -56,6 +57,9 @@ clean:
 
 distclean: clean
 	$(RM) *~ .depend
+
+install: slack.so
+	install slack.so ~/.weechat/plugins/
 
 .PHONY: tags cs
 

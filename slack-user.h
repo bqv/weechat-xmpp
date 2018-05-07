@@ -56,4 +56,8 @@ struct t_slack_user *slack_user_new(struct t_slack_workspace *workspace,
 
 void slack_user_free_all(struct t_slack_workspace *workspace);
 
+void slack_user_nicklist_add(struct t_slack_workspace *workspace,
+                             struct t_slack_channel *channel,
+                             struct t_slack_user *user);
+
 #endif /*SLACK_USER_H*/

@@ -846,6 +846,12 @@ int slack_workspace_timer_cb(const void *pointer, void *data, int remaining_call
                     free(ptr_request->uri);
                     ptr_request->uri = NULL;
                 }
+                ptr_request->pointer = NULL;
+                if (ptr_request->data)
+                {
+                    free(ptr_request->data);
+                    ptr_request->data = NULL;
+                }
 
                 /* remove request from requests list */
                 if (ptr_workspace->last_request == ptr_request)

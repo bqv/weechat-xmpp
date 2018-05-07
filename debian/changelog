@@ -1,0 +1,6 @@
+weechat-slack (0~1805071648-1) UNRELEASED; urgency=low
+
+  * Initial release. Closes: #nnnn
+    <nnnn is the bug number of your ITP>
+
+ -- Bao <bao@localhost>  Mon, 07 May 2018 17:48:57 +0100

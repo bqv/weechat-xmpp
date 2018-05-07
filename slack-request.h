@@ -7,6 +7,9 @@ struct t_slack_request
 
     int idx;
 
+    const void *pointer;
+    void *data;
+
     char *uri;
     struct lws *client_wsi;
     struct lws_context *context;

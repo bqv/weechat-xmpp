@@ -1,0 +1,2865 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: weechat-slack
+Source: <url://example.com>
+#
+# Please double check copyright with the licensecheck(1) command.
+
+Files:     .depend
+           .gitattributes
+           .gitignore
+           .gitmodules
+           Makefile
+           api/.slack-api-message.c.swp
+           api/message/.slack-api-message-bot-message.c.swp
+           api/message/slack-api-message-unimplemented.c
+           api/message/slack-api-message-unimplemented.h
+           api/message/slack-api-message-unimplemented.o
+           api/slack-api-error.c
+           api/slack-api-error.h
+           api/slack-api-error.o
+           api/slack-api-hello.c
+           api/slack-api-hello.h
+           api/slack-api-hello.o
+           api/slack-api-message.c
+           api/slack-api-message.h
+           api/slack-api-message.o
+           api/slack-api-user-typing.c
+           api/slack-api-user-typing.h
+           api/slack-api-user-typing.o
+           compile_commands.json
+           debian/control
+           json-c/.deps/arraylist.Plo
+           json-c/.deps/debug.Plo
+           json-c/.deps/json_c_version.Plo
+           json-c/.deps/json_object.Plo
+           json-c/.deps/json_object_iterator.Plo
+           json-c/.deps/json_pointer.Plo
+           json-c/.deps/json_tokener.Plo
+           json-c/.deps/json_util.Plo
+           json-c/.deps/json_visit.Plo
+           json-c/.deps/linkhash.Plo
+           json-c/.deps/printbuf.Plo
+           json-c/.deps/random_seed.Plo
+           json-c/.deps/strerror_override.Plo
+           json-c/.editorconfig
+           json-c/.git
+           json-c/.gitignore
+           json-c/.travis.yml
+           json-c/AUTHORS
+           json-c/Android.configure.mk
+           json-c/CMakeCache.txt
+           json-c/CMakeFiles/3.9.0/CMakeCCompiler.cmake
+           json-c/CMakeFiles/3.9.0/CMakeCXXCompiler.cmake
+           json-c/CMakeFiles/3.9.0/CMakeDetermineCompilerABI_C.bin
+           json-c/CMakeFiles/3.9.0/CMakeDetermineCompilerABI_CXX.bin
+           json-c/CMakeFiles/3.9.0/CMakeSystem.cmake
+           json-c/CMakeFiles/3.9.0/CompilerIdC/CMakeCCompilerId.c
+           json-c/CMakeFiles/3.9.0/CompilerIdC/a.out
+           json-c/CMakeFiles/3.9.0/CompilerIdCXX/CMakeCXXCompilerId.cpp
+           json-c/CMakeFiles/3.9.0/CompilerIdCXX/a.out
+           json-c/CMakeFiles/CMakeDirectoryInformation.cmake
+           json-c/CMakeFiles/CMakeOutput.log
+           json-c/CMakeFiles/Makefile.cmake
+           json-c/CMakeFiles/Makefile2
+           json-c/CMakeFiles/TargetDirectories.txt
+           json-c/CMakeFiles/cmake.check_cache
+           json-c/CMakeFiles/feature_tests.bin
+           json-c/CMakeFiles/feature_tests.c
+           json-c/CMakeFiles/feature_tests.cxx
+           json-c/CMakeFiles/json-c-static.dir/C.includecache
+           json-c/CMakeFiles/json-c-static.dir/DependInfo.cmake
+           json-c/CMakeFiles/json-c-static.dir/arraylist.c.o
+           json-c/CMakeFiles/json-c-static.dir/build.make
+           json-c/CMakeFiles/json-c-static.dir/cmake_clean.cmake
+           json-c/CMakeFiles/json-c-static.dir/cmake_clean_target.cmake
+           json-c/CMakeFiles/json-c-static.dir/debug.c.o
+           json-c/CMakeFiles/json-c-static.dir/depend.internal
+           json-c/CMakeFiles/json-c-static.dir/depend.make
+           json-c/CMakeFiles/json-c-static.dir/flags.make
+           json-c/CMakeFiles/json-c-static.dir/json_c_version.c.o
+           json-c/CMakeFiles/json-c-static.dir/json_object.c.o
+           json-c/CMakeFiles/json-c-static.dir/json_object_iterator.c.o
+           json-c/CMakeFiles/json-c-static.dir/json_pointer.c.o
+           json-c/CMakeFiles/json-c-static.dir/json_tokener.c.o
+           json-c/CMakeFiles/json-c-static.dir/json_util.c.o
+           json-c/CMakeFiles/json-c-static.dir/json_visit.c.o
+           json-c/CMakeFiles/json-c-static.dir/link.txt
+           json-c/CMakeFiles/json-c-static.dir/linkhash.c.o
+           json-c/CMakeFiles/json-c-static.dir/printbuf.c.o
+           json-c/CMakeFiles/json-c-static.dir/progress.make
+           json-c/CMakeFiles/json-c-static.dir/random_seed.c.o
+           json-c/CMakeFiles/json-c-static.dir/strerror_override.c.o
+           json-c/CMakeFiles/json-c.dir/DependInfo.cmake
+           json-c/CMakeFiles/json-c.dir/build.make
+           json-c/CMakeFiles/json-c.dir/cmake_clean.cmake
+           json-c/CMakeFiles/json-c.dir/depend.make
+           json-c/CMakeFiles/json-c.dir/flags.make
+           json-c/CMakeFiles/json-c.dir/link.txt
+           json-c/CMakeFiles/json-c.dir/progress.make
+           json-c/CMakeFiles/progress.marks
+           json-c/Doxyfile
+           json-c/INSTALL
+           json-c/Makefile
+           json-c/Makefile.am
+           json-c/NEWS
+           json-c/README
+           json-c/README.md
+           json-c/RELEASE_CHECKLIST.txt
+           json-c/STYLE.txt
+           json-c/appveyor.yml
+           json-c/autoconf-archive/README.txt
+           json-c/autogen.sh
+           json-c/autom4te.cache/requests
+           json-c/autom4te.cache/traces.1
+           json-c/autom4te.cache/traces.2
+           json-c/cmake_install.cmake
+           json-c/config.h
+           json-c/config.h.in
+           json-c/config.h.win32
+           json-c/configure.ac
+           json-c/fuzz/README.md
+           json-c/fuzz/tokener_parse_ex_fuzzer.cc
+           json-c/fuzz/tokener_parse_ex_fuzzer.dict
+           json-c/include/config.h
+           json-c/include/json_config.h
+           json-c/issues_closed_for_0.13.md
+           json-c/json-c-uninstalled.pc
+           json-c/json-c-uninstalled.pc.in
+           json-c/json-c.pc
+           json-c/json-c.pc.in
+           json-c/json_config.h
+           json-c/json_config.h.in
+           json-c/json_config.h.win32
+           json-c/json_inttypes.h
+           json-c/json_object_iterator.c
+           json-c/json_object_iterator.h
+           json-c/json_visit.h
+           json-c/libjson-c.a
+           json-c/libjson.c
+           json-c/math_compat.h
+           json-c/snprintf_compat.h
+           json-c/stamp-h1
+           json-c/stamp-h2
+           json-c/strdup_compat.h
+           json-c/strerror_override.c
+           json-c/strerror_override.h
+           json-c/strerror_override_private.h
+           json-c/tests/.deps/test1.Po
+           json-c/tests/.deps/test1Formatted-parse_flags.Po
+           json-c/tests/.deps/test1Formatted-test1.Po
+           json-c/tests/.deps/test2.Po
+           json-c/tests/.deps/test2Formatted-parse_flags.Po
+           json-c/tests/.deps/test2Formatted-test2.Po
+           json-c/tests/.deps/test4.Po
+           json-c/tests/.deps/testReplaceExisting.Po
+           json-c/tests/.deps/test_cast.Po
+           json-c/tests/.deps/test_charcase.Po
+           json-c/tests/.deps/test_compare.Po
+           json-c/tests/.deps/test_deep_copy.Po
+           json-c/tests/.deps/test_double_serializer.Po
+           json-c/tests/.deps/test_float.Po
+           json-c/tests/.deps/test_int_add.Po
+           json-c/tests/.deps/test_json_pointer.Po
+           json-c/tests/.deps/test_locale.Po
+           json-c/tests/.deps/test_null.Po
+           json-c/tests/.deps/test_parse.Po
+           json-c/tests/.deps/test_parse_int64.Po
+           json-c/tests/.deps/test_printbuf.Po
+           json-c/tests/.deps/test_set_serializer.Po
+           json-c/tests/.deps/test_set_value.Po
+           json-c/tests/.deps/test_util_file.Po
+           json-c/tests/.deps/test_visit.Po
+           json-c/tests/Makefile.am
+           json-c/tests/parse_flags.c
+           json-c/tests/parse_flags.h
+           json-c/tests/test-defs.sh
+           json-c/tests/test1.c
+           json-c/tests/test1.expected
+           json-c/tests/test1.test
+           json-c/tests/test1Formatted_plain.expected
+           json-c/tests/test1Formatted_pretty.expected
+           json-c/tests/test1Formatted_spaced.expected
+           json-c/tests/test2.c
+           json-c/tests/test2.expected
+           json-c/tests/test2.test
+           json-c/tests/test2Formatted_plain.expected
+           json-c/tests/test2Formatted_pretty.expected
+           json-c/tests/test2Formatted_spaced.expected
+           json-c/tests/test4.c
+           json-c/tests/test4.expected
+           json-c/tests/testReplaceExisting.c
+           json-c/tests/testReplaceExisting.expected
+           json-c/tests/test_basic.test
+           json-c/tests/test_cast.c
+           json-c/tests/test_cast.expected
+           json-c/tests/test_charcase.c
+           json-c/tests/test_charcase.expected
+           json-c/tests/test_compare.c
+           json-c/tests/test_compare.expected
+           json-c/tests/test_deep_copy.c
+           json-c/tests/test_deep_copy.expected
+           json-c/tests/test_double_serializer.c
+           json-c/tests/test_double_serializer.expected
+           json-c/tests/test_float.expected
+           json-c/tests/test_int_add.c
+           json-c/tests/test_int_add.expected
+           json-c/tests/test_json_pointer.c
+           json-c/tests/test_json_pointer.expected
+           json-c/tests/test_locale.c
+           json-c/tests/test_locale.expected
+           json-c/tests/test_null.c
+           json-c/tests/test_null.expected
+           json-c/tests/test_parse.c
+           json-c/tests/test_parse.expected
+           json-c/tests/test_parse_int64.c
+           json-c/tests/test_parse_int64.expected
+           json-c/tests/test_printbuf.c
+           json-c/tests/test_printbuf.expected
+           json-c/tests/test_set_serializer.c
+           json-c/tests/test_set_serializer.expected
+           json-c/tests/test_set_value.c
+           json-c/tests/test_set_value.expected
+           json-c/tests/test_util_file.c
+           json-c/tests/test_util_file.expected
+           json-c/tests/test_visit.c
+           json-c/tests/test_visit.expected
+           json-c/tests/valid.json
+           json-c/vasprintf_compat.h
+           libwebsockets/.git
+           libwebsockets/.gitignore
+           libwebsockets/.travis.yml
+           libwebsockets/CMakeCache.txt
+           libwebsockets/CMakeFiles/3.9.0/CMakeCCompiler.cmake
+           libwebsockets/CMakeFiles/3.9.0/CMakeDetermineCompilerABI_C.bin
+           libwebsockets/CMakeFiles/3.9.0/CMakeSystem.cmake
+           libwebsockets/CMakeFiles/3.9.0/CompilerIdC/CMakeCCompilerId.c
+           libwebsockets/CMakeFiles/3.9.0/CompilerIdC/a.out
+           libwebsockets/CMakeFiles/CMakeDirectoryInformation.cmake
+           libwebsockets/CMakeFiles/CMakeError.log
+           libwebsockets/CMakeFiles/CMakeOutput.log
+           libwebsockets/CMakeFiles/CMakeRuleHashes.txt
+           libwebsockets/CMakeFiles/Export/lib/cmake/libwebsockets/LibwebsocketsTargets-debug.cmake
+           libwebsockets/CMakeFiles/Export/lib/cmake/libwebsockets/LibwebsocketsTargets.cmake
+           libwebsockets/CMakeFiles/LibwebsocketsConfig.cmake
+           libwebsockets/CMakeFiles/Makefile.cmake
+           libwebsockets/CMakeFiles/Makefile2
+           libwebsockets/CMakeFiles/TargetDirectories.txt
+           libwebsockets/CMakeFiles/cmake.check_cache
+           libwebsockets/CMakeFiles/dist.dir/DependInfo.cmake
+           libwebsockets/CMakeFiles/dist.dir/build.make
+           libwebsockets/CMakeFiles/dist.dir/cmake_clean.cmake
+           libwebsockets/CMakeFiles/dist.dir/progress.make
+           libwebsockets/CMakeFiles/feature_tests.bin
+           libwebsockets/CMakeFiles/feature_tests.c
+           libwebsockets/CMakeFiles/progress.marks
+           libwebsockets/CMakeFiles/websockets.dir/C.includecache
+           libwebsockets/CMakeFiles/websockets.dir/DependInfo.cmake
+           libwebsockets/CMakeFiles/websockets.dir/build.make
+           libwebsockets/CMakeFiles/websockets.dir/cmake_clean.cmake
+           libwebsockets/CMakeFiles/websockets.dir/cmake_clean_target.cmake
+           libwebsockets/CMakeFiles/websockets.dir/depend.internal
+           libwebsockets/CMakeFiles/websockets.dir/depend.make
+           libwebsockets/CMakeFiles/websockets.dir/flags.make
+           libwebsockets/CMakeFiles/websockets.dir/lib/alloc.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/context.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/event-libs/poll/poll.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/libwebsockets.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/misc/base64-decode.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/misc/lws-ring.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/misc/sha-1.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/output.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/plat/lws-plat-unix.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/pollfd.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/roles/h1/ops-h1.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/roles/http/client/client-handshake.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/roles/http/client/client.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/roles/http/header.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/roles/http/server/lws-spa.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/roles/http/server/parsers.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/roles/http/server/server.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/roles/listen/ops-listen.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/roles/pipe/ops-pipe.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/roles/raw/ops-raw.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/roles/ws/client-parser-ws.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/roles/ws/client-ws.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/roles/ws/ops-ws.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/roles/ws/server-ws.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/service.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/tls/openssl/openssl-client.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/tls/openssl/openssl-server.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/tls/openssl/ssl.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/tls/tls-client.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/tls/tls-server.c.o
+           libwebsockets/CMakeFiles/websockets.dir/lib/tls/tls.c.o
+           libwebsockets/CMakeFiles/websockets.dir/link.txt
+           libwebsockets/CMakeFiles/websockets.dir/progress.make
+           libwebsockets/CMakeLists.txt
+           libwebsockets/CPackConfig.cmake
+           libwebsockets/CPackSourceConfig.cmake
+           libwebsockets/Kconfig
+           libwebsockets/LibwebsocketsConfig.cmake
+           libwebsockets/LibwebsocketsConfigVersion.cmake
+           libwebsockets/LibwebsocketsTargets.cmake
+           libwebsockets/Makefile
+           libwebsockets/Makefile.projbuild
+           libwebsockets/README.md
+           libwebsockets/READMEs/README-plugin-sshd-base.md
+           libwebsockets/READMEs/README.build.md
+           libwebsockets/READMEs/README.esp32.md
+           libwebsockets/READMEs/README.generic-sessions.md
+           libwebsockets/READMEs/README.generic-table.md
+           libwebsockets/READMEs/README.lws-meta.md
+           libwebsockets/READMEs/README.lwsws.md
+           libwebsockets/READMEs/README.plugin-acme.md
+           libwebsockets/READMEs/README.problems.md
+           libwebsockets/READMEs/mainpage.md
+           libwebsockets/READMEs/release-checklist
+           libwebsockets/appveyor.yml
+           libwebsockets/cmake/FindLibWebSockets.cmake
+           libwebsockets/cmake/FindOpenSSLbins.cmake
+           libwebsockets/cmake/LibwebsocketsConfig.cmake.in
+           libwebsockets/cmake/LibwebsocketsConfigVersion.cmake.in
+           libwebsockets/cmake/UseRPMTools.cmake
+           libwebsockets/cmake/lws_config.h.in
+           libwebsockets/cmake/lws_config_private.h.in
+           libwebsockets/cmake_install.cmake
+           libwebsockets/component.mk
+           libwebsockets/contrib/Android.mk
+           libwebsockets/contrib/abi/README.md
+           libwebsockets/contrib/abi/libwebsockets.json
+           libwebsockets/contrib/abi/lws-abi-update.sh
+           libwebsockets/contrib/android-make-script.sh
+           libwebsockets/contrib/cross-aarch64.cmake
+           libwebsockets/contrib/cross-arm-linux-gnueabihf.cmake
+           libwebsockets/contrib/cross-esp32.cmake
+           libwebsockets/contrib/cross-ming.cmake
+           libwebsockets/contrib/cross-openwrt-makefile
+           libwebsockets/contrib/cross-w32.cmake
+           libwebsockets/contrib/cross-w64.cmake
+           libwebsockets/doc-assets/lws-overview.png
+           libwebsockets/doc-assets/lws-smp-example.png
+           libwebsockets/doc-assets/lws-smp-ov.png
+           libwebsockets/doc-assets/lwsgt-overview.png
+           libwebsockets/include/lws_config.h
+           libwebsockets/lib/alloc.c
+           libwebsockets/lib/event-libs/README.md
+           libwebsockets/lib/plat/lws-plat-optee.c
+           libwebsockets/lib/plat/lws-plat-win.c
+           libwebsockets/lib/roles/README.md
+           libwebsockets/lib/roles/h2/huftable.h
+           libwebsockets/lib/roles/http/client/client-handshake.c
+           libwebsockets/lib/roles/http/lextable-strings.h
+           libwebsockets/lib/roles/http/lextable.h
+           libwebsockets/lib/roles/http/server/rewrite.c
+           libwebsockets/lib/roles/ws/ext/extension-permessage-deflate.h
+           libwebsockets/lib/roles/ws/ext/extension.c
+           libwebsockets/lib/tls/mbedtls/wrapper/include/internal/ssl_stack.h
+           libwebsockets/libwebsockets.dox
+           libwebsockets/libwebsockets.pc
+           libwebsockets/libwebsockets_static.pc
+           libwebsockets/lws_config.h
+           libwebsockets/lws_config_private.h
+           libwebsockets/lwsws/etc-logrotate.d-lwsws
+           libwebsockets/lwsws/etc-lwsws-conf-EXAMPLE
+           libwebsockets/lwsws/etc-lwsws-conf.d-localhost-EXAMPLE
+           libwebsockets/lwsws/usr-lib-systemd-system-lwsws.service
+           libwebsockets/minimal-examples/README.md
+           libwebsockets/minimal-examples/client-server/README.md
+           libwebsockets/minimal-examples/client-server/minimal-ws-proxy/CMakeLists.txt
+           libwebsockets/minimal-examples/client-server/minimal-ws-proxy/README.md
+           libwebsockets/minimal-examples/client-server/minimal-ws-proxy/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/client-server/minimal-ws-proxy/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-client/README.md
+           libwebsockets/minimal-examples/http-client/minimal-http-client-certinfo/CMakeLists.txt
+           libwebsockets/minimal-examples/http-client/minimal-http-client-certinfo/README.md
+           libwebsockets/minimal-examples/http-client/minimal-http-client-certinfo/warmcat.com.cer
+           libwebsockets/minimal-examples/http-client/minimal-http-client-hugeurl/CMakeLists.txt
+           libwebsockets/minimal-examples/http-client/minimal-http-client-hugeurl/README.md
+           libwebsockets/minimal-examples/http-client/minimal-http-client-hugeurl/selftest.sh
+           libwebsockets/minimal-examples/http-client/minimal-http-client-hugeurl/warmcat.com.cer
+           libwebsockets/minimal-examples/http-client/minimal-http-client-multi/CMakeLists.txt
+           libwebsockets/minimal-examples/http-client/minimal-http-client-multi/README.md
+           libwebsockets/minimal-examples/http-client/minimal-http-client-multi/selftest.sh
+           libwebsockets/minimal-examples/http-client/minimal-http-client-multi/warmcat.com.cer
+           libwebsockets/minimal-examples/http-client/minimal-http-client-post/CMakeLists.txt
+           libwebsockets/minimal-examples/http-client/minimal-http-client-post/README.md
+           libwebsockets/minimal-examples/http-client/minimal-http-client-post/libwebsockets.org.cer
+           libwebsockets/minimal-examples/http-client/minimal-http-client-post/selftest.sh
+           libwebsockets/minimal-examples/http-client/minimal-http-client/CMakeLists.txt
+           libwebsockets/minimal-examples/http-client/minimal-http-client/README.md
+           libwebsockets/minimal-examples/http-client/minimal-http-client/selftest.sh
+           libwebsockets/minimal-examples/http-client/minimal-http-client/warmcat.com.cer
+           libwebsockets/minimal-examples/http-server/README.md
+           libwebsockets/minimal-examples/http-server/minimal-http-server-basicauth/CMakeLists.txt
+           libwebsockets/minimal-examples/http-server/minimal-http-server-basicauth/README.md
+           libwebsockets/minimal-examples/http-server/minimal-http-server-basicauth/ba-passwords
+           libwebsockets/minimal-examples/http-server/minimal-http-server-basicauth/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server-basicauth/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server-basicauth/mount-secret-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server-dynamic/CMakeLists.txt
+           libwebsockets/minimal-examples/http-server/minimal-http-server-dynamic/README.md
+           libwebsockets/minimal-examples/http-server/minimal-http-server-dynamic/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server-dynamic/mount-origin/index.html
+           libwebsockets/minimal-examples/http-server/minimal-http-server-dynamic/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib-foreign/CMakeLists.txt
+           libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib-foreign/README.md
+           libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib-foreign/localhost-100y.cert
+           libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib-foreign/localhost-100y.key
+           libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib-foreign/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib-foreign/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib/CMakeLists.txt
+           libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib/README.md
+           libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib/localhost-100y.cert
+           libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib/localhost-100y.key
+           libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib/mount-origin/index.html
+           libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-get/CMakeLists.txt
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-get/README.md
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-get/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-get/mount-origin/index.html
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-get/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-post-file/CMakeLists.txt
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-post-file/README.md
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-post-file/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-post-file/mount-origin/index.html
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-post-file/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-post/CMakeLists.txt
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-post/README.md
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-post/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-post/mount-origin/index.html
+           libwebsockets/minimal-examples/http-server/minimal-http-server-form-post/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/CMakeLists.txt
+           libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/README.md
+           libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/mount-origin-localhost1/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/mount-origin-localhost1/index.html
+           libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/mount-origin-localhost1/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/mount-origin-localhost2/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/mount-origin-localhost2/index.html
+           libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/mount-origin-localhost2/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/mount-origin-localhost3/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/mount-origin-localhost3/index.html
+           libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/mount-origin-localhost3/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server-smp/CMakeLists.txt
+           libwebsockets/minimal-examples/http-server/minimal-http-server-smp/README.md
+           libwebsockets/minimal-examples/http-server/minimal-http-server-smp/localhost-100y.cert
+           libwebsockets/minimal-examples/http-server/minimal-http-server-smp/localhost-100y.key
+           libwebsockets/minimal-examples/http-server/minimal-http-server-smp/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server-smp/mount-origin/index.html
+           libwebsockets/minimal-examples/http-server/minimal-http-server-smp/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server-sse-ring/CMakeLists.txt
+           libwebsockets/minimal-examples/http-server/minimal-http-server-sse-ring/README.md
+           libwebsockets/minimal-examples/http-server/minimal-http-server-sse-ring/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server-sse-ring/mount-origin/index.html
+           libwebsockets/minimal-examples/http-server/minimal-http-server-sse-ring/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server-sse/CMakeLists.txt
+           libwebsockets/minimal-examples/http-server/minimal-http-server-sse/README.md
+           libwebsockets/minimal-examples/http-server/minimal-http-server-sse/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server-sse/mount-origin/index.html
+           libwebsockets/minimal-examples/http-server/minimal-http-server-sse/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server-tls/CMakeLists.txt
+           libwebsockets/minimal-examples/http-server/minimal-http-server-tls/README.md
+           libwebsockets/minimal-examples/http-server/minimal-http-server-tls/localhost-100y.cert
+           libwebsockets/minimal-examples/http-server/minimal-http-server-tls/localhost-100y.key
+           libwebsockets/minimal-examples/http-server/minimal-http-server-tls/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server-tls/mount-origin/index.html
+           libwebsockets/minimal-examples/http-server/minimal-http-server-tls/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/http-server/minimal-http-server/CMakeLists.txt
+           libwebsockets/minimal-examples/http-server/minimal-http-server/README.md
+           libwebsockets/minimal-examples/http-server/minimal-http-server/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/http-server/minimal-http-server/mount-origin/index.html
+           libwebsockets/minimal-examples/http-server/minimal-http-server/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/raw/README.md
+           libwebsockets/minimal-examples/raw/minimal-raw-adopt-tcp/CMakeLists.txt
+           libwebsockets/minimal-examples/raw/minimal-raw-adopt-tcp/README.md
+           libwebsockets/minimal-examples/raw/minimal-raw-adopt-udp/CMakeLists.txt
+           libwebsockets/minimal-examples/raw/minimal-raw-adopt-udp/README.md
+           libwebsockets/minimal-examples/raw/minimal-raw-file/CMakeLists.txt
+           libwebsockets/minimal-examples/raw/minimal-raw-file/README.md
+           libwebsockets/minimal-examples/raw/minimal-raw-vhost/CMakeLists.txt
+           libwebsockets/minimal-examples/raw/minimal-raw-vhost/README.md
+           libwebsockets/minimal-examples/selftests-library.sh
+           libwebsockets/minimal-examples/selftests.sh
+           libwebsockets/minimal-examples/ws-client/README.md
+           libwebsockets/minimal-examples/ws-client/minimal-ws-client-echo/CMakeLists.txt
+           libwebsockets/minimal-examples/ws-client/minimal-ws-client-echo/README.md
+           libwebsockets/minimal-examples/ws-client/minimal-ws-client-pmd-bulk/CMakeLists.txt
+           libwebsockets/minimal-examples/ws-client/minimal-ws-client-pmd-bulk/README.md
+           libwebsockets/minimal-examples/ws-client/minimal-ws-client-rx/CMakeLists.txt
+           libwebsockets/minimal-examples/ws-client/minimal-ws-client-rx/README.md
+           libwebsockets/minimal-examples/ws-client/minimal-ws-client-rx/libwebsockets.org.cer
+           libwebsockets/minimal-examples/ws-client/minimal-ws-client-rx/selftest.sh
+           libwebsockets/minimal-examples/ws-client/minimal-ws-client-tx/CMakeLists.txt
+           libwebsockets/minimal-examples/ws-client/minimal-ws-client-tx/README.md
+           libwebsockets/minimal-examples/ws-server/README.md
+           libwebsockets/minimal-examples/ws-server/minimal-ws-broker/CMakeLists.txt
+           libwebsockets/minimal-examples/ws-server/minimal-ws-broker/README.md
+           libwebsockets/minimal-examples/ws-server/minimal-ws-broker/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/ws-server/minimal-ws-broker/mount-origin/index.html
+           libwebsockets/minimal-examples/ws-server/minimal-ws-broker/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-echo/CMakeLists.txt
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-echo/README.md
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-pmd-bulk/CMakeLists.txt
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-pmd-bulk/README.md
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-pmd-bulk/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-pmd-bulk/mount-origin/index.html
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-pmd-bulk/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-pmd/CMakeLists.txt
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-pmd/README.md
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-pmd/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-pmd/mount-origin/index.html
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-pmd/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-ring/CMakeLists.txt
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-ring/README.md
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-ring/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-ring/mount-origin/index.html
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-ring/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-threads/CMakeLists.txt
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-threads/README.md
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-threads/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-threads/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server/CMakeLists.txt
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server/README.md
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server/mount-origin/favicon.ico
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server/mount-origin/index.html
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server/mount-origin/libwebsockets.org-logo.png
+           libwebsockets/plugin-standalone/CMakeLists.txt
+           libwebsockets/plugins/generic-sessions/assets/lwsgs-logo.png
+           libwebsockets/plugins/generic-sessions/assets/md5.min.js
+           libwebsockets/plugins/generic-sessions/assets/post-register-fail.html
+           libwebsockets/plugins/generic-sessions/assets/seats.jpg
+           libwebsockets/plugins/generic-sessions/assets/sent-forgot-ok.html
+           libwebsockets/plugins/generic-table/assets/lwsgt.js
+           libwebsockets/plugins/lwsws-logo.png
+           libwebsockets/plugins/ssh-base/crypto/chacha.c
+           libwebsockets/plugins/ssh-base/crypto/ed25519.c
+           libwebsockets/plugins/ssh-base/crypto/fe25519.c
+           libwebsockets/plugins/ssh-base/crypto/fe25519.h
+           libwebsockets/plugins/ssh-base/crypto/ge25519.c
+           libwebsockets/plugins/ssh-base/crypto/ge25519.h
+           libwebsockets/plugins/ssh-base/crypto/ge25519_base.data
+           libwebsockets/plugins/ssh-base/crypto/poly1305.c
+           libwebsockets/plugins/ssh-base/crypto/sc25519.c
+           libwebsockets/plugins/ssh-base/crypto/sc25519.h
+           libwebsockets/plugins/ssh-base/crypto/smult_curve25519_ref.c
+           libwebsockets/plugins/ssh-base/include/lws-plugin-sshd-static-build-includes.h
+           libwebsockets/scripts/attack.sh
+           libwebsockets/scripts/autobahn-test.sh
+           libwebsockets/scripts/build-gcov.sh
+           libwebsockets/scripts/client-ca/certindex.txt
+           libwebsockets/scripts/client-ca/create-ca.sh
+           libwebsockets/scripts/client-ca/create-client-cert.sh
+           libwebsockets/scripts/client-ca/create-server-cert.sh
+           libwebsockets/scripts/client-ca/serial
+           libwebsockets/scripts/client-ca/tmp.cnf
+           libwebsockets/scripts/esp32.mk
+           libwebsockets/scripts/gcov.sh
+           libwebsockets/scripts/h2load-smp.sh
+           libwebsockets/scripts/h2load.sh
+           libwebsockets/scripts/h2spec.sh
+           libwebsockets/scripts/libwebsockets.spec
+           libwebsockets/scripts/travis_control.sh
+           libwebsockets/scripts/travis_install.sh
+           libwebsockets/test-apps/.gitignore
+           libwebsockets/test-apps/android/app/build.gradle
+           libwebsockets/test-apps/android/app/src/main/jni/Android.mk
+           libwebsockets/test-apps/android/app/src/main/jni/Application.mk
+           libwebsockets/test-apps/android/app/src/main/libs/placeholder
+           libwebsockets/test-apps/android/app/src/main/res/drawable/warmcat.png
+           libwebsockets/test-apps/android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+           libwebsockets/test-apps/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+           libwebsockets/test-apps/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+           libwebsockets/test-apps/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+           libwebsockets/test-apps/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+           libwebsockets/test-apps/android/build.gradle
+           libwebsockets/test-apps/android/gradle.properties
+           libwebsockets/test-apps/android/settings.gradle
+           libwebsockets/test-apps/candide.zip
+           libwebsockets/test-apps/favicon.ico
+           libwebsockets/test-apps/http2.png
+           libwebsockets/test-apps/libwebsockets-test-server.service
+           libwebsockets/test-apps/libwebsockets.org-logo.png
+           libwebsockets/test-apps/lws-cgi-test.sh
+           libwebsockets/test-apps/lws-common.js
+           libwebsockets/test-apps/lws-ssh-test-keys
+           libwebsockets/test-apps/lws-ssh-test-keys.pub
+           libwebsockets/test-apps/private/index.html
+           libwebsockets/test-apps/wss-over-h2.png
+           libwebsockets/win32port/libwebsockets.nsi
+           libwebsockets/win32port/version.rc.in
+           libwebsockets/win32port/win32helpers/getopt.h
+           libwebsockets/win32port/win32helpers/gettimeofday.c
+           libwebsockets/win32port/win32helpers/gettimeofday.h
+           libwebsockets/win32port/zlib/ZLib.vcxproj
+           libwebsockets/win32port/zlib/ZLib.vcxproj.filters
+           libwebsockets/win32port/zlib/crc32.h
+           libwebsockets/win32port/zlib/inffixed.h
+           libwebsockets/win32port/zlib/trees.h
+           request/#slack-request-conversations-members.c#
+           request/slack-request-channels-list.c
+           request/slack-request-channels-list.h
+           request/slack-request-channels-list.o
+           request/slack-request-chat-postmessage.c
+           request/slack-request-chat-postmessage.h
+           request/slack-request-chat-postmessage.o
+           request/slack-request-conversations-members.c
+           request/slack-request-conversations-members.h
+           request/slack-request-conversations-members.o
+           request/slack-request-users-list.c
+           request/slack-request-users-list.h
+           request/slack-request-users-list.o
+           slack-api.c
+           slack-api.h
+           slack-api.o
+           slack-buffer.c
+           slack-buffer.h
+           slack-buffer.o
+           slack-channel.c
+           slack-channel.h
+           slack-channel.o
+           slack-command.c
+           slack-command.h
+           slack-command.o
+           slack-config.c
+           slack-config.h
+           slack-config.o
+           slack-input.c
+           slack-input.h
+           slack-input.o
+           slack-message.c
+           slack-message.h
+           slack-message.o
+           slack-oauth.c
+           slack-oauth.h
+           slack-oauth.o
+           slack-request.c
+           slack-request.h
+           slack-request.o
+           slack-teaminfo.c
+           slack-teaminfo.h
+           slack-teaminfo.o
+           slack-user.c
+           slack-user.h
+           slack-user.o
+           slack-workspace.c
+           slack-workspace.h
+           slack-workspace.o
+           slack.c
+           slack.h
+           slack.o
+Copyright: __NO_COPYRIGHT_NOR_LICENSE__
+License:   __NO_COPYRIGHT_NOR_LICENSE__
+
+Files:     libwebsockets/include/libwebsockets.h
+           libwebsockets/lib/context.c
+           libwebsockets/lib/event-libs/libev/libev.c
+           libwebsockets/lib/event-libs/libev/private.h
+           libwebsockets/lib/event-libs/libevent/libevent.c
+           libwebsockets/lib/event-libs/libevent/private.h
+           libwebsockets/lib/event-libs/libuv/libuv.c
+           libwebsockets/lib/event-libs/libuv/private.h
+           libwebsockets/lib/event-libs/poll/poll.c
+           libwebsockets/lib/event-libs/poll/private.h
+           libwebsockets/lib/libwebsockets.c
+           libwebsockets/lib/libwebsockets.h
+           libwebsockets/lib/misc/jws/jwk.c
+           libwebsockets/lib/misc/jws/jws.c
+           libwebsockets/lib/misc/lejp.c
+           libwebsockets/lib/misc/lws-ring.c
+           libwebsockets/lib/misc/peer-limits.c
+           libwebsockets/lib/output.c
+           libwebsockets/lib/plat/lws-plat-esp32.c
+           libwebsockets/lib/plat/lws-plat-unix.c
+           libwebsockets/lib/pollfd.c
+           libwebsockets/lib/private-libwebsockets.h
+           libwebsockets/lib/roles/cgi/cgi-server.c
+           libwebsockets/lib/roles/cgi/ops-cgi.c
+           libwebsockets/lib/roles/cgi/private.h
+           libwebsockets/lib/roles/h1/ops-h1.c
+           libwebsockets/lib/roles/h1/private.h
+           libwebsockets/lib/roles/h2/hpack.c
+           libwebsockets/lib/roles/h2/http2.c
+           libwebsockets/lib/roles/h2/ops-h2.c
+           libwebsockets/lib/roles/h2/private.h
+           libwebsockets/lib/roles/http/client/client.c
+           libwebsockets/lib/roles/http/header.c
+           libwebsockets/lib/roles/http/server/access-log.c
+           libwebsockets/lib/roles/http/server/lejp-conf.c
+           libwebsockets/lib/roles/http/server/lws-spa.c
+           libwebsockets/lib/roles/http/server/parsers.c
+           libwebsockets/lib/roles/http/server/ranges.c
+           libwebsockets/lib/roles/http/server/server.c
+           libwebsockets/lib/roles/listen/ops-listen.c
+           libwebsockets/lib/roles/pipe/ops-pipe.c
+           libwebsockets/lib/roles/raw/ops-raw.c
+           libwebsockets/lib/roles/ws/client-parser-ws.c
+           libwebsockets/lib/roles/ws/client-ws.c
+           libwebsockets/lib/roles/ws/ext/extension-permessage-deflate.c
+           libwebsockets/lib/roles/ws/ops-ws.c
+           libwebsockets/lib/roles/ws/private.h
+           libwebsockets/lib/roles/ws/server-ws.c
+           libwebsockets/lib/service.c
+           libwebsockets/lib/tls/mbedtls/lws-genhash.c
+           libwebsockets/lib/tls/mbedtls/lws-genrsa.c
+           libwebsockets/lib/tls/mbedtls/mbedtls-client.c
+           libwebsockets/lib/tls/mbedtls/mbedtls-server.c
+           libwebsockets/lib/tls/mbedtls/ssl.c
+           libwebsockets/lib/tls/openssl/lws-genhash.c
+           libwebsockets/lib/tls/openssl/lws-genrsa.c
+           libwebsockets/lib/tls/openssl/openssl-client.c
+           libwebsockets/lib/tls/openssl/openssl-server.c
+           libwebsockets/lib/tls/openssl/ssl.c
+           libwebsockets/lib/tls/private.h
+           libwebsockets/lib/tls/tls-client.c
+           libwebsockets/lib/tls/tls-server.c
+           libwebsockets/lib/tls/tls.c
+           libwebsockets/plugins/protocol_esp32_lws_ota.c
+           libwebsockets/plugins/ssh-base/include/lws-plugin-ssh.h
+           libwebsockets/plugins/ssh-base/include/lws-ssh.h
+           libwebsockets/plugins/ssh-base/kex-25519.c
+           libwebsockets/plugins/ssh-base/sshd.c
+           libwebsockets/plugins/ssh-base/telnet.c
+           libwebsockets/test-apps/test-lejp.c
+Copyright: 2010-2018 Andy Green <andy@warmcat.com>
+License:   LGPL-2.1
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation:
+ version 2.1 of the License.
+ .
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ MA  02110-1301  USA
+ .
+ On Debian systems, the complete text of the GNU Lesser General Public License
+ Version 2.1 can be found in `/usr/share/common-licenses/LGPL-2.1'.
+
+Files:     json-c/fuzz/build.sh
+           libwebsockets/lib/tls/mbedtls/wrapper/include/internal/ssl3.h
+           libwebsockets/lib/tls/mbedtls/wrapper/include/internal/ssl_cert.h
+           libwebsockets/lib/tls/mbedtls/wrapper/include/internal/ssl_code.h
+           libwebsockets/lib/tls/mbedtls/wrapper/include/internal/ssl_dbg.h
+           libwebsockets/lib/tls/mbedtls/wrapper/include/internal/ssl_lib.h
+           libwebsockets/lib/tls/mbedtls/wrapper/include/internal/ssl_methods.h
+           libwebsockets/lib/tls/mbedtls/wrapper/include/internal/ssl_pkey.h
+           libwebsockets/lib/tls/mbedtls/wrapper/include/internal/ssl_types.h
+           libwebsockets/lib/tls/mbedtls/wrapper/include/internal/ssl_x509.h
+           libwebsockets/lib/tls/mbedtls/wrapper/include/internal/tls1.h
+           libwebsockets/lib/tls/mbedtls/wrapper/include/internal/x509_vfy.h
+           libwebsockets/lib/tls/mbedtls/wrapper/include/openssl/ssl.h
+           libwebsockets/lib/tls/mbedtls/wrapper/include/platform/ssl_pm.h
+           libwebsockets/lib/tls/mbedtls/wrapper/include/platform/ssl_port.h
+           libwebsockets/lib/tls/mbedtls/wrapper/library/ssl_cert.c
+           libwebsockets/lib/tls/mbedtls/wrapper/library/ssl_lib.c
+           libwebsockets/lib/tls/mbedtls/wrapper/library/ssl_methods.c
+           libwebsockets/lib/tls/mbedtls/wrapper/library/ssl_pkey.c
+           libwebsockets/lib/tls/mbedtls/wrapper/library/ssl_stack.c
+           libwebsockets/lib/tls/mbedtls/wrapper/library/ssl_x509.c
+           libwebsockets/lib/tls/mbedtls/wrapper/platform/ssl_pm.c
+           libwebsockets/lib/tls/mbedtls/wrapper/platform/ssl_port.c
+Copyright: 2015-2016 Espressif Systems (Shanghai) PTE LTD
+           2018 Google Inc.
+License:   Apache-2.0
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+ .
+ http://www.apache.org/licenses/LICENSE-2.0
+ .
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the complete text of the Apache License Version 2.0
+  can be found in `/usr/share/common-licenses/Apache-2.0'.
+
+Files:     json-c/tests/test_float.c
+           libwebsockets/READMEs/README.test-apps.md
+           libwebsockets/lib/misc/daemonize.c
+           libwebsockets/win32port/zlib/adler32.c
+           libwebsockets/win32port/zlib/compress.c
+           libwebsockets/win32port/zlib/gzguts.h
+           libwebsockets/win32port/zlib/gzlib.c
+           libwebsockets/win32port/zlib/gzread.c
+           libwebsockets/win32port/zlib/gzwrite.c
+           libwebsockets/win32port/zlib/inffast.c
+           libwebsockets/win32port/zlib/inftrees.c
+           libwebsockets/win32port/zlib/trees.c
+           libwebsockets/win32port/zlib/uncompr.c
+           libwebsockets/win32port/zlib/zconf.h
+           libwebsockets/win32port/zlib/zutil.c
+Copyright: 1995-2010 Jean-loup Gailly
+           1995-2010 Jean-loup Gailly. For conditions of distribution and use, see copyright notice in zlib.h
+           1995-2010 Mark Adler For conditions of distribution and use, see copyright notice in zlib.h
+           2006-2013 Andy Green <andy@warmcat.com>
+           2010-2011 Andy Green <andy@warmcat.com> licensed under LGPL2.1 Compiled with SSL support, not using it Listening on port 7681 server sees client connect accepted v06 connection Spamming 360 random fragments
+           2016 Rainer Gerhards Released under ASL 2.0
+License:   __NO_LICENSE__
+
+Files:     libwebsockets/lwsws/main.c
+           libwebsockets/plugins/protocol_lws_mirror.c
+           libwebsockets/plugins/protocol_lws_server_status.c
+           libwebsockets/plugins/protocol_lws_status.c
+           libwebsockets/test-apps/android/README
+           libwebsockets/test-apps/android/app/src/main/java/org/libwebsockets/client/LwsService.java
+           libwebsockets/test-apps/android/app/src/main/java/org/libwebsockets/client/MainActivity.java
+           libwebsockets/test-apps/android/app/src/main/java/org/libwebsockets/client/ThreadService.java
+           libwebsockets/test-apps/android/app/src/main/jni/LwsService.cpp
+           libwebsockets/test-apps/test-client.c
+           libwebsockets/test-apps/test-server-libev.c
+           libwebsockets/test-apps/test-server-libevent.c
+           libwebsockets/test-apps/test-server.c
+Copyright: 2010-2018 Andy Green <andy@warmcat.com>
+           2016 Alexander Bruines <alexander.bruines@gmail.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ The person who associated a work with this deed has dedicated
+ the work to the public domain by waiving all of his or her rights
+ to the work worldwide under copyright law, including all related
+ and neighboring rights, to the extent allowed by law. You can copy,
+ modify, distribute and perform the work, even for commercial purposes,
+ all without asking permission.
+ .
+ The test apps are intended to be adapted for use in your code, which
+ may be proprietary.  So unlike the library itself, they are licensed
+ Public Domain.
+
+Files:     json-c/arraylist.c
+           json-c/arraylist.h
+           json-c/debug.c
+           json-c/json_c_version.c
+           json-c/json_object.c
+           json-c/json_object.h
+           json-c/json_tokener.h
+           json-c/json_util.c
+           json-c/linkhash.c
+           json-c/linkhash.h
+           json-c/random_seed.c
+Copyright: 2004-2013 Metaparadigm Pte. Ltd. Michael Clark <michael@metaparadigm.com>
+           2009 Hewlett-Packard Development Company, L.P.
+           2012 Eric Haszlakiewicz
+License:   __UNKNOWN__
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the MIT license. See COPYING for details.
+
+Files:     libwebsockets/lib/misc/smtp.c
+           libwebsockets/plugins/generic-sessions/handlers.c
+           libwebsockets/plugins/generic-sessions/private-lwsgs.h
+           libwebsockets/plugins/generic-sessions/protocol_generic_sessions.c
+           libwebsockets/plugins/generic-sessions/protocol_lws_messageboard.c
+           libwebsockets/plugins/generic-sessions/utils.c
+           libwebsockets/plugins/generic-table/protocol_table_dirlisting.c
+Copyright: 2010-2017 Andy Green <andy@warmcat.com>
+License:   LGPL-2.1
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation:
+ version 2.1 of the License.
+ .
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ MA  02110-1301  USA
+ .
+ On Debian systems, the complete text of the GNU Lesser General Public License
+ Version 2.1 can be found in `/usr/share/common-licenses/LGPL-2.1'.
+
+Files:     json-c/autoconf-archive/m4/libtool.m4
+           json-c/autoconf-archive/m4/ltoptions.m4
+           json-c/autoconf-archive/m4/ltsugar.m4
+           json-c/autoconf-archive/m4/ltversion.m4
+           json-c/autoconf-archive/m4/lt~obsolete.m4
+Copyright: 1996-2015 Free Software Foundation, Inc.
+License:   PERMISSIVE
+ This file is free software; the Free Software Foundation gives
+ unlimited permission to copy and/or distribute it, with or without
+ modifications, as long as this notice is preserved.
+
+Files:     libwebsockets/plugin-standalone/protocol_example_standalone.c
+           libwebsockets/plugins/protocol_client_loopback_test.c
+           libwebsockets/plugins/protocol_dumb_increment.c
+           libwebsockets/plugins/protocol_lws_sshd_demo.c
+           libwebsockets/plugins/protocol_post_demo.c
+Copyright: 2010-2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ The person who associated a work with this deed has dedicated
+ the work to the public domain by waiving all of his or her rights
+ to the work worldwide under copyright law, including all related
+ and neighboring rights, to the extent allowed by law. You can copy,
+ modify, distribute and perform the work, even for commercial purposes,
+ all without asking permission.
+ .
+ These test plugins are intended to be adapted for use in your code, which
+ may be proprietary.  So unlike the library itself, they are licensed
+ Public Domain.
+
+Files:     json-c/autom4te.cache/output.0
+           json-c/autom4te.cache/output.1
+           json-c/autom4te.cache/output.2
+           json-c/configure
+Copyright: 1992-2012 Free Software Foundation, Inc.
+License:   PERMISSIVE
+ This configure script is free software; the Free Software Foundation
+ gives unlimited permission to copy, distribute and modify it.
+
+Files:     libwebsockets/minimal-examples/ws-client/minimal-ws-client-echo/protocol_lws_minimal_client_echo.c
+           libwebsockets/minimal-examples/ws-client/minimal-ws-client-pmd-bulk/protocol_lws_minimal_pmd_bulk.c
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-echo/protocol_lws_minimal_server_echo.c
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-pmd-bulk/protocol_lws_minimal_pmd_bulk.c
+Copyright: 2010-2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ The protocol shows how to send and receive bulk messages over a ws connection
+ that optionally may have the permessage-deflate extension negotiated on it.
+
+Files:     libwebsockets/win32port/zlib/deflate.h
+           libwebsockets/win32port/zlib/inffast.h
+           libwebsockets/win32port/zlib/inflate.h
+           libwebsockets/win32port/zlib/zutil.h
+Copyright: 1995-2010 Jean-loup Gailly For conditions of distribution and use, see copyright notice in zlib.h
+           1995-2010 Jean-loup Gailly. For conditions of distribution and use, see copyright notice in zlib.h
+           1995-2010 Mark Adler For conditions of distribution and use, see copyright notice in zlib.h
+License:   __UNKNOWN__
+ WARNING: this file should *not* be used by applications. It is
+ part of the implementation of the compression library and is
+ subject to change. Applications should only use zlib.h.
+
+Files:     json-c/autoconf-archive/m4/ax_append_compile_flags.m4
+           json-c/autoconf-archive/m4/ax_append_flag.m4
+           json-c/autoconf-archive/m4/ax_check_compile_flag.m4
+           json-c/autoconf-archive/m4/ax_compile_check_sizeof.m4
+Copyright: 2008 Guido U. Draheim <guidod@gmx.de>
+           2008 Kaveh Ghazi <ghazi@caip.rutgers.edu>
+           2011 Maarten Bosmans <mkbosmans@gmail.com>
+License:   GPL-3.0+ with unknown exception *** check multiple exceptions ***
+ This program is free software: you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by the
+ Free Software Foundation, either version 3 of the License, or (at your
+ option) any later version.
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License along
+ with this program. If not, see <http://www.gnu.org/licenses/>.
+ .
+ As a special exception, the respective Autoconf Macro's copyright owner
+ gives unlimited permission to copy, distribute and modify the configure
+ scripts that are the output of Autoconf when processing the Macro. You
+ need not follow the terms of the GNU General Public License when using
+ or distributing such scripts, even though portions of the text of the
+ Macro appear in them. The GNU General Public License (GPL) does govern
+ all other use of the material that constitutes the Autoconf Macro.
+ .
+ This special exception to the GPL applies to versions of the Autoconf
+ Macro released by the Autoconf Archive. When you make and distribute a
+ modified version of the Autoconf Macro, you may extend this special
+ exception to the GPL to apply to your modified version as well.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ Version 3 can be found in `/usr/share/common-licenses/GPL-3'.
+
+Files:     json-c/debug.h
+           json-c/json_object_private.h
+           json-c/random_seed.h
+Copyright: 2004-2013 Metaparadigm Pte. Ltd. Michael Clark <michael@metaparadigm.com>
+           2009 Hewlett-Packard Development Company, L.P.
+License:   __UNKNOWN__
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the MIT license. See COPYING for details.
+ .
+ @brief Do not use, json-c internal, may be changed or removed at any time.
+
+Files:     libwebsockets/minimal-examples/client-server/minimal-ws-proxy/protocol_lws_minimal.c
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-ring/protocol_lws_minimal.c
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-threads/protocol_lws_minimal.c
+Copyright: 2010-2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+
+Files:     json-c/compile
+           json-c/missing
+           json-c/test-driver
+Copyright: 1996-2014 Free Software Foundation, Inc.
+License:   GPL-2.0+ with autoconf exception
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2, or (at your option)
+ any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ .
+ As a special exception to the GNU General Public License, if you
+ distribute this file as part of a program that contains a
+ configuration script generated by Autoconf, you may include it under
+ the same distribution terms that you use for the rest of that program.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ Version 2 can be found in `/usr/share/common-licenses/GPL-2'.
+
+Files:     libwebsockets/lib/event-libs/private.h
+           libwebsockets/lib/roles/private.h
+Copyright: 2010-2018 Andy Green <andy@warmcat.com>
+License:   LGPL-2.1
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation:
+ version 2.1 of the License.
+ .
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ MA  02110-1301  USA
+ .
+ This is included from private-libwebsockets.h
+ .
+ On Debian systems, the complete text of the GNU Lesser General Public License
+ Version 2.1 can be found in `/usr/share/common-licenses/LGPL-2.1'.
+
+Files:     libwebsockets/plugins/protocol_esp32_lws_group.c
+           libwebsockets/plugins/protocol_esp32_lws_scan.c
+Copyright: 2017 Andy Green <andy@warmcat.com>
+License:   LGPL-2.1
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation:
+ version 2.1 of the License.
+ .
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ MA  02110-1301  USA*
+ .
+ On Debian systems, the complete text of the GNU Lesser General Public License
+ Version 2.1 can be found in `/usr/share/common-licenses/LGPL-2.1'.
+
+Files:     libwebsockets/minimal-examples/http-server/minimal-http-server-sse-ring/minimal-http-server-sse-ring.c
+           libwebsockets/minimal-examples/http-server/minimal-http-server-sse/minimal-http-server-sse.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates a minimal http server that can serve both normal static
+ content and server-side event connections.
+ .
+ To keep it simple, it serves the static stuff from the subdirectory
+ "./mount-origin" of the directory it was started in.
+ .
+ You can change that by changing mount.origin below.
+
+Files:     libwebsockets/lib/roles/h2/minihuf.c
+           libwebsockets/lib/roles/http/minilex.c
+Copyright: 2011-2014 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ Licensed under LGPL2
+
+Files:     libwebsockets/minimal-examples/ws-server/minimal-ws-server-pmd/protocol_lws_minimal.c
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server/protocol_lws_minimal.c
+Copyright: 2010-2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This version holds a single message at a time, which may be lost if a new
+ message comes.  See the minimal-ws-server-ring sample for the same thing
+
+Files:     libwebsockets/minimal-examples/ws-server/minimal-ws-server-pmd-bulk/minimal-ws-server-pmd-bulk.c
+           libwebsockets/minimal-examples/ws-server/minimal-ws-server-pmd/minimal-ws-server-pmd.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates the most minimal http server you can make with lws.
+ .
+ To keep it simple, it serves stuff in the subdirectory "./mount-origin" of
+ the directory it was started in.
+ You can change that by changing mount.origin.
+
+Files:     json-c/json_pointer.c
+           json-c/json_visit.c
+Copyright: 2016 Alexandru Ardelean.
+           2016 Eric Haszlakiewicz
+License:   __UNKNOWN__
+ This is free software; you can redistribute it and/or modify
+ it under the terms of the MIT license. See COPYING for details.
+
+Files:     libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/minimal-http-server.c
+           libwebsockets/minimal-examples/http-server/minimal-http-server/minimal-http-server.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates the most minimal http server you can make with lws.
+ .
+ To keep it simple, it serves stuff from the subdirectory
+ "./mount-origin" of the directory it was started in.
+ You can change that by changing mount.origin below.
+
+Files:     json-c/json_tokener.c
+           json-c/printbuf.c
+Copyright: 2004-2005 Metaparadigm Pte. Ltd. Michael Clark <michael@metaparadigm.com>
+           2008-2009 Yahoo! Inc.
+License:   __UNKNOWN__
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the MIT license. See COPYING for details.
+ .
+ The copyrights to the contents of this file are licensed under the MIT License
+ (http://www.opensource.org/licenses/mit-license.php)
+
+Files:     libwebsockets/minimal-examples/http-client/minimal-http-client-certinfo/minimal-http-client-certinfo.c
+           libwebsockets/minimal-examples/http-client/minimal-http-client/minimal-http-client.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates the a minimal http client using lws.
+ .
+ It visits https://warmcat.com/ and receives the html page there.  You
+ can dump the page data by changing the #if 0 below.
+
+Files:     libwebsockets/lib/misc/romfs.c
+           libwebsockets/lib/misc/romfs.h
+Copyright: 2017 National Institute of Advanced Industrial Science and Technology (AIST)
+License:   BSD-3-Clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+ .
+ Redistributions of source code must retain the above copyright notice, this
+ list of conditions and the following disclaimer.
+ .
+ Redistributions in binary form must reproduce the above copyright notice,
+ this list of conditions and the following disclaimer in the documentation
+ and/or other materials provided with the distribution.
+ .
+ Neither the name of AIST nor the names of its contributors may be used
+ to endorse or promote products derived from this software without specific
+ prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ POSSIBILITY OF SUCH DAMAGE.
+ .
+ On Debian systems, the complete text of the BSD 3-clause "New" or "Revised"
+ License can be found in `/usr/share/common-licenses/BSD'.
+
+Files:     libwebsockets/win32port/win32helpers/getopt.c
+           libwebsockets/win32port/win32helpers/getopt_long.c
+Copyright: 1987-1996 The Regents of the University of California.
+License:   BSD-4-Clause-UC
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ 1. Redistributions of source code must retain the above copyright
+ notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+ notice, this list of conditions and the following disclaimer in the
+ documentation and/or other materials provided with the distribution.
+ 3. All advertising materials mentioning features or use of this software
+ must display the following acknowledgement:
+ This product includes software developed by the University of
+ California, Berkeley and its contributors.
+ 4. Neither the name of the University nor the names of its contributors
+ may be used to endorse or promote products derived from this software
+ without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ SUCH DAMAGE.
+
+Files:     json-c/Makefile.in
+           json-c/tests/Makefile.in
+Copyright: 1994-2017 Free Software Foundation, Inc.
+License:   __AUTO_PERMISSIVE__
+ Autogenerated files with permissive licenses.
+
+Files:     json-c/install-sh
+Copyright: 1994 X Consortium
+License:   MIT
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to
+ deal in the Software without restriction, including without limitation the
+ rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+ AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNEC-
+ TION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ .
+ Except as contained in this notice, the name of the X Consortium shall not
+ be used in advertising or otherwise to promote the sale, use or other deal-
+ ings in this Software without prior written authorization from the X Consor-
+ tium.
+ .
+ FSF changes to this file are in the public domain.
+ .
+ Calling this script install-sh is preferred over install.sh, to prevent
+ 'make' implicit rules from creating a file called install from it
+ when there is no Makefile.
+ .
+ This script is compatible with the BSD install script, but was written
+ from scratch.
+
+Files:     libwebsockets/win32port/zlib/zlib.h
+Copyright: 1995-2010 Jean-loup Gailly and Mark Adler
+License:   Zlib
+ This software is provided 'as-is', without any express or implied
+ warranty.  In no event will the authors be held liable for any damages
+ arising from the use of this software.
+ .
+ Permission is granted to anyone to use this software for any purpose,
+ including commercial applications, and to alter it and redistribute it
+ freely, subject to the following restrictions:
+ .
+ 1. The origin of this software must not be misrepresented; you must not
+ claim that you wrote the original software. If you use this software
+ in a product, an acknowledgment in the product documentation would be
+ appreciated but is not required.
+ 2. Altered source versions must be plainly marked as such, and must not be
+ misrepresented as being the original software.
+ 3. This notice may not be removed or altered from any source distribution.
+ .
+ Jean-loup Gailly        Mark Adler
+ jloup@gzip.org          madler@alumni.caltech.edu
+ .
+ The data format used by the zlib library is described by RFCs (Request for
+ Comments) 1950 to 1952 in the files http://www.ietf.org/rfc/rfc1950.txt
+ (zlib format), rfc1951.txt (deflate format) and rfc1952.txt (gzip format).
+
+Files:     libwebsockets/lib/misc/base64-decode.c
+Copyright: __NO_COPYRIGHT__ in: libwebsockets/lib/misc/base64-decode.c
+License:   Expat
+ Permission is hereby granted, free of charge, to any person
+ obtaining a copy of this software and associated
+ documentation files (the "Software"), to deal in the
+ Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute,
+ sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so,
+ subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall
+ be included in all copies or substantial portions of the
+ Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+ KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+ WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+ OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ .
+ VERSION HISTORY:
+ Bob Trower 08/04/01 -- Create Version 0.00.00B
+ .
+ I cleaned it up quite a bit to match the (linux kernel) style of the rest
+ of libwebsockets; this version is under LGPL2.1 + SLE like the rest of lws
+ since he explicitly allows sublicensing, but I give the URL above so you can
+ get the original with Bob's super-liberal terms directly if you prefer.
+
+Files:     weechat-plugin.h
+Copyright: 2003-2018 Sébastien Helleu <flashcode@flashtux.org>
+License:   GPL-3.0+
+ This file is part of WeeChat, the extensible chat client.
+ .
+ WeeChat is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 3 of the License, or
+ (at your option) any later version.
+ .
+ WeeChat is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with WeeChat.  If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ Version 3 can be found in `/usr/share/common-licenses/GPL-3'.
+
+Files:     libwebsockets/test-apps/fuzxy.c
+Copyright: 2016 Andy Green <andy@warmcat.com>
+License:   LGPL-2.1
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation:
+ version 2.1 of the License.
+ .
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ MA	02110-1301  USA
+ .
+ fuzxy is designed to go on the client path
+ .
+ [ client <-> fuzxy ] <-> server
+ .
+ you can arrange that with, eg,
+ .
+ On Debian systems, the complete text of the GNU Lesser General Public License
+ Version 2.1 can be found in `/usr/share/common-licenses/LGPL-2.1'.
+
+Files:     libwebsockets/lib/roles/http/private.h
+Copyright: 2010-2018 Andy Green <andy@warmcat.com>
+License:   LGPL-2.1
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation:
+ version 2.1 of the License.
+ .
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ MA  02110-1301  USA
+ .
+ This is included from private-libwebsockets.h if either H1 or H2 roles are
+ enabled
+ .
+ On Debian systems, the complete text of the GNU Lesser General Public License
+ Version 2.1 can be found in `/usr/share/common-licenses/LGPL-2.1'.
+
+Files:     libwebsockets/plugins/acme-client/protocol_lws_acme_client.c
+Copyright: 2017 Andy Green <andy@warmcat.com>
+License:   LGPL-2.1
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation:
+ version 2.1 of the License.
+ .
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ MA  02110-1301  USA
+ .
+ Acme is in a big messy transition at the moment from a homebrewed api
+ to an IETF one.  The old repo for the homebrew api (they currently
+ implement) is marked up as deprecated and "not accurate[ly] reflect[ing]"
+ what they implement, but the IETF standard, currently at v7 is not yet
+ implemented at let's encrypt (ETA Jan 2018).
+ .
+ This implementation follows draft 7 of the IETF standard, and falls back
+ to whatever differences exist for Boulder's tls-sni-01 challenge.  The
+ tls-sni-02 support is there but nothing to test it against at the time of
+ writing (Nov 1 2017).
+ .
+ On Debian systems, the complete text of the GNU Lesser General Public License
+ Version 2.1 can be found in `/usr/share/common-licenses/LGPL-2.1'.
+
+Files:     libwebsockets/plugins/protocol_esp32_lws_reboot_to_factory.c
+Copyright: 2017 Andy Green <andy@warmcat.com>
+License:   LGPL-2.1
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation:
+ version 2.1 of the License.
+ .
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ MA  02110-1301  USA
+ .
+ This is intended to be mounted somewhere in your ESP32 user app... if the
+ client touched the mount, the plugin hangs up and reboots into the
+ factory mode one second later.
+ .
+ The factory mode will reassociate with the same IP with the same MAC
+ shortly afterwards and be accessible by the same IP / mDNS name.
+ .
+ On Debian systems, the complete text of the GNU Lesser General Public License
+ Version 2.1 can be found in `/usr/share/common-licenses/LGPL-2.1'.
+
+Files:     libwebsockets/lib/roles/http/server/fops-zip.c
+Copyright: 2017 Andy Green <andy@warmcat.com>
+           2017 Per Bothner <per@bothner.com>
+License:   LGPL-2.1
+ MIT License
+ .
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ ( copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+ .
+ lws rewrite:
+ .
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation:
+ version 2.1 of the License.
+ .
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ MA  02110-1301  USA
+ .
+ On Debian systems, the complete text of the GNU Lesser General Public License
+ Version 2.1 can be found in `/usr/share/common-licenses/LGPL-2.1'.
+
+Files:     json-c/autoconf-archive/m4/ax_require_defined.m4
+Copyright: 2014 Mike Frysinger <vapier@gentoo.org>
+License:   PERMISSIVE
+ Copying and distribution of this file, with or without modification, are
+ permitted in any medium without royalty provided the copyright notice
+ and this notice are preserved. This file is offered as-is, without any
+ warranty.
+
+Files:     json-c/tests/Makefile
+Copyright: 1994-2017 Free Software Foundation, Inc.
+License:   PERMISSIVE
+ This Makefile.in is free software; the Free Software Foundation
+ gives unlimited permission to copy and/or distribute it,
+ with or without modifications, as long as this notice is preserved.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+ even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ PARTICULAR PURPOSE.
+
+Files:     json-c/aclocal.m4
+Copyright: 1996-2017 Free Software Foundation, Inc.
+License:   PERMISSIVE
+ This file is free software; the Free Software Foundation
+ gives unlimited permission to copy and/or distribute it,
+ with or without modifications, as long as this notice is preserved.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+ even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ PARTICULAR PURPOSE.
+
+Files:     json-c/json_util.h
+Copyright: 2004-2005 Metaparadigm Pte. Ltd. Michael Clark <michael@metaparadigm.com>
+License:   __UNKNOWN__
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the MIT license. See COPYING for details.
+ .
+ @brief Miscllaneous utility functions and macros.
+
+Files:     libwebsockets/minimal-examples/http-server/minimal-http-server-tls/mount-origin/http2.png
+Copyright: __NO_COPYRIGHT__ in: libwebsockets/minimal-examples/http-server/minimal-http-server-tls/mount-origin/http2.png
+License:   __UNKNOWN__
+ _MANY_NON_ASCII_(10chars. over 20chars.) starting with: 8S¯×P*<ÎY@!À{O
+ _MANY_NON_ASCII_(3chars. over 4chars.) starting with: ¡µ@©
+ R
+
+Files:     libwebsockets/minimal-examples/http-server/minimal-http-server-basicauth/minimal-http-server-basicauth.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates a minimal http server with a second mount that
+ is protected using a password file and basic auth.
+ .
+ To keep it simple, it serves the static stuff from the subdirectory
+ "./mount-origin" of the directory it was started in.
+ .
+ You can change that by changing mount.origin below.
+
+Files:     libwebsockets/minimal-examples/raw/minimal-raw-file/minimal-raw-file.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates adopting a file descriptor into the lws event
+ loop.
+
+Files:     json-c/CMakeLists.txt
+Copyright: __NO_COPYRIGHT__ in: json-c/CMakeLists.txt
+License:   __UNKNOWN__
+ Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+Files:     libwebsockets/minimal-examples/http-server/minimal-http-server-form-post/minimal-http-server-form-post.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates a minimal http server that performs POST with a couple
+ of parameters.  It dumps the parameters to the console log and redirects
+ to another page.
+
+Files:     libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib/minimal-http-server-eventlib.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates a minimal http[s] server that can work with any of the
+ supported event loop backends, or the default poll() one.
+ .
+ To keep it simple, it serves stuff from the subdirectory
+ "./mount-origin" of the directory it was started in.
+ You can change that by changing mount.origin below.
+
+Files:     libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib-foreign/minimal-http-server-eventlib-foreign.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates the most minimal http server you can make with lws that
+ uses a libuv event loop created outside lws.  It shows how lws can
+ participate in someone else's event loop and clean up after itself.
+ .
+ You choose the event loop to work with at runtime, by giving the
+ --uv, --event or --ev switch.  Lws has to have been configured to build the
+ selected event lib support.
+ .
+ To keep it simple, it serves stuff from the subdirectory
+ "./mount-origin" of the directory it was started in.
+ You can change that by changing mount.origin below.
+
+Files:     libwebsockets/win32port/zlib/crc32.c
+Copyright: 1995-2010 Mark Adler For conditions of distribution and use, see copyright notice in zlib.h
+License:   __UNKNOWN__
+ Thanks to Rodney Brown <rbrown64@csc.com.au> for his contribution of faster
+ CRC methods: exclusive-oring 32 bits of data at a time, and pre-computing
+ tables for updating the shift register in one step with three exclusive-ors
+ instead of four steps with four exclusive-ors.  This results in about a
+ factor of two increase in speed on a Power PC G4 (PPC7455) using gcc -O3.
+
+Files:     json-c/config.log
+Copyright: 2017 Free Software Foundation, Inc.
+License:   __UNKNOWN__
+ This is free software; see the source for copying conditions.  There is NO
+ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+Files:     libwebsockets/READMEs/README.coding.md
+Copyright: __NO_COPYRIGHT__ in: libwebsockets/READMEs/README.coding.md
+License:   __UNKNOWN__
+ For these reasons and the response I got trying to raise these issues with
+ them, if you have a choice about event loop, I would gently encourage you
+ to avoid libev.  Where lws uses an event loop itself, eg in lwsws, we use
+ libuv.
+ .
+ @section extopts Extension option control from user code
+ .
+ User code may set per-connection extension options now, using a new api
+
+Files:     json-c/config.status
+Copyright: 2012 Free Software Foundation, Inc.
+License:   __UNKNOWN__
+ This config.status script is free software; the Free Software Foundation
+ gives unlimited permission to copy, distribute and modify it."
+
+Files:     libwebsockets/minimal-examples/http-server/minimal-http-server-dynamic/minimal-http-server-dynamic.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates a minimal http server that can produce dynamic http
+ content as well as static content.
+ .
+ To keep it simple, it serves the static stuff from the subdirectory
+ "./mount-origin" of the directory it was started in.
+ .
+ You can change that by changing mount.origin below.
+
+Files:     libwebsockets/win32port/zlib/inftrees.h
+Copyright: 1995-2010 Mark Adler For conditions of distribution and use, see copyright notice in zlib.h
+License:   __UNKNOWN__
+ WARNING: this file should *not* be used by applications. It is
+ part of the implementation of the compression library and is
+ subject to change. Applications should only use zlib.h.
+ .
+ Structure for decoding tables.  Each entry provides either the
+ information needed to do the operation requested by the code that
+ indexed that table entry, or it provides a pointer to another
+ table that indexes more bits of the code.  op indicates whether
+ the entry is a pointer to another table, a literal, a length or
+ distance, an end-of-block, or an invalid code.  For a table
+ pointer, the low four bits of op is the number of index bits of
+ that table.  For a length or distance, the low four bits of op
+ is the number of extra bits to get after the code.  bits is
+ the number of bits in this code or part of the code to drop off
+ of the bit buffer.  val is the actual byte to output in the case
+ of a literal, the base length or distance, or the offset from
+ the current table to the next table.  Each entry is four bytes.
+
+Files:     libwebsockets/minimal-examples/raw/minimal-raw-adopt-tcp/minimal-raw-adopt-tcp.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates integrating somebody else's connected tcp
+ socket into the lws event loop as a RAW wsi.  It's interesting in
+ the kind of situation where you already have a connected socket
+ in your application, and you need to hand it over to lws to deal with.
+ .
+ Lws supports "adopting" these foreign sockets.
+ .
+ If you simply want a connected client raw socket using lws alone, you
+
+Files:     libwebsockets/test-apps/test-sshd.c
+Copyright: 2017 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ The person who associated a work with this deed has dedicated
+ the work to the public domain by waiving all of his or her rights
+ to the work worldwide under copyright law, including all related
+ and neighboring rights, to the extent allowed by law. You can copy,
+ modify, distribute and perform the work, even for commercial purposes,
+ all without asking permission.
+ .
+ The test apps are intended to be adapted for use in your code, which
+ may be proprietary.	So unlike the library itself, they are licensed
+ Public Domain.
+ .
+ This test app listens on port 2200 for authorized ssh connections.  Run it
+ using
+ .
+ $ sudo libwebsockets-test-sshd
+ .
+ Connect to it using the test private key with:
+ .
+ $ ssh -p 2200 -i /usr/local/share/libwebsockets-test-server/lws-ssh-test-keys anyuser@127.0.0.1
+
+Files:     libwebsockets/minimal-examples/ws-server/minimal-ws-server-echo/minimal-ws-server-echo.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates a ws server that echoes back what it was sent, in a way
+ compatible with autobahn -m fuzzingclient
+
+Files:     libwebsockets/minimal-examples/ws-server/minimal-ws-broker/minimal-ws-broker.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates the most minimal http server you can make with lws,
+ with an added publish / broker / subscribe ws server.
+ .
+ To keep it simple, it serves stuff in the subdirectory "./mount-origin" of
+ the directory it was started in.
+ You can change that by changing mount.origin.
+
+Files:     libwebsockets/win32port/zlib/inflate.c
+Copyright: 1995-2010 Mark Adler For conditions of distribution and use, see copyright notice in zlib.h
+License:   __UNKNOWN__
+ Change history:
+ .
+ 1.2.beta0    24 Nov 2002
+ - First version -- complete rewrite of inflate to simplify code, avoid
+ creation of window when not needed, minimize use of window when it is
+ needed, make inffast.c even faster, implement gzip decoding, and to
+ improve code readability and style over the previous zlib inflate code
+ .
+ 1.2.beta1    25 Nov 2002
+ - Use pointers for available input and output checking in inffast.c
+ - Remove input and output counters in inffast.c
+
+Files:     libwebsockets/minimal-examples/ws-client/minimal-ws-client-pmd-bulk/minimal-ws-client-pmd-bulk.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates a ws client that sends bulk data in multiple
+ ws fragments, in a way compatible with per-message deflate.
+ .
+ It shows how to send huge messages without needing a lot of memory.
+ .
+ Build and start the minimal-examples/ws-server/minmal-ws-server-pmd-bulk
+ example first.  Running this sends a large message to the server and
+ exits.
+ .
+ If you give both sides the -n commandline option, it disables permessage-
+ deflate compression extension.
+
+Files:     json-c/printbuf.h
+Copyright: 2004-2005 Metaparadigm Pte. Ltd. Michael Clark <michael@metaparadigm.com>
+           2008-2009 Yahoo! Inc.
+License:   __UNKNOWN__
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the MIT license. See COPYING for details.
+ .
+ The copyrights to the contents of this file are licensed under the MIT License
+ (http://www.opensource.org/licenses/mit-license.php)
+ .
+ @brief Internal string buffer handing.  Unless you're writing a
+
+Files:     libwebsockets/cmake/FindGit.cmake
+Copyright: Kitware Inc.
+License:   __UNKNOWN__
+ See COPYRIGHT.txt
+ or http://www.slicer.org/copyright/copyright.txt for details.
+ .
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ This file was originally developed by Jean-Christophe Fillion-Robin, Kitware Inc.
+ and was partially funded by NIH grant 3P41RR013218-12S1
+ .
+ AG 2013-02-18: I got it from here
+ https://github.com/Slicer/Slicer/blob/master/CMake/FindGit.cmake
+ license is BSD
+ .
+ The module defines the following variables:
+
+Files:     json-c/json_c_version.h
+Copyright: 2012-2017 Eric Haszlakiewicz
+License:   __UNKNOWN__
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the MIT license. See COPYING for details.
+ .
+ @brief Methods for retrieving the json-c version.
+
+Files:     json-c/autom4te.cache/traces.0
+Copyright: 2011 Free Software Foundation, Inc.
+License:   __UNKNOWN__
+ This config.lt script is free software; the Free Software Foundation
+ gives unlimited permision to copy, distribute and modify it."
+
+Files:     libwebsockets/minimal-examples/ws-client/minimal-ws-client-tx/minimal-ws-client.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates a ws "publisher" to go with the minimal-ws-broker
+ example.
+ .
+ Two threads are spawned that produce messages to be sent to the broker,
+ via a local ringbuffer.  Locking is provided to make ringbuffer access
+ threadsafe.
+ .
+ When a nailed-up client connection to the broker is established, the
+ ringbuffer is sent to the broker, which distributes the events to all
+ connected clients.
+
+Files:     libwebsockets/plugins/protocol_lws_raw_test.c
+Copyright: 2010-2017 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ The person who associated a work with this deed has dedicated
+ the work to the public domain by waiving all of his or her rights
+ to the work worldwide under copyright law, including all related
+ and neighboring rights, to the extent allowed by law. You can copy,
+ modify, distribute and perform the work, even for commercial purposes,
+ all without asking permission.
+ .
+ These test plugins are intended to be adapted for use in your code, which
+ may be proprietary.  So unlike the library itself, they are licensed
+ Public Domain.
+ .
+ This plugin test both raw file descriptors and raw socket descriptors.  It
+ can test both or just one depending on how you configure it.  libwebsockets-
+ test-server-v2.0 is set up to test both.
+ .
+ RAW File Descriptor Testing
+
+Files:     libwebsockets/win32port/zlib/infback.c
+Copyright: 1995-2009 Mark Adler For conditions of distribution and use, see copyright notice in zlib.h
+License:   __UNKNOWN__
+ This code is largely copied from inflate.c.  Normally either infback.o or
+ inflate.o would be linked into an application--not both.  The interface
+ with inffast.c is retained so that optimized assembler-coded versions of
+
+Files:     libwebsockets/minimal-examples/http-client/minimal-http-client-post/minimal-http-client-post.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates the a minimal http client using lws and POST.
+ .
+ It POSTs both form data and a file to the form at
+ https://libwebsockets.org/testserver/formtest and dumps
+ the html page received generated by the POST handler.
+
+Files:     libwebsockets/minimal-examples/raw/minimal-raw-vhost/minimal-raw-vhost.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates integrating a raw tcp listener into the lws event loop.
+ .
+ This demo doesn't have any http or ws support.  You can connect to it
+ using netcat.  If you make multiple connections to it, things typed in one
+ netcat session are broadcast to all netcat connections.
+ .
+ $ nc localhost 7681
+ .
+ You can add more vhosts with things like http or ws support, it's as it is
+ for clarity.
+ .
+ The main point is the apis and ways of managing raw sockets are almost
+ identical to http or ws mode sockets in lws.  The callback names for raw
+ wsi are changed to be specific to RAW mode is all.
+
+Files:     libwebsockets/minimal-examples/http-server/minimal-http-server-form-post-file/minimal-http-server-form-post-file.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates a minimal http server that performs POST with a couple
+ of parameters and a file upload, all in multipart (mime) form mode.
+ It saves the uploaded file in the current directory, dumps the parameters to
+ the console log and redirects to another page.
+
+Files:     libwebsockets/minimal-examples/ws-server/minimal-ws-server-ring/minimal-ws-server.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates the most minimal http server you can make with lws,
+ with an added websocket chat server using a ringbuffer.
+ .
+ To keep it simple, it serves stuff in the subdirectory "./mount-origin" of
+ the directory it was started in.
+ You can change that by changing mount.origin.
+
+Files:     libwebsockets/test-apps/android/app/src/main/jni/NativeLibs.mk
+Copyright: 2016 Alexander Bruines <alexander.bruines@gmail.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ The person who associated a work with this deed has dedicated
+ the work to the public domain by waiving all of his or her rights
+ to the work worldwide under copyright law, including all related
+ and neighboring rights, to the extent allowed by law. You can copy,
+ modify, distribute and perform the work, even for commercial purposes,
+ all without asking permission.
+ .
+ The test apps are intended to be adapted for use in your code, which
+ may be proprietary.  So unlike the library itself, they are licensed
+ Public Domain.
+ .
+ This makefile is fully intergrated with this Android Studio project and
+ it will be called automaticaly when you build the project with Gradle.
+ .
+ The source packages for the libraries will be automaticaly downloaded.
+ Alternativly you can provide your own sources by placing the following
+ files in the 'jni' directory:
+ .
+ zlib-1.2.8.tar.gz
+ openssl-1.0.2g.tar.gz
+ libwebsockets.tar.gz
+ .
+ This makefile was tested with the latest NDK/SDK and Android Studio at the
+ time of this writing. As these software packages evolve changes to this
+ makefile may be needed or it may become obselete...
+ .
+ This makefile was made for use in Linux but you may be able to edit it
+ and make it work under Windows.
+ .
+ At least on Debian, building openssl requires package xutils-dev
+ for makedepend. Ofcourse the standard development packages must also be
+ installed, but xutils-dev is not that obvious in this case...
+ .
+ Makedepend will most likely print a lot of warnings during the 'make depend'
+ stage of building openssl. In this case these warnings can be safely ignored.
+ .
+ Include Application.mk but do not complain if it is not found
+
+Files:     json-c/json.h
+Copyright: 2004-2005 Metaparadigm Pte. Ltd. Michael Clark <michael@metaparadigm.com>
+           2009 Hewlett-Packard Development Company, L.P.
+License:   __UNKNOWN__
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the MIT license. See COPYING for details.
+ .
+ @brief A convenience header that may be included instead of other individual ones.
+
+Files:     libwebsockets/minimal-examples/http-server/minimal-http-server-form-get/minimal-http-server-form-get.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates a minimal http server that performs a form GET with a couple
+ of parameters.  It dumps the parameters to the console log and redirects
+ to another page.
+
+Files:     libwebsockets/minimal-examples/ws-client/minimal-ws-client-echo/minimal-ws-client-echo.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates a ws client that echoes back what it was sent, in a
+ way compatible with autobahn -m fuzzingserver
+
+Files:     libwebsockets/minimal-examples/http-server/minimal-http-server-smp/minimal-http-server-smp.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates a minimal multithreaded http server you can make with lws.
+ .
+ To keep it simple, it serves stuff in the subdirectory "./mount-origin" of
+ the directory it was started in.
+ You can change that by changing mount.origin.
+ .
+ Also for simplicity the number of threads is set in the code... note that
+
+Files:     libwebsockets/minimal-examples/ws-client/minimal-ws-client-rx/minimal-ws-client.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates the a minimal ws client using lws.
+ .
+ It connects to https://libwebsockets.org/ and makes a
+ wss connection to the dumb-increment protocol there.  While
+ connected, it prints the numbers it is being sent by
+ dumb-increment protocol.
+
+Files:     libwebsockets/minimal-examples/http-client/minimal-http-client-multi/minimal-http-client-multi.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates the a minimal http client using lws, which makes
+ 8 downloads simultaneously from warmcat.com.
+ .
+ Currently that takes the form of 8 individual simultaneous tcp and
+ tls connections, which happen concurrently.  Notice that the ordering
+ of the returned payload may be intermingled for the various connections.
+ .
+ By default the connections happen all together at the beginning and operate
+ concurrently, which is fast.  However this is resource-intenstive, there are
+ 8 tcp connections, 8 tls tunnels on both the client and server.  You can
+ instead opt to have the connections happen one after the other inside a
+ single tcp connection and tls tunnel, using HTTP/1.1 pipelining.  To be
+ eligible to be pipelined on another existing connection to the same server,
+
+Files:     libwebsockets/minimal-examples/http-client/minimal-http-client-hugeurl/minimal-http-client-hugeurl.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates the a minimal http client using lws.
+
+Files:     libwebsockets/minimal-examples/raw/minimal-raw-adopt-udp/minimal-raw-adopt-udp.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates integrating a connected udp
+ socket into the lws event loop as a RAW wsi.  It's interesting in
+ the kind of situation where you already have a connected socket
+ in your application, and you need to hand it over to lws to deal with.
+ .
+ Lws supports "adopting" these foreign sockets, and also has a helper API
+ to create, bind, and adopt them inside lws.
+
+Files:     libwebsockets/minimal-examples/http-server/minimal-http-server-tls/minimal-http-server-tls.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates the most minimal http server you can make with lws,
+ with three extra lines giving it tls (ssl) capabilities, which in
+ turn allow operation with HTTP/2 if lws was configured for it.
+ .
+ To keep it simple, it serves stuff from the subdirectory
+ "./mount-origin" of the directory it was started in.
+ .
+ You can change that by changing mount.origin below.
+
+Files:     libwebsockets/minimal-examples/ws-server/minimal-ws-broker/protocol_lws_minimal.c
+Copyright: 2010-2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This implements a minimal "broker", for systems that look like this
+ .
+ [ publisher  ws client ] <-> [ ws server  broker ws server ] <-> [ ws client subscriber ]
+ .
+ The "publisher" role is to add data to the broker.
+ .
+ The "subscriber" role is to hear about all data added to the system.
+ .
+ The "broker" role is to manage incoming data from publishers and pass it out
+ to subscribers.
+ .
+ Any number of publishers and subscribers are supported.
+ .
+ This example implements a single ws server, using one ws protocol, that treats ws
+ connections as being in publisher or subscriber mode according to the URL the ws
+ connection was made to.  ws connections to "/publisher" URL are understood to be
+ publishing data and to any other URL, subscribing.
+
+Files:     libwebsockets/win32port/zlib/deflate.c
+Copyright: 1995-2010 Jean-loup Gailly and Mark Adler For conditions of distribution and use, see copyright notice in zlib.h
+License:   __UNKNOWN__
+ ALGORITHM
+ .
+ The "deflation" process depends on being able to identify portions
+ of the input text which are identical to earlier input (within a
+ sliding window trailing behind the input currently being processed).
+ .
+ The most straightforward technique turns out to be the fastest for
+ most input files: try all possible matches and select the longest.
+ The key feature of this algorithm is that insertions into the string
+ dictionary are very simple and thus fast, and deletions are avoided
+ completely. Insertions are performed at each input character, whereas
+ string matches are performed only when the previous match ends. So it
+ is preferable to spend more time in matches to allow very fast string
+ insertions and avoid deletions. The matching algorithm for small
+ strings is inspired from that of Rabin & Karp. A brute force approach
+ is used to find longer strings when a small match has been found.
+ A similar algorithm is used in comic (by Jan-Mark Wams) and freeze
+ (by Leonid Broukhis).
+ A previous version of this file used a more sophisticated algorithm
+ (by Fiala and Greene) which is guaranteed to run in linear amortized
+ time, but has a larger average cost, uses more memory and is patented.
+ However the F&G algorithm may be faster for some highly redundant
+
+Files:     json-c/json_pointer.h
+Copyright: 2016 Alexadru Ardelean.
+License:   __UNKNOWN__
+ This is free software; you can redistribute it and/or modify
+ it under the terms of the MIT license. See COPYING for details.
+ .
+ @brief JSON Pointer (RFC 6901) implementation for retrieving
+ objects from a json-c object tree.
+
+Files:     libwebsockets/minimal-examples/client-server/minimal-ws-proxy/minimal-ws-proxy.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates the most minimal http server you can make with lws,
+ with an added websocket proxy distributing what is received on a
+ dumb-increment wss connection to https://libwebsockets.org to all
+ browsers connected to this server.
+ .
+ To keep it simple, it serves stuff in the subdirectory "./mount-origin" of
+ the directory it was started in.
+ You can change that by changing mount.origin.
+
+Files:     libwebsockets/minimal-examples/ws-server/minimal-ws-server-threads/minimal-ws-server.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates a minimal ws server that can cooperate with
+ other threads cleanly.  Two other threads are started, which fill
+ a ringbuffer with strings at 10Hz.
+ .
+ The actual work and thread spawning etc are done in the protocol
+
+Files:     libwebsockets/minimal-examples/ws-server/minimal-ws-server/minimal-ws-server.c
+Copyright: 2018 Andy Green <andy@warmcat.com>
+License:   __UNKNOWN__
+ This file is made available under the Creative Commons CC0 1.0
+ Universal Public Domain Dedication.
+ .
+ This demonstrates the most minimal http server you can make with lws,
+ with an added websocket chat server.
+ .
+ To keep it simple, it serves stuff in the subdirectory "./mount-origin" of
+ the directory it was started in.
+ You can change that by changing mount.origin.
+
+Files:     libwebsockets/lib/misc/getifaddrs.c
+Copyright: 2000-2001 Kungliga Tekniska H�gskolan (Royal Institute of Technology, Stockholm, Sweden).
+License:   BSD-3-Clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ .
+ 1. Redistributions of source code must retain the above copyright
+ notice, this list of conditions and the following disclaimer.
+ .
+ 2. Redistributions in binary form must reproduce the above copyright
+ notice, this list of conditions and the following disclaimer in the
+ documentation and/or other materials provided with the distribution.
+ .
+ 3. Neither the name of the Institute nor the names of its contributors
+ may be used to endorse or promote products derived from this software
+ without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ SUCH DAMAGE.
+ .
+ originally downloaded from
+ .
+ http://ftp.uninett.no/pub/OpenBSD/src/kerberosV/src/lib/roken/getifaddrs.c
+ .
+ On Debian systems, the complete text of the BSD 3-clause "New" or "Revised"
+ License can be found in `/usr/share/common-licenses/BSD'.
+
+Files:     libwebsockets/lib/misc/getifaddrs.h
+Copyright: 2000 Kungliga Tekniska H�gskolan (Royal Institute of Technology, Stockholm, Sweden).
+License:   BSD-3-Clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ .
+ 1. Redistributions of source code must retain the above copyright
+ notice, this list of conditions and the following disclaimer.
+ .
+ 2. Redistributions in binary form must reproduce the above copyright
+ notice, this list of conditions and the following disclaimer in the
+ documentation and/or other materials provided with the distribution.
+ .
+ 3. Neither the name of the Institute nor the names of its contributors
+ may be used to endorse or promote products derived from this software
+ without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ SUCH DAMAGE.
+ .
+ $KTH: ifaddrs.hin,v 1.3 2000/12/11 00:01:13 assar Exp $
+ .
+ On Debian systems, the complete text of the BSD 3-clause "New" or "Revised"
+ License can be found in `/usr/share/common-licenses/BSD'.
+
+Files:     libwebsockets/lib/misc/sha-1.c
+Copyright: 1995-1997 and 1998 WIDE Project.
+License:   BSD-3-Clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ 1. Redistributions of source code must retain the above copyright
+ notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+ notice, this list of conditions and the following disclaimer in the
+ documentation and/or other materials provided with the distribution.
+ 3. Neither the name of the project nor the names of its contributors
+ may be used to endorse or promote products derived from this software
+ without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE PROJECT AND CONTRIBUTORS ``AS IS'' AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED.  IN NO EVENT SHALL THE PROJECT OR CONTRIBUTORS BE LIABLE
+ FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ SUCH DAMAGE.
+ .
+ FIPS pub 180-1: Secure Hash Algorithm (SHA-1)
+ based on: http://csrc.nist.gov/fips/fip180-1.txt
+ implemented by Jun-ichiro itojun Itoh <itojun@itojun.org>
+ .
+ On Debian systems, the complete text of the BSD 3-clause "New" or "Revised"
+ License can be found in `/usr/share/common-licenses/BSD'.
+
+Files:     json-c/libtool
+Copyright: 2014 Free Software Foundation, Inc.
+License:   GPL-2.0 with libtool exception
+ This is free software; see the source for copying conditions.  There is NO
+ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ .
+ GNU Libtool is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of of the License, or
+ (at your option) any later version.
+ .
+ As a special exception to the GNU General Public License, if you
+ distribute this file as part of a program or library that is built
+ using GNU Libtool, you may include this file under the  same
+ distribution terms that you use for the rest of that program.
+ .
+ GNU Libtool is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ .
+ The names of the tagged configurations supported by this script.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ Version 2 can be found in `/usr/share/common-licenses/GPL-2'.
+
+Files:     json-c/ltmain.sh
+Copyright: 1996-2015 Free Software Foundation, Inc.
+License:   GPL-2.0+ with libtool exception
+ This is free software; see the source for copying conditions.  There is NO
+ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ .
+ GNU Libtool is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+ .
+ As a special exception to the GNU General Public License,
+ if you distribute this file as part of a program or library that
+ is built using GNU Libtool, you may include this file under the
+ same distribution terms that you use for the rest of that program.
+ .
+ GNU Libtool is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ Version 2 can be found in `/usr/share/common-licenses/GPL-2'.
+
+Files:     json-c/depcomp
+Copyright: 1999-2017 Free Software Foundation, Inc.
+License:   GPL-2.0+ with autoconf exception
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2, or (at your option)
+ any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ .
+ As a special exception to the GNU General Public License, if you
+ distribute this file as part of a program that contains a
+ configuration script generated by Autoconf, you may include it under
+ the same distribution terms that you use for the rest of that program.
+ .
+ Originally written by Alexandre Oliva <oliva@dcc.unicamp.br>.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ Version 2 can be found in `/usr/share/common-licenses/GPL-2'.
+
+Files:     json-c/config.guess
+Copyright: 1992-2016 Free Software Foundation, Inc.
+License:   GPL-3.0+ with autoconf exception
+ This file is free software; you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, see <http://www.gnu.org/licenses/>.
+ .
+ As a special exception to the GNU General Public License, if you
+ distribute this file as part of a program that contains a
+ configuration script generated by Autoconf, you may include it under
+ the same distribution terms that you use for the rest of that
+ program.  This Exception is an additional permission under section 7
+ of the GNU General Public License, version 3 ("GPLv3").
+ .
+ Originally written by Per Bothner; maintained since 2000 by Ben Elliston.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ Version 3 can be found in `/usr/share/common-licenses/GPL-3'.
+
+Files:     json-c/config.sub
+Copyright: 1992-2016 Free Software Foundation, Inc.
+License:   GPL-3.0+ with autoconf exception
+ This file is free software; you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, see <http://www.gnu.org/licenses/>.
+ .
+ As a special exception to the GNU General Public License, if you
+ distribute this file as part of a program that contains a
+ configuration script generated by Autoconf, you may include it under
+ the same distribution terms that you use for the rest of that
+ program.  This Exception is an additional permission under section 7
+ of the GNU General Public License, version 3 ("GPLv3").
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ Version 3 can be found in `/usr/share/common-licenses/GPL-3'.
+
+#----------------------------------------------------------------------------
+# xml and html files (skipped):
+#         json-c/README.html
+#         libwebsockets/minimal-examples/client-server/minimal-ws-proxy/mount-origin/index.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server/mount-origin/404.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib/mount-origin/404.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-basicauth/mount-origin/404.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-basicauth/mount-origin/index.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-basicauth/mount-secret-origin/index.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib-foreign/mount-origin/404.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-eventlib-foreign/mount-origin/index.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-dynamic/mount-origin/404.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/mount-origin-localhost2/404.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/mount-origin-localhost1/404.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-multivhost/mount-origin-localhost3/404.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-form-post-file/mount-origin/after-form1.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-form-post-file/mount-origin/404.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-sse/mount-origin/404.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-form-get/mount-origin/after-form1.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-form-get/mount-origin/404.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-form-post/mount-origin/after-form1.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-form-post/mount-origin/404.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-tls/mount-origin/404.html
+#         libwebsockets/minimal-examples/http-server/minimal-http-server-sse-ring/mount-origin/404.html
+#         libwebsockets/minimal-examples/ws-server/minimal-ws-server-threads/mount-origin/index.html
+#         libwebsockets/plugins/server-status.html
+#         libwebsockets/plugins/generic-sessions/assets/post-register-ok.html
+#         libwebsockets/plugins/generic-sessions/assets/post-verify-ok.html
+#         libwebsockets/plugins/generic-sessions/assets/admin-login.html
+#         libwebsockets/plugins/generic-sessions/assets/failed-login.html
+#         libwebsockets/plugins/generic-sessions/assets/post-forgot-ok.html
+#         libwebsockets/plugins/generic-sessions/assets/post-forgot-fail.html
+#         libwebsockets/plugins/generic-sessions/assets/lwsgs.js
+#         libwebsockets/plugins/generic-sessions/assets/post-verify-fail.html
+#         libwebsockets/plugins/generic-sessions/assets/successful-login.html
+#         libwebsockets/plugins/generic-sessions/assets/sent-forgot-fail.html
+#         libwebsockets/plugins/generic-sessions/assets/index.html
+#         libwebsockets/plugins/generic-table/assets/index.html
+#         libwebsockets/test-apps/test.html
+#         libwebsockets/test-apps/android/app/app.iml
+#         libwebsockets/test-apps/android/app/src/main/AndroidManifest.xml
+#         libwebsockets/test-apps/android/app/src/main/res/layout/activity_main.xml
+#         libwebsockets/test-apps/android/app/src/main/res/values/colors.xml
+#         libwebsockets/test-apps/android/app/src/main/res/values/dimens.xml
+#         libwebsockets/test-apps/android/app/src/main/res/values/strings.xml
+#         libwebsockets/test-apps/android/app/src/main/res/values/styles.xml
+
+#----------------------------------------------------------------------------
+# huge files   (skipped):
+#         cscope.out
+#         cscope.in.out
+#         cscope.po.out
+#         slack.so
+#         libwebsockets/lib/libwebsockets.a
+#         libwebsockets/test-apps/leaf.jpg
+
+#----------------------------------------------------------------------------
+# Files marked as NO_LICENSE_TEXT_FOUND may be covered by the following
+# license/copyright files.
+
+#----------------------------------------------------------------------------
+# License file: LICENSE
+ Mozilla Public License Version 2.0
+ ==================================
+ .
+ 1. Definitions
+ --------------
+ .
+ 1.1. "Contributor"
+     means each individual or legal entity that creates, contributes to
+     the creation of, or owns Covered Software.
+ .
+ 1.2. "Contributor Version"
+     means the combination of the Contributions of others (if any) used
+     by a Contributor and that particular Contributor's Contribution.
+ .
+ 1.3. "Contribution"
+     means Covered Software of a particular Contributor.
+ .
+ 1.4. "Covered Software"
+     means Source Code Form to which the initial Contributor has attached
+     the notice in Exhibit A, the Executable Form of such Source Code
+     Form, and Modifications of such Source Code Form, in each case
+     including portions thereof.
+ .
+ 1.5. "Incompatible With Secondary Licenses"
+     means
+ .
+     (a) that the initial Contributor has attached the notice described
+         in Exhibit B to the Covered Software; or
+ .
+     (b) that the Covered Software was made available under the terms of
+         version 1.1 or earlier of the License, but not also under the
+         terms of a Secondary License.
+ .
+ 1.6. "Executable Form"
+     means any form of the work other than Source Code Form.
+ .
+ 1.7. "Larger Work"
+     means a work that combines Covered Software with other material, in
+     a separate file or files, that is not Covered Software.
+ .
+ 1.8. "License"
+     means this document.
+ .
+ 1.9. "Licensable"
+     means having the right to grant, to the maximum extent possible,
+     whether at the time of the initial grant or subsequently, any and
+     all of the rights conveyed by this License.
+ .
+ 1.10. "Modifications"
+     means any of the following:
+ .
+     (a) any file in Source Code Form that results from an addition to,
+         deletion from, or modification of the contents of Covered
+         Software; or
+ .
+     (b) any new file in Source Code Form that contains any Covered
+         Software.
+ .
+ 1.11. "Patent Claims" of a Contributor
+     means any patent claim(s), including without limitation, method,
+     process, and apparatus claims, in any patent Licensable by such
+     Contributor that would be infringed, but for the grant of the
+     License, by the making, using, selling, offering for sale, having
+     made, import, or transfer of either its Contributions or its
+     Contributor Version.
+ .
+ 1.12. "Secondary License"
+     means either the GNU General Public License, Version 2.0, the GNU
+     Lesser General Public License, Version 2.1, the GNU Affero General
+     Public License, Version 3.0, or any later versions of those
+     licenses.
+ .
+ 1.13. "Source Code Form"
+     means the form of the work preferred for making modifications.
+ .
+ 1.14. "You" (or "Your")
+     means an individual or a legal entity exercising rights under this
+     License. For legal entities, "You" includes any entity that
+     controls, is controlled by, or is under common control with You. For
+     purposes of this definition, "control" means (a) the power, direct
+     or indirect, to cause the direction or management of such entity,
+     whether by contract or otherwise, or (b) ownership of more than
+     fifty percent (50%) of the outstanding shares or beneficial
+     ownership of such entity.
+ .
+ 2. License Grants and Conditions
+ --------------------------------
+ .
+ 2.1. Grants
+ .
+ Each Contributor hereby grants You a world-wide, royalty-free,
+ non-exclusive license:
+ .
+ (a) under intellectual property rights (other than patent or trademark)
+     Licensable by such Contributor to use, reproduce, make available,
+     modify, display, perform, distribute, and otherwise exploit its
+     Contributions, either on an unmodified basis, with Modifications, or
+     as part of a Larger Work; and
+ .
+ (b) under Patent Claims of such Contributor to make, use, sell, offer
+     for sale, have made, import, and otherwise transfer either its
+     Contributions or its Contributor Version.
+ .
+ 2.2. Effective Date
+ .
+ The licenses granted in Section 2.1 with respect to any Contribution
+ become effective for each Contribution on the date the Contributor first
+ distributes such Contribution.
+ .
+ 2.3. Limitations on Grant Scope
+ .
+ The licenses granted in this Section 2 are the only rights granted under
+ this License. No additional rights or licenses will be implied from the
+ distribution or licensing of Covered Software under this License.
+ Notwithstanding Section 2.1(b) above, no patent license is granted by a
+ Contributor:
+ .
+ (a) for any code that a Contributor has removed from Covered Software;
+     or
+ .
+ (b) for infringements caused by: (i) Your and any other third party's
+     modifications of Covered Software, or (ii) the combination of its
+     Contributions with other software (except as part of its Contributor
+     Version); or
+ .
+ (c) under Patent Claims infringed by Covered Software in the absence of
+     its Contributions.
+ .
+ This License does not grant any rights in the trademarks, service marks,
+ or logos of any Contributor (except as may be necessary to comply with
+ the notice requirements in Section 3.4).
+ .
+ 2.4. Subsequent Licenses
+ .
+ No Contributor makes additional grants as a result of Your choice to
+ distribute the Covered Software under a subsequent version of this
+ License (see Section 10.2) or under the terms of a Secondary License (if
+ permitted under the terms of Section 3.3).
+ .
+ 2.5. Representation
+ .
+ Each Contributor represents that the Contributor believes its
+ Contributions are its original creation(s) or it has sufficient rights
+ to grant the rights to its Contributions conveyed by this License.
+ .
+ 2.6. Fair Use
+ .
+ This License is not intended to limit any rights You have under
+ applicable copyright doctrines of fair use, fair dealing, or other
+ equivalents.
+ .
+ 2.7. Conditions
+ .
+ Sections 3.1, 3.2, 3.3, and 3.4 are conditions of the licenses granted
+ in Section 2.1.
+ .
+ 3. Responsibilities
+ -------------------
+ .
+ 3.1. Distribution of Source Form
+ .
+ All distribution of Covered Software in Source Code Form, including any
+ Modifications that You create or to which You contribute, must be under
+ the terms of this License. You must inform recipients that the Source
+ Code Form of the Covered Software is governed by the terms of this
+ License, and how they can obtain a copy of this License. You may not
+ attempt to alter or restrict the recipients' rights in the Source Code
+ Form.
+ .
+ 3.2. Distribution of Executable Form
+ .
+ If You distribute Covered Software in Executable Form then:
+ .
+ (a) such Covered Software must also be made available in Source Code
+     Form, as described in Section 3.1, and You must inform recipients of
+     the Executable Form how they can obtain a copy of such Source Code
+     Form by reasonable means in a timely manner, at a charge no more
+     than the cost of distribution to the recipient; and
+ .
+ (b) You may distribute such Executable Form under the terms of this
+     License, or sublicense it under different terms, provided that the
+     license for the Executable Form does not attempt to limit or alter
+     the recipients' rights in the Source Code Form under this License.
+ .
+ 3.3. Distribution of a Larger Work
+ .
+ You may create and distribute a Larger Work under terms of Your choice,
+ provided that You also comply with the requirements of this License for
+ the Covered Software. If the Larger Work is a combination of Covered
+ Software with a work governed by one or more Secondary Licenses, and the
+ Covered Software is not Incompatible With Secondary Licenses, this
+ License permits You to additionally distribute such Covered Software
+ under the terms of such Secondary License(s), so that the recipient of
+ the Larger Work may, at their option, further distribute the Covered
+ Software under the terms of either this License or such Secondary
+ License(s).
+ .
+ 3.4. Notices
+ .
+ You may not remove or alter the substance of any license notices
+ (including copyright notices, patent notices, disclaimers of warranty,
+ or limitations of liability) contained within the Source Code Form of
+ the Covered Software, except that You may alter any license notices to
+ the extent required to remedy known factual inaccuracies.
+ .
+ 3.5. Application of Additional Terms
+ .
+ You may choose to offer, and to charge a fee for, warranty, support,
+ indemnity or liability obligations to one or more recipients of Covered
+ Software. However, You may do so only on Your own behalf, and not on
+ behalf of any Contributor. You must make it absolutely clear that any
+ such warranty, support, indemnity, or liability obligation is offered by
+ You alone, and You hereby agree to indemnify every Contributor for any
+ liability incurred by such Contributor as a result of warranty, support,
+ indemnity or liability terms You offer. You may include additional
+ disclaimers of warranty and limitations of liability specific to any
+ jurisdiction.
+ .
+ 4. Inability to Comply Due to Statute or Regulation
+ ---------------------------------------------------
+ .
+ If it is impossible for You to comply with any of the terms of this
+ License with respect to some or all of the Covered Software due to
+ statute, judicial order, or regulation then You must: (a) comply with
+ the terms of this License to the maximum extent possible; and (b)
+ describe the limitations and the code they affect. Such description must
+ be placed in a text file included with all distributions of the Covered
+ Software under this License. Except to the extent prohibited by statute
+ or regulation, such description must be sufficiently detailed for a
+ recipient of ordinary skill to be able to understand it.
+ .
+ 5. Termination
+ --------------
+ .
+ 5.1. The rights granted under this License will terminate automatically
+ if You fail to comply with any of its terms. However, if You become
+ compliant, then the rights granted under this License from a particular
+ Contributor are reinstated (a) provisionally, unless and until such
+ Contributor explicitly and finally terminates Your grants, and (b) on an
+ ongoing basis, if such Contributor fails to notify You of the
+ non-compliance by some reasonable means prior to 60 days after You have
+ come back into compliance. Moreover, Your grants from a particular
+ Contributor are reinstated on an ongoing basis if such Contributor
+ notifies You of the non-compliance by some reasonable means, this is the
+ first time You have received notice of non-compliance with this License
+ from such Contributor, and You become compliant prior to 30 days after
+ Your receipt of the notice.
+ .
+ 5.2. If You initiate litigation against any entity by asserting a patent
+ infringement claim (excluding declaratory judgment actions,
+ counter-claims, and cross-claims) alleging that a Contributor Version
+ directly or indirectly infringes any patent, then the rights granted to
+ You by any and all Contributors for the Covered Software under Section
+ 2.1 of this License shall terminate.
+ .
+ 5.3. In the event of termination under Sections 5.1 or 5.2 above, all
+ end user license agreements (excluding distributors and resellers) which
+ have been validly granted by You or Your distributors under this License
+ prior to termination shall survive termination.
+ .
+ ************************************************************************
+ *                                                                      *
+ *  6. Disclaimer of Warranty                                           *
+ *  -------------------------                                           *
+ *                                                                      *
+ *  Covered Software is provided under this License on an "as is"       *
+ *  basis, without warranty of any kind, either expressed, implied, or  *
+ *  statutory, including, without limitation, warranties that the       *
+ *  Covered Software is free of defects, merchantable, fit for a        *
+ *  particular purpose or non-infringing. The entire risk as to the     *
+ *  quality and performance of the Covered Software is with You.        *
+ *  Should any Covered Software prove defective in any respect, You     *
+ *  (not any Contributor) assume the cost of any necessary servicing,   *
+ *  repair, or correction. This disclaimer of warranty constitutes an   *
+ *  essential part of this License. No use of any Covered Software is   *
+ *  authorized under this License except under this disclaimer.         *
+ *                                                                      *
+ ************************************************************************
+ .
+ ************************************************************************
+ *                                                                      *
+ *  7. Limitation of Liability                                          *
+ *  --------------------------                                          *
+ *                                                                      *
+ *  Under no circumstances and under no legal theory, whether tort      *
+ *  (including negligence), contract, or otherwise, shall any           *
+ *  Contributor, or anyone who distributes Covered Software as          *
+ *  permitted above, be liable to You for any direct, indirect,         *
+ *  special, incidental, or consequential damages of any character      *
+ *  including, without limitation, damages for lost profits, loss of    *
+ *  goodwill, work stoppage, computer failure or malfunction, or any    *
+ *  and all other commercial damages or losses, even if such party      *
+ *  shall have been informed of the possibility of such damages. This   *
+ *  limitation of liability shall not apply to liability for death or   *
+ *  personal injury resulting from such party's negligence to the       *
+ *  extent applicable law prohibits such limitation. Some               *
+ *  jurisdictions do not allow the exclusion or limitation of           *
+ *  incidental or consequential damages, so this exclusion and          *
+ *  limitation may not apply to You.                                    *
+ *                                                                      *
+ ************************************************************************
+ .
+ 8. Litigation
+ -------------
+ .
+ Any litigation relating to this License may be brought only in the
+ courts of a jurisdiction where the defendant maintains its principal
+ place of business and such litigation shall be governed by laws of that
+ jurisdiction, without reference to its conflict-of-law provisions.
+ Nothing in this Section shall prevent a party's ability to bring
+ cross-claims or counter-claims.
+ .
+ 9. Miscellaneous
+ ----------------
+ .
+ This License represents the complete agreement concerning the subject
+ matter hereof. If any provision of this License is held to be
+ unenforceable, such provision shall be reformed only to the extent
+ necessary to make it enforceable. Any law or regulation which provides
+ that the language of a contract shall be construed against the drafter
+ shall not be used to construe this License against a Contributor.
+ .
+ 10. Versions of the License
+ ---------------------------
+ .
+ 10.1. New Versions
+ .
+ Mozilla Foundation is the license steward. Except as provided in Section
+ 10.3, no one other than the license steward has the right to modify or
+ publish new versions of this License. Each version will be given a
+ distinguishing version number.
+ .
+ 10.2. Effect of New Versions
+ .
+ You may distribute the Covered Software under the terms of the version
+ of the License under which You originally received the Covered Software,
+ or under the terms of any subsequent version published by the license
+ steward.
+ .
+ 10.3. Modified Versions
+ .
+ If you create software not governed by this License, and you want to
+ create a new license for such software, you may create and use a
+ modified version of this License if you rename the license and remove
+ any references to the name of the license steward (except to note that
+ such modified license differs from this License).
+ .
+ 10.4. Distributing Source Code Form that is Incompatible With Secondary
+ Licenses
+ .
+ If You choose to distribute Source Code Form that is Incompatible With
+ Secondary Licenses under the terms of this version of the License, the
+ notice described in Exhibit B of this License must be attached.
+ .
+ Exhibit A - Source Code Form License Notice
+ -------------------------------------------
+ .
+   This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ .
+ If it is not possible or desirable to put the notice in a particular
+ file, then You may include the notice in a location (such as a LICENSE
+ file in a relevant directory) where a recipient would be likely to look
+ for such a notice.
+ .
+ You may add additional accurate notices of copyright ownership.
+ .
+ Exhibit B - "Incompatible With Secondary Licenses" Notice
+ ---------------------------------------------------------
+ .
+   This Source Code Form is "Incompatible With Secondary Licenses", as
+   defined by the Mozilla Public License, v. 2.0.

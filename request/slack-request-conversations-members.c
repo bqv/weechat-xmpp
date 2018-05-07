@@ -6,13 +6,13 @@
 #include "../weechat-plugin.h"
 #include "../slack.h"
 #include "../slack-workspace.h"
+#include "../slack-channel.h"
 #include "../slack-request.h"
 #include "../slack-user.h"
-#include "../request/slack-request-chat-postmessage.h"
+#include "../request/slack-request-conversations-members.h"
 
-static const char *const endpoint = "/api/chat.postMessage?"
-    "token=%s&channel=%s&text=%s&"
-    "as_user=true&link_names=true&mrkdwn=false&parse=full";
+static const char *const endpoint = "/api/conversations.members?"
+    "token=%s&channel=%s&cursor=%s&limit=100";
 
 static inline int json_valid(json_object *object, struct t_slack_workspace *workspace)
 {
@@ -20,7 +20,7 @@ static inline int json_valid(json_object *object, struct t_slack_workspace *work
     {
         weechat_printf(
             workspace->buffer,
-            _("%s%s: error posting message: unexpected response from server"),
+            _("%s%s: error retrieving members: unexpected response from server"),
             weechat_prefix("error"), SLACK_PLUGIN_NAME);
         //__asm__("int3");
         return 0;
@@ -36,6 +36,8 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 {
     struct t_slack_request *request = (struct t_slack_request *)user;
     struct lws_client_connect_info ccinfo;
+    struct t_slack_channel *channel;
+    const char *channelid;
 
     int status;
 
@@ -74,7 +76,7 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
         status = lws_http_client_http_response(wsi);
         weechat_printf(
             request->workspace->buffer,
-            _("%s%s: (%d) posting message... (%d)"),
+            _("%s%s: (%d) retrieving members... (%d)"),
             weechat_prefix("network"), SLACK_PLUGIN_NAME, request->idx,
             status);
         break;
@@ -120,8 +122,13 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
         {
             int chunk_count, i;
             char *json_string;
-            json_object *response, *ok, *error;
+            char cursor[64];
+            json_object *response, *ok, *error, *members;
+            json_object *user, *metadata, *next_cursor;
             struct t_json_chunk *chunk_ptr;
+
+            channelid = (const char *)request->pointer;
+            channel = slack_channel_search(request->workspace, channelid);
 
             chunk_count = 0;
             if (request->json_chunks)
@@ -165,7 +172,58 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
             if(json_object_get_boolean(ok))
             {
-                /* wait for websocket to catch up */
+                members = json_object_object_get(response, "members");
+                if (!json_valid(members, request->workspace))
+                {
+                    json_object_put(response);
+                    free(json_string);
+                    return 0;
+                }
+
+                for (i = json_object_array_length(members); i > 0; i--)
+                {
+                    user = json_object_array_get_idx(members, i - 1);
+                    if (!json_valid(user, request->workspace))
+                    {
+                        json_object_put(response);
+                        free(json_string);
+                        return 0;
+                    }
+
+                    slack_channel_add_member(request->workspace,
+                                             channel,
+                                             json_object_get_string(user));
+                }
+
+                metadata = json_object_object_get(response, "response_metadata");
+                if (!json_valid(metadata, request->workspace))
+                {
+                    json_object_put(response);
+                    free(json_string);
+                    return 0;
+                }
+
+                next_cursor = json_object_object_get(metadata, "next_cursor");
+                if (!json_valid(next_cursor, request->workspace))
+                {
+                    json_object_put(response);
+                    free(json_string);
+                    return 0;
+                }
+                lws_urlencode(cursor, json_object_get_string(next_cursor), sizeof(cursor));
+
+                if (cursor[0])
+                {
+                    struct t_slack_request *next_request;
+
+                    next_request = slack_request_conversations_members(request->workspace,
+                            weechat_config_string(
+                                request->workspace->options[SLACK_WORKSPACE_OPTION_TOKEN]),
+                            channelid,
+                            cursor);
+                    if (next_request)
+                        slack_workspace_register_request(request->workspace, next_request);
+                }
             }
             else
             {
@@ -179,7 +237,7 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
                 weechat_printf(
                     request->workspace->buffer,
-                    _("%s%s: (%d) failed to post message: %s"),
+                    _("%s%s: (%d) failed to retrieve users: %s"),
                     weechat_prefix("error"), SLACK_PLUGIN_NAME, request->idx,
                     json_object_get_string(error));
             }
@@ -211,20 +269,21 @@ static const struct lws_protocols protocols[] = {
     { NULL, NULL, 0, 0 }
 };
 
-struct t_slack_request *slack_request_chat_postmessage(
+struct t_slack_request *slack_request_conversations_members(
                                    struct t_slack_workspace *workspace,
                                    const char *token, const char *channel,
-                                   const char *text)
+                                   const char *cursor)
 {
     struct t_slack_request *request;
     struct lws_context_creation_info ctxinfo;
     struct lws_client_connect_info ccinfo;
 
     request = slack_request_alloc(workspace);
+    request->pointer = channel;
 
-    size_t urilen = snprintf(NULL, 0, endpoint, token, channel, text) + 1;
+    size_t urilen = snprintf(NULL, 0, endpoint, token, channel, cursor) + 1;
     request->uri = malloc(urilen);
-    snprintf(request->uri, urilen, endpoint, token, channel, text);
+    snprintf(request->uri, urilen, endpoint, token, channel, cursor);
 
     memset(&ctxinfo, 0, sizeof(ctxinfo)); /* otherwise uninitialized garbage */
     ctxinfo.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;

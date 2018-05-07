@@ -1,0 +1,19 @@
+Source: weechat-slack
+Section: net
+Priority: optional
+Maintainer: Tony Olagbaiye <frony0@gmail.com>
+Build-Depends: cmake, debhelper (>= 11), pkg-config
+Standards-Version: 4.1.3
+Homepage: https://weechat.org/
+Vcs-Git: https://github.com/bqv/weechat-slack.git
+Vcs-Browser: https://github.com/bqv/weechat-slack
+
+Package: weechat-slack
+Architecture: all
+Depends:
+    weechat (>= 1.4)
+Description: Fast, light and extensible chat client - Slack plugin
+ WeeChat (Wee Enhanced Environment for Chat) is a fast and light chat client
+ for many operating systems. Everything can be done with a keyboard.
+ .
+ This package provides the Slack API plugin.

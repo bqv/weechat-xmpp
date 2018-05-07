@@ -6,8 +6,10 @@
 #include "../weechat-plugin.h"
 #include "../slack.h"
 #include "../slack-workspace.h"
+#include "../slack-channel.h"
 #include "../slack-request.h"
 #include "../slack-user.h"
+#include "../request/slack-request-conversations-members.h"
 #include "../request/slack-request-users-list.h"
 
 static const char *const endpoint = "/api/users.list?"
@@ -29,10 +31,13 @@ static inline int json_valid(json_object *object, struct t_slack_workspace *work
     return 1;
 }
 
+static const struct lws_protocols protocols[];
+
 static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                          void *user, void *in, size_t len)
 {
     struct t_slack_request *request = (struct t_slack_request *)user;
+    struct lws_client_connect_info ccinfo;
 
     int status;
 
@@ -45,7 +50,26 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
             _("%s%s: (%d) error connecting to slack: %s"),
             weechat_prefix("error"), SLACK_PLUGIN_NAME, request->idx,
             in ? (char *)in : "(null)");
-        request->client_wsi = NULL;
+
+        weechat_printf(
+            request->workspace->buffer,
+            _("%s%s: (%d) reconnecting..."),
+            weechat_prefix("error"), SLACK_PLUGIN_NAME, request->idx);
+
+        memset(&ccinfo, 0, sizeof(ccinfo)); /* otherwise uninitialized garbage */
+        ccinfo.context = request->context;
+        ccinfo.ssl_connection = LCCSCF_USE_SSL;
+        ccinfo.port = 443;
+        ccinfo.address = "slack.com";
+        ccinfo.path = request->uri;
+        ccinfo.host = ccinfo.address;
+        ccinfo.origin = ccinfo.address;
+        ccinfo.method = "GET";
+        ccinfo.protocol = protocols[0].name;
+        ccinfo.pwsi = &request->client_wsi;
+        ccinfo.userdata = request;
+
+        lws_client_connect_via_info(&ccinfo);
         break;
 
     case LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP:
@@ -229,6 +253,23 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                             cursor);
                     if (next_request)
                         slack_workspace_register_request(request->workspace, next_request);
+                }
+                else
+                {
+                    struct t_slack_request *next_request;
+                    struct t_slack_channel *ptr_channel;
+
+                    for (ptr_channel = request->workspace->channels; ptr_channel;
+                         ptr_channel = ptr_channel->next_channel)
+                    {
+                        next_request = slack_request_conversations_members(request->workspace,
+                                weechat_config_string(
+                                    request->workspace->options[SLACK_WORKSPACE_OPTION_TOKEN]),
+                                ptr_channel->id,
+                                cursor);
+                        if (next_request)
+                            slack_workspace_register_request(request->workspace, next_request);
+                    }
                 }
             }
             else
