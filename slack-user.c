@@ -14,7 +14,8 @@ const char *slack_user_get_colour(struct t_slack_user *user)
 }
 
 const char *slack_user_as_prefix(struct t_slack_workspace *workspace,
-                                 struct t_slack_user *user)
+                                 struct t_slack_user *user,
+                                 const char *name)
 {
     static char result[256];
 
@@ -22,9 +23,28 @@ const char *slack_user_as_prefix(struct t_slack_workspace *workspace,
 
     snprintf(result, sizeof(result), "%s%s\t",
              slack_user_get_colour(user),
-             user->profile.display_name);
+             name ? name : user->profile.display_name);
 
     return result;
+}
+
+struct t_slack_user *slack_user_bot_search(struct t_slack_workspace *workspace,
+                                           const char *bot_id)
+{
+    struct t_slack_user *ptr_user;
+
+    if (!workspace || !bot_id)
+        return NULL;
+
+    for (ptr_user = workspace->users; ptr_user;
+         ptr_user = ptr_user->next_user)
+    {
+        if (ptr_user->profile.bot_id &&
+            weechat_strcasecmp(ptr_user->profile.bot_id, bot_id) == 0)
+            return ptr_user;
+    }
+
+    return NULL;
 }
 
 struct t_slack_user *slack_user_search(struct t_slack_workspace *workspace,
@@ -72,7 +92,12 @@ struct t_slack_user *slack_user_new(struct t_slack_workspace *workspace,
 {
     struct t_slack_user *new_user, *ptr_user;
 
-    if (!workspace || !id || !display_name || !display_name[0])
+    if (!workspace || !id || !display_name)
+    {
+        return NULL;
+    }
+
+    if (!display_name[0] && strcmp("USLACKBOT", id) == 0)
         return NULL;
 
     if (!workspace->users)
@@ -86,7 +111,9 @@ struct t_slack_user *slack_user_new(struct t_slack_workspace *workspace,
     }
 
     if ((new_user = malloc(sizeof(*new_user))) == NULL)
+    {
         return NULL;
+    }
 
     new_user->prev_user = workspace->last_user;
     new_user->next_user = NULL;
@@ -112,10 +139,13 @@ struct t_slack_user *slack_user_new(struct t_slack_workspace *workspace,
     new_user->profile.status_text = NULL;
     new_user->profile.status_emoji = NULL;
     new_user->profile.real_name = NULL;
-    new_user->profile.display_name = strdup(display_name);
+    new_user->profile.display_name = display_name[0] ?
+        strdup(display_name) :
+        strdup("slackbot");
     new_user->profile.real_name_normalized = NULL;
     new_user->profile.email = NULL;
     new_user->profile.team = NULL;
+    new_user->profile.bot_id = NULL;
     new_user->updated = 0;
     new_user->is_away = 0;
 

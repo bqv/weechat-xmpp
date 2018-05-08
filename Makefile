@@ -24,6 +24,7 @@ SRCS=slack.c \
 	 api/slack-api-error.c \
 	 api/slack-api-message.c \
 	 api/slack-api-user-typing.c \
+	 api/message/slack-api-message-bot-message.c \
 	 api/message/slack-api-message-unimplemented.c \
 	 request/slack-request-chat-postmessage.c \
 	 request/slack-request-channels-list.c \
@@ -65,7 +66,7 @@ install: slack.so
 
 tags:
 	ctags -f .git/tags -R *.c *.h
-	
+
 cs:
 	cscope -RUbq
 

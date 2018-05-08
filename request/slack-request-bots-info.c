@@ -9,12 +9,10 @@
 #include "../slack-channel.h"
 #include "../slack-request.h"
 #include "../slack-user.h"
-#include "../request/slack-request-conversations-members.h"
-#include "../request/slack-request-users-list.h"
+#include "../request/slack-request-bots-info.h"
 
-static const char *const endpoint = "/api/users.list?"
-    "token=%s&cursor=%s&"
-    "exclude_archived=false&exclude_members=true&limit=20";
+static const char *const endpoint = "/api/bots.info?"
+    "token=%s&bot=%s";
 
 static inline int json_valid(json_object *object, struct t_slack_workspace *workspace)
 {
@@ -22,7 +20,7 @@ static inline int json_valid(json_object *object, struct t_slack_workspace *work
     {
         weechat_printf(
             workspace->buffer,
-            _("%s%s: error retrieving users: unexpected response from server"),
+            _("%s%s: error retrieving bot info: unexpected response from server"),
             weechat_prefix("error"), SLACK_PLUGIN_NAME);
         //__asm__("int3");
         return 0;
@@ -76,7 +74,7 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
         status = lws_http_client_http_response(wsi);
         weechat_printf(
             request->workspace->buffer,
-            _("%s%s: (%d) retrieving users... (%d)"),
+            _("%s%s: (%d) retrieving bot info... (%d)"),
             weechat_prefix("network"), SLACK_PLUGIN_NAME, request->idx,
             status);
         break;
@@ -123,10 +121,8 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
             int chunk_count, i;
             char *json_string;
             char cursor[64];
-            json_object *response, *ok, *error, *members;
-            json_object *user, *id, *name;
-            json_object *profile, *display_name, *bot_id;
-            json_object *metadata, *next_cursor;
+            json_object *response, *ok, *error, *members, *metadata;
+            json_object *user, *id, *name, *profile, *display_name, *next_cursor;
             struct t_json_chunk *chunk_ptr;
 
             chunk_count = 0;
@@ -171,107 +167,7 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
             if(json_object_get_boolean(ok))
             {
-                members = json_object_object_get(response, "members");
-                if (!json_valid(members, request->workspace))
-                {
-                    json_object_put(response);
-                    free(json_string);
-                    return 0;
-                }
-
-                for (i = json_object_array_length(members); i > 0; i--)
-                {
-                    struct t_slack_user *new_user;
-
-                    user = json_object_array_get_idx(members, i - 1);
-                    if (!json_valid(user, request->workspace))
-                    {
-                        continue;
-                    }
-
-                    id = json_object_object_get(user, "id");
-                    if (!json_valid(id, request->workspace))
-                    {
-                        continue;
-                    }
-
-                    name = json_object_object_get(user, "name");
-                    if (!json_valid(name, request->workspace))
-                    {
-                        continue;
-                    }
-
-                    profile = json_object_object_get(user, "profile");
-                    if (!json_valid(profile, request->workspace))
-                    {
-                        continue;
-                    }
-
-                    display_name = json_object_object_get(profile, "display_name");
-                    if (!json_valid(display_name, request->workspace))
-                    {
-                        continue;
-                    }
-
-                    new_user = slack_user_new(request->workspace,
-                                              json_object_get_string(id),
-                                              json_object_get_string(display_name));
-
-                    if (!new_user)
-                        __asm__("int3");
-                    
-                    bot_id = json_object_object_get(profile, "bot_id");
-                    if (json_valid(bot_id, request->workspace))
-                    {
-                        new_user->profile.bot_id = strdup(json_object_get_string(bot_id));
-                    }
-                }
-
-                metadata = json_object_object_get(response, "response_metadata");
-                if (!json_valid(metadata, request->workspace))
-                {
-                    json_object_put(response);
-                    free(json_string);
-                    return 0;
-                }
-
-                next_cursor = json_object_object_get(metadata, "next_cursor");
-                if (!json_valid(next_cursor, request->workspace))
-                {
-                    json_object_put(response);
-                    free(json_string);
-                    return 0;
-                }
-                lws_urlencode(cursor, json_object_get_string(next_cursor), sizeof(cursor));
-
-                if (cursor[0])
-                {
-                    struct t_slack_request *next_request;
-
-                    next_request = slack_request_users_list(request->workspace,
-                            weechat_config_string(
-                                request->workspace->options[SLACK_WORKSPACE_OPTION_TOKEN]),
-                            cursor);
-                    if (next_request)
-                        slack_workspace_register_request(request->workspace, next_request);
-                }
-                else
-                {
-                    struct t_slack_request *next_request;
-                    struct t_slack_channel *ptr_channel;
-
-                    for (ptr_channel = request->workspace->channels; ptr_channel;
-                         ptr_channel = ptr_channel->next_channel)
-                    {
-                        next_request = slack_request_conversations_members(request->workspace,
-                                weechat_config_string(
-                                    request->workspace->options[SLACK_WORKSPACE_OPTION_TOKEN]),
-                                ptr_channel->id,
-                                cursor);
-                        if (next_request)
-                            slack_workspace_register_request(request->workspace, next_request);
-                    }
-                }
+                // TODO: this
             }
             else
             {
@@ -317,7 +213,7 @@ static const struct lws_protocols protocols[] = {
     { NULL, NULL, 0, 0 }
 };
 
-struct t_slack_request *slack_request_users_list(
+struct t_slack_request *slack_request_bots_info(
                                    struct t_slack_workspace *workspace,
                                    const char *token, const char *cursor)
 {

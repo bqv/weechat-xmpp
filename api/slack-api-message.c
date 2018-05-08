@@ -10,6 +10,7 @@
 #include "../slack-message.h"
 #include "slack-api-message.h"
 #include "message/slack-api-message-unimplemented.h"
+#include "message/slack-api-message-bot-message.h"
 
 static const char *type = "message";
 
@@ -21,7 +22,7 @@ struct stringcase
 };
 
 static struct stringcase cases[] =
-{ { "bot_message", &slack_api_message_unimplemented }
+{ { "bot_message", &slack_api_message_bot_message }
 , { "channel_archive", &slack_api_message_unimplemented }
 , { "channel_join", &slack_api_message_unimplemented }
 , { "channel_leave", &slack_api_message_unimplemented }
@@ -97,10 +98,10 @@ int slack_api_message_message_handle(struct t_slack_workspace *workspace,
         (time_t)atof(ts),
         "slack_message",
         _("%s%s"),
-        slack_user_as_prefix(workspace, ptr_user),
+        slack_user_as_prefix(workspace, ptr_user, NULL),
         message);
     free(message);
-
+    
     ptr_typing = slack_channel_typing_search(ptr_channel,
                                              ptr_user->profile.display_name);
     if (ptr_typing)
