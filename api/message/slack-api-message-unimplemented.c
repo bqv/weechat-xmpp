@@ -8,6 +8,7 @@
 #include "../../slack-channel.h"
 #include "../../slack-user.h"
 #include "../slack-api-message.h"
+#include "slack-api-message-unimplemented.h"
 
 static const char *subtype = "unimplemented";
 

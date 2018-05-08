@@ -11,6 +11,7 @@
 #include "slack-api-message.h"
 #include "message/slack-api-message-unimplemented.h"
 #include "message/slack-api-message-bot-message.h"
+#include "message/slack-api-message-slackbot-response.h"
 
 static const char *type = "message";
 
@@ -46,6 +47,7 @@ static struct stringcase cases[] =
 , { "message_replied", &slack_api_message_unimplemented }
 , { "pinned_item", &slack_api_message_unimplemented }
 , { "reply_broadcast", &slack_api_message_unimplemented }
+, { "slackbot_response", &slack_api_message_slackbot_response }
 , { "thread_broadcast", &slack_api_message_unimplemented }
 , { "unpinned_item", &slack_api_message_unimplemented }
 };
@@ -118,7 +120,7 @@ int slack_api_message_route_message(struct t_slack_workspace *workspace,
                                     json_object *message)
 {
     struct stringcase key;
-    key.string = type;
+    key.string = subtype;
 
     size_t case_count = sizeof(cases) / sizeof(cases[0]);
     void *entry_ptr = bsearch(&key, cases, case_count,
