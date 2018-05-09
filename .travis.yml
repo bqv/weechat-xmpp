@@ -1,5 +1,5 @@
 language: c
-script: make && make install
+script: make
 compiler:
   - clang
   - gcc
