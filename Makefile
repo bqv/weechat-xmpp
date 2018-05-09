@@ -3,7 +3,7 @@ CXX=g++
 RM=rm -f
 SANCFLAGS=-fsanitize=address -fsanitize=leak
 SANLDFLAGS=-static-libasan -static-liblsan
-CFLAGS=$(SANCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -Ilibwebsockets/lib -Ijson-c
+CFLAGS=$(SANCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -Ilibwebsockets/include -Ijson-c
 LDFLAGS=-shared -g $(SANCFLAGS) $(SANLDFLAGS)
 LDLIBS=-lgnutls
 
