@@ -66,7 +66,7 @@ install: slack.so
 .PHONY: tags cs
 
 tags:
-	ctags -f .git/tags -R *.c *.h
+	$(CC) $(CFLAGS) -M $(SRCS) | sed -e "s/[\\ ]/\n/g" | sed -e "/^$$/d" -e "/\.o:[ \t]*$$/d" | sort | uniq | ctags -e -L - -f .git/tags -R --c-kinds=+px --c++-kinds=+px --fields=+iaS --extra=+fq
 
 cs:
 	cscope -RUbq
