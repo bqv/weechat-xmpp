@@ -5,8 +5,8 @@
 #+DESCRIPTION: Weechat plugin for Slack
 #+KEYWORDS: weechat slack c api
 #+LANGUAGE:  en
-#+OPTIONS:   H:3 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
-#+OPTIONS:   TeX:t LaTeX:nil skip:nil d:nil todo:nil pri:nil tags:not-in-toc
+#+OPTIONS:   H:3 num:nil toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:nil skip:nil d:nil todo:t pri:t tags:not-in-toc
 #+EXPORT_EXCLUDE_TAGS: exclude
 #+STARTUP:    showall
 
