@@ -48,7 +48,7 @@ json-c/libjson-c.a:
 
 depend: .depend
 
-.depend: libwebsockets/lib/libwebsockets.a json_c/libjson-c.a $(SRCS)
+.depend: libwebsockets/lib/libwebsockets.a json-c/libjson-c.a $(SRCS)
 	$(RM) ./.depend
 	$(CC) $(CFLAGS) -MM $^>>./.depend;
 
