@@ -44,7 +44,7 @@
 
 ** TODO [#A] Implement essential api endpoints and events
   - [X] +Implement handling api message =message.me_message= (see [[http://github.com/bqv/weechat-slack/issues/5][#5]])+
-  - [ ] Implement sending request =chat.meMessage= (see [[http://github.com/bqv/weechat-slack/issues/5][#5]])
+  - [X] +Implement sending request =chat.meMessage= (see [[http://github.com/bqv/weechat-slack/issues/5][#5]])+
   - [ ] Implement handling api message =message.thread_broadcast=
   - [X] +Implement handling api message =message.bot_message= (see [[http://github.com/bqv/weechat-slack/issues/2][#2]])+
   - [ ] Implement handling api message =message.message_changed=
@@ -62,6 +62,7 @@
   - [ ] Complete api event set
 ** TODO [#C] Implement full weechat functionality
   - [ ] Hook buffer closes
+  - [ ] Relay compatibility
 
 * Contributing
 

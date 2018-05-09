@@ -30,6 +30,7 @@ SRCS=slack.c \
 	 api/message/slack-api-message-slackbot-response.c \
 	 api/message/slack-api-message-me-message.c \
 	 api/message/slack-api-message-unimplemented.c \
+	 request/slack-request-chat-memessage.c \
 	 request/slack-request-chat-postmessage.c \
 	 request/slack-request-channels-list.c \
 	 request/slack-request-conversations-members.c \
