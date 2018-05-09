@@ -1,0 +1,49 @@
+#+TITLE:     weechat-slack
+#+AUTHOR:    Tony Olagbaiye
+#+EMAIL:     frony0.com
+#+DATE:      2018-05-09
+#+DESCRIPTION: Weechat plugin for Slack
+#+KEYWORDS: weechat slack c api
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:nil skip:nil d:nil todo:nil pri:nil tags:not-in-toc
+#+EXPORT_EXCLUDE_TAGS: exclude
+#+STARTUP:    showall
+
+[[https://travis-ci.org/bqv/weechat-slack][file:https://api.travis-ci.org/bqv/weechat-slack.svg?branch=master]]
+[[https://coveralls.io/github/bqv/weechat-slack?branch=master][file:https://coveralls.io/repos/github/bqv/weechat-slack/badge.svg?branch=master]]
+
+ | Status:   | Under Development                 |
+ | Location: | [[http://github.com/bqv/weechat-slack]] |
+ | Version:  | 0.1.0                             |
+
+* Description
+
+  A weechat plugin in C to extend the chat client to
+  support Slack workspaces via the RTM and Web APIs.
+
+* Dependencies
+
+  - libwebsockets (static, submodule)
+  - json-c (static, submodule)
+  - weechat (>= v1.4)
+
+* Building
+
+  #+begin_src sh
+  git clone git://github.com/bqv/weechat-slack.git
+  cd weechat-slack
+  make
+  make install
+  #+end_src
+
+* Contributing
+
+  *Your contributions are always welcome!*
+  Please submit a pull request or create an issue
+  to add a new or missing feature.
+
+* License
+
+  weechat-slack is licensed under the Mozilla Public
+  License Version 2.0 available [[https://www.mozilla.org/en-US/MPL/2.0/][here]] and in LICENSE.
