@@ -43,6 +43,17 @@
   
   Do *NOT* run make install as root, it installs the plugin to your
   local weechat plugins directory
+  
+* Development
+  
+  I use emacs for development of this, although I am also a fan of vim.
+  My debug build process involves static analysis with clang and cppcheck,
+  and dynamic analysis with address-sanitizer and leak-sanitizer.
+  
+  I have no real requests for style of pull requests besides a wish that
+  you keep vaguely to the style I have adopted for this project.
+
+  Happy coding!
 
 * Tasks
 
