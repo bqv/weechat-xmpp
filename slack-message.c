@@ -19,34 +19,83 @@ char *slack_message_translate_code(struct t_slack_workspace *workspace,
 {
     struct t_slack_channel *channel;
     struct t_slack_user *user;
-    char *command;
+    size_t resultlen;
+    char *identifier, *alttext, *result, *symbol, *prefix;
 
-    switch (code[0])
+    identifier = strdup(code);
+    alttext = strchr(identifier, '|');
+    if (alttext)
+        *alttext++ = '\0';
+
+    switch (identifier[0])
     {
         case '#': /* channel */
-            channel = slack_channel_search(workspace, code+1);
-            if (channel)
-                return strdup(channel->name);
-            else
-                return strdup(code);
-        case '@': /* user */
-            user = slack_user_search(workspace, code+1);
-            if (user)
+            if (alttext)
             {
-                size_t nicklen = snprintf(NULL, 0, "%s@%s%s", weechat_color("chat_nick"), user->profile.display_name, weechat_color("reset")) + 1;
-                char *tag = malloc(nicklen);
-                snprintf(tag, nicklen, "%s@%s%s", weechat_color("chat_nick"), user->profile.display_name, weechat_color("reset"));
-                return tag;
+                prefix = "#";
+                symbol = strdup(alttext);
             }
             else
-                return strdup(code);
+            {
+                channel = slack_channel_search(workspace, identifier+1);
+                if (channel)
+                {
+                    prefix = "#";
+                    symbol = strdup(channel->name);
+                }
+                else
+                {
+                    prefix = "Channel:";
+                    symbol = strdup(identifier+1);
+                }
+            }
+            break;
+        case '@': /* user */
+            if (alttext)
+            {
+                prefix = "@";
+                symbol = strdup(alttext);
+            }
+            else
+            {
+                user = slack_user_search(workspace, identifier+1);
+                if (user)
+                {
+                    prefix = "@";
+                    symbol = strdup(user->profile.display_name);
+                }
+                else
+                {
+                    prefix = "User:";
+                    symbol = strdup(identifier+1);
+                }
+            }
+            break;
         case '!': /* special */
-            command = strdup(code);
-            command[0] = '@';
-            return command;
+            if (alttext)
+            {
+                prefix = "@";
+                symbol = strdup(alttext);
+            }
+            else
+            {
+                prefix = "@";
+                symbol = strdup(identifier+1);
+            }
+            break;
         default: /* url */
-            return strdup(code);
+            prefix = "";
+            symbol = strdup(code);
+            break;
     }
+    
+    free(identifier);
+    resultlen = snprintf(NULL, 0, "%s%s%s%s", weechat_color("chat_nick"), prefix, symbol, weechat_color("reset")) + 1;
+    result = malloc(resultlen);
+    snprintf(result, resultlen, "%s%s%s%s", weechat_color("chat_nick"), prefix, symbol, weechat_color("reset"));
+    free(symbol);
+    
+    return result;
 }
 
 void slack_message_htmldecode(char *dest, const char *src, size_t n)
