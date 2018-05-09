@@ -36,6 +36,9 @@
   make
   make install
   #+end_src
+  
+  Do *NOT* run make install as root, it installs the plugin to your
+  local weechat plugins directory
 
 * Tasks
 

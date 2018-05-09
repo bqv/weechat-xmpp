@@ -63,7 +63,7 @@ distclean: clean
 	$(RM) *~ .depend
 
 install: slack.so
-	install -d slack.so ~/.weechat/plugins/
+	install -t ~/.weechat/plugins -D slack.so
 
 .PHONY: tags cs
 
