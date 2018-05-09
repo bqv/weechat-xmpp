@@ -42,13 +42,15 @@ libwebsockets/lib/libwebsockets.a:
 	cd libwebsockets && cmake -DLWS_STATIC_PIC=ON -DLWS_WITH_SHARED=OFF -DLWS_WITHOUT_TESTAPPS=ON -DLWS_WITH_LIBEV=OFF -DLWS_WITH_LIBUV=OFF -DLWS_WITH_LIBEVENT=OFF -DCMAKE_BUILD_TYPE=DEBUG .
 	$(MAKE) -C libwebsockets
 
+libwebsockets/include/libwebsockets.h: libwebsockets/lib/libwebsockets.a
+
 json-c/libjson-c.a:
 	cd json-c && cmake -DCMAKE_C_FLAGS=-fPIC .
 	$(MAKE) -C json-c json-c-static
 
 depend: .depend
 
-.depend: $(SRCS)
+.depend: libwebsockets/include/libwebsockets.h $(SRCS)
 	$(RM) ./.depend
 	$(CC) $(CFLAGS) -MM $^>>./.depend;
 
