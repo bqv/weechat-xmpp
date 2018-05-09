@@ -12,6 +12,10 @@
 
 [[https://travis-ci.org/bqv/weechat-slack][file:https://api.travis-ci.org/bqv/weechat-slack.svg?branch=master]]
 [[https://coveralls.io/github/bqv/weechat-slack?branch=master][file:https://coveralls.io/repos/github/bqv/weechat-slack/badge.svg?branch=master]]
+[[https://github.com/bqv/weechat-slack/issues][file:https://img.shields.io/github/issues/bqv/weechat-slack.svg]]
+[[https://github.com/bqv/weechat-slack/issues?q=is:issue+is:closed][file:https://img.shields.io/github/issues-closed/bqv/weechat-slack.svg]]
+[[https://github.com/bqv/weechat-slack/blob/master/LICENSE][file:https://img.shields.io/github/license/bqv/weechat-slack.svg]]
+[[https://github.com/bqv/weechat-extras/][file:https://img.shields.io/badge/weechat--extras-slack-yellow.svg]]
 
  | Status:   | Under Development                   |
  | Location: | [[http://github.com/bqv/weechat-slack]] |
@@ -42,7 +46,8 @@
 
 * Tasks
 
-** TODO [#A] Implement essential api endpoints and events
+** DONE [#A] Implement basic functionality (milestone v0.1)
+** TODO [#A] Implement essential api endpoints and events (milestone v0.2)
   - [X] +Implement handling api message =message.me_message= (see [[http://github.com/bqv/weechat-slack/issues/5][#5]])+
   - [X] +Implement sending request =chat.meMessage= (see [[http://github.com/bqv/weechat-slack/issues/5][#5]])+
   - [ ] Implement handling api message =message.thread_broadcast=
@@ -50,19 +55,20 @@
   - [ ] Implement handling api message =message.message_changed=
   - [ ] Implement handling api message =message.message_deleted=
   - [ ] Implement handling api message =message.message_replied=
-** TODO [#B] Implement completion engine
+** TODO [#B] Implement completion engine (milestone v0.3)
   - [ ] Tab completion for slack emoji (see [[http://github.com/bqv/weechat-slack/issues/3][#3]])
   - [ ] Tab completion for display/user names (see [[http://github.com/bqv/weechat-slack/issues/1][#1]])
   - [ ] Sort nick-completion by recent (see [[http://github.com/bqv/weechat-slack/issues/4][#4]])
-** TODO [#B] Implement debian packaging
+** TODO [#B] Implement debian packaging (milestone v0.4)
   - [ ] Switch to system libwebsockets package (dynamically link)
   - [ ] Create configure build step (cmake? autotools?)
-** TODO [#C] Implement remaining api endpoints and events
+** TODO [#C] Implement remaining api endpoints and events (milestone v0.5)
   - [ ] Complete api endpoint set
   - [ ] Complete api event set
-** TODO [#C] Implement full weechat functionality
+** TODO [#C] Implement full weechat functionality (milestone v0.6)
   - [ ] Hook buffer closes
   - [ ] Relay compatibility
+** TODO [#D] Close all issues (milestone v1.0)
 
 * Contributing
 
