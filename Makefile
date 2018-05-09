@@ -1,8 +1,10 @@
 CC=clang
 CXX=g++
 RM=rm -f
-SANCFLAGS=-fsanitize=address -fsanitize=leak
-SANLDFLAGS=-static-libasan -static-liblsan
+ifdef DEBUG
+	SANCFLAGS=-fsanitize=address -fsanitize=leak
+	SANLDFLAGS=-static-libasan -static-liblsan
+endif
 CFLAGS=$(SANCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -Ilibwebsockets/include -Ijson-c
 LDFLAGS=-shared -g $(SANCFLAGS) $(SANLDFLAGS)
 LDLIBS=-lgnutls
