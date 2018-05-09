@@ -15,6 +15,7 @@
 #include "slack-api-message.h"
 #include "message/slack-api-message-unimplemented.h"
 #include "message/slack-api-message-bot-message.h"
+#include "message/slack-api-message-me-message.h"
 #include "message/slack-api-message-slackbot-response.h"
 
 static const char *type = "message";
@@ -45,7 +46,7 @@ static struct stringcase cases[] =
 , { "group_purpose", &slack_api_message_unimplemented }
 , { "group_topic", &slack_api_message_unimplemented }
 , { "group_unarchive", &slack_api_message_unimplemented }
-, { "me_message", &slack_api_message_unimplemented }
+, { "me_message", &slack_api_message_me_message }
 , { "message_changed", &slack_api_message_unimplemented }
 , { "message_deleted", &slack_api_message_unimplemented }
 , { "message_replied", &slack_api_message_unimplemented }
