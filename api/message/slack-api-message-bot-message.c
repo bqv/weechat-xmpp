@@ -70,16 +70,48 @@ int slack_api_message_bot_message_handle(struct t_slack_workspace *workspace,
     return 1;
 }
 
+int slack_api_message_slackbot_message_handle(struct t_slack_workspace *workspace,
+                                              const char *channel, const char *user,
+                                              const char *text, const char *ts)
+{
+    struct t_slack_channel *ptr_channel;
+    struct t_slack_user *ptr_user;
+    struct t_slack_channel_typing *ptr_typing;
+
+    ptr_channel = slack_channel_search(workspace, channel);
+    if (!ptr_channel)
+        return 1; /* silently ignore if channel hasn't been loaded yet */
+    ptr_user = slack_user_search(workspace, user);
+    if (!ptr_user)
+        return 1; /* silently ignore if slackbot user hasn't been loaded yet */
+
+    char *message = slack_message_decode(workspace, text);
+    weechat_printf_date_tags(
+        ptr_channel->buffer,
+        (time_t)atof(ts),
+        "slack_message,slack_slackbot_message",
+        _("%s%s"),
+        slack_user_as_prefix(workspace, ptr_user, user),
+        message);
+    free(message);
+
+    ptr_typing = slack_channel_typing_search(ptr_channel,
+                                             ptr_user->profile.display_name);
+    if (ptr_typing)
+    {
+        slack_channel_typing_free(ptr_channel, ptr_typing);
+        slack_channel_typing_cb(ptr_channel, NULL, 0);
+    }
+
+    return 1;
+}
+
 int slack_api_message_bot_message(struct t_slack_workspace *workspace,
                                   json_object *message)
 {
-    json_object *channel, *bot_id, *username, *text, *ts;
+    json_object *channel, *bot_id, *username, *user, *text, *ts;
     channel = json_object_object_get(message, "channel");
     if (!json_valid(channel, workspace))
-        return 0;
-
-    bot_id = json_object_object_get(message, "bot_id");
-    if (!json_valid(bot_id, workspace))
         return 0;
 
     username = json_object_object_get(message, "username");
@@ -94,11 +126,30 @@ int slack_api_message_bot_message(struct t_slack_workspace *workspace,
     if (!json_valid(ts, workspace))
         return 0;
 
-    return slack_api_message_bot_message_handle(workspace,
-            json_object_get_string(channel),
-            json_object_get_string(bot_id),
-            json_object_get_string(username),
-            json_object_get_string(text),
-            json_object_get_string(ts));
+    if (strcmp("slackbot", json_object_get_string(username)) == 0)
+    {
+        user = json_object_object_get(message, "user");
+        if (!json_valid(user, workspace))
+            return 0;
+        
+        return slack_api_message_slackbot_message_handle(workspace,
+                                                         json_object_get_string(channel),
+                                                         json_object_get_string(user),
+                                                         json_object_get_string(text),
+                                                         json_object_get_string(ts));
+    }
+    else
+    {
+        bot_id = json_object_object_get(message, "bot_id");
+        if (!json_valid(bot_id, workspace))
+            return 0;
+
+        return slack_api_message_bot_message_handle(workspace,
+                                                    json_object_get_string(channel),
+                                                    json_object_get_string(bot_id),
+                                                    json_object_get_string(username),
+                                                    json_object_get_string(text),
+                                                    json_object_get_string(ts));
+    }
 }
 

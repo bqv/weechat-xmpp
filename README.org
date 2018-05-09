@@ -60,6 +60,8 @@
 ** TODO [#C] Implement remaining api endpoints and events
   - [ ] Complete api endpoint set
   - [ ] Complete api event set
+** TODO [#C] Implement full weechat functionality
+  - [ ] Hook buffer closes
 
 * Contributing
 
