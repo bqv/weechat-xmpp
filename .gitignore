@@ -1,4 +1,6 @@
 # Prerequisites
+debian/weechat-slack/
+.debhelper/
 compile_commands.json
 cscope*
 .depend

@@ -1,0 +1,6 @@
+# This is an override for the following lintian errors:
+# E: weechat-slack source: source-is-missing libwebsockets/plugins/generic-sessions/assets/lwsgs.js
+# E: weechat-slack source: source-is-missing libwebsockets/plugins/generic-sessions/assets/md5.min.js
+# The source is not missing, all sources are included.
+# This is a lintian false-positive.
+weechat-slack source: source-is-missing

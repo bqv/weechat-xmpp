@@ -1,4 +1,4 @@
-weechat-slack (0.1) UNRELEASED; urgency=medium
+weechat-slack (0.1.0) sid; urgency=medium
 
   [ Tony Olagbaiye ]
   * Initial release.
