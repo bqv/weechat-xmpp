@@ -49,6 +49,9 @@
   I use emacs for development of this, although I am also a fan of vim.
   My debug build process involves static analysis with clang and cppcheck,
   and dynamic analysis with address-sanitizer and leak-sanitizer.
+  My debug evaluation process involves gdb/mi run with the arguments
+  =-ex "handle SIGPIPE nostop noprint pass" --args weechat -a 2>asan.log=
+  since part of weechat and it's default plugins use SIGPIPE as control.
   
   I have no real requests for style of pull requests besides a wish that
   you keep vaguely to the style I have adopted for this project.
