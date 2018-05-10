@@ -11,7 +11,8 @@ Vcs-Browser: https://github.com/bqv/weechat-slack
 Package: weechat-slack
 Architecture: all
 Depends:
-    weechat (>= 1.4)
+    weechat (>= 1.4),
+    libwebsockets (>= 2.0)
 Description: Fast, light and extensible chat client - Slack plugin
  WeeChat (Wee Enhanced Environment for Chat) is a fast and light chat client
  for many operating systems. Everything can be done with a keyboard.

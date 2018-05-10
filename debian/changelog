@@ -1,6 +1,31 @@
-weechat-slack (0~1805071648-1) UNRELEASED; urgency=low
+weechat-slack (0.1) UNRELEASED; urgency=medium
 
-  * Initial release. Closes: #nnnn
-    <nnnn is the bug number of your ITP>
+  [ Tony Olagbaiye ]
+  * Initial release.
+  * Bot messages
+  * Slackbot responses
+  * CTags
+  * Fix channel mentions. Closes #2
+  * License headers
+  * Administration
+  * Add TODO to readme
+  * Fix makefile to find libwebsockets.h
+  * Build libwebsockets first
+  * Revert libwebsockets header change
+  * Build libjson-c before too
+  * Typo
+  * Move sanitizers to debug build
+  * Fix make install
+  * Fix install finally
+  * Just remove `make install` from travis
+  * Update README.org
+  * Handle message.me_message (ref #5)
+  * Monkeypatch message.bot_message for undoc'd slackbot msgs. Fixes #6
+  * Implement chat.meMessage for /me (closes #5)
+  * Update README.org
+  * Update README.org
+  * Describe debug process
 
- -- Bao <bao@localhost>  Mon, 07 May 2018 17:48:57 +0100
+  [ Bao ]
+
+ -- Bao <bao@mail.fron.io>  Thu, 10 May 2018 15:18:26 +0100
