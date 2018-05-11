@@ -19,6 +19,7 @@ SRCS=slack.c \
 	 slack-channel.c \
 	 slack-config.c \
 	 slack-command.c \
+	 slack-emoji.c \
 	 slack-input.c \
 	 slack-message.c \
 	 slack-oauth.c \
@@ -45,6 +46,9 @@ all: libwebsockets/lib/libwebsockets.a json-c/libjson-c.a weechat-slack
 
 weechat-slack: $(OBJS)
 	$(CXX) $(LDFLAGS) -o slack.so $(OBJS) $(LDLIBS) 
+
+slack-emoji.inc: slack-emoji.py
+	env python3 slack-emoji.py > slack-emoji.inc
 
 libwebsockets/lib/libwebsockets.a:
 	cd libwebsockets && env CFLAGS= LDFLAGS= cmake -DLWS_STATIC_PIC=ON -DLWS_WITH_SHARED=OFF -DLWS_WITHOUT_TESTAPPS=ON -DLWS_WITH_LIBEV=OFF -DLWS_WITH_LIBUV=OFF -DLWS_WITH_LIBEVENT=OFF -DCMAKE_BUILD_TYPE=DEBUG .

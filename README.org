@@ -74,10 +74,15 @@
   - [ ] Implement handling api message =message.message_changed=
   - [ ] Implement handling api message =message.message_deleted=
   - [ ] Implement handling api message =message.message_replied=
+  - [ ] Implement sending websocket =typing= message
 ** TODO [#B] Implement completion engine (milestone v0.3)
   - [ ] Tab completion for slack emoji (see [[http://github.com/bqv/weechat-slack/issues/3][#3]])
+    - [ ] Support Slack Emoji
+    - [ ] Support Custom Emoji
   - [ ] Tab completion for display/user names (see [[http://github.com/bqv/weechat-slack/issues/1][#1]])
   - [ ] Sort nick-completion by recent (see [[http://github.com/bqv/weechat-slack/issues/4][#4]])
+** TODO [#B] Implement websocket ping and pong (milestone v0.4)
+  - [ ] Add ping timer and pong handler (see [[http://github.com/bqv/weechat-slack/issues/9][#9]])
 ** TODO [#C] Implement remaining api endpoints and events (milestone v0.5)
   - [ ] Complete api endpoint set
   - [ ] Complete api event set
