@@ -1,6 +1,10 @@
 #!/usr/bin/python
 # Compatible with python v2 and v3
 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, version 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 import requests
 import json
 import ast
@@ -8,6 +12,10 @@ import ast
 emoji = requests.get("https://raw.githubusercontent.com/iamcal/emoji-data/master/emoji.json").json()
 
 print("""
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, version 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 #include <stdlib.h>
 
 #define MAX_TEXTS %d

@@ -1,5 +1,9 @@
 #!/usr/bin/perl -l
 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, version 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 use strict;
 use warnings;
 
@@ -17,6 +21,10 @@ my $maxtexts = max (map { 1 + @{$_} } (grep defined, map { $_->{'texts'} } @arra
 my $maxnames = max (map { 1 + @{$_} } (grep defined, map { $_->{'short_names'} } @array));
 
 print "
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, version 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 #include <stdlib.h>
 
 #define MAX_TEXTS $maxtexts

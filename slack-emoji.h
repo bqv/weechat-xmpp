@@ -5,6 +5,12 @@
 #ifndef _SLACK_EMOJI_H_
 #define _SLACK_EMOJI_H_
 
+const char *slack_emoji_get_unicode_by_name(const char *name);
 
+const char *slack_emoji_get_unicode_by_text(const char *text);
+
+const char *slack_emoji_get_text_by_name(const char *name);
+    
+const char *slack_emoji_get_text_by_text(const char *text);
 
 #endif /*SLACK_EMOJI_H*/
