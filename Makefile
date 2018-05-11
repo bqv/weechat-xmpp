@@ -7,7 +7,7 @@ endif
 RM=rm -f
 CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -Ilibwebsockets/include -Ijson-c
 LDFLAGS+=-shared -g $(DBGCFLAGS) $(DBGLDFLAGS)
-LDLIBS=-Wl,--push-state,--as-needed -lgnutls
+LDLIBS=-lgnutls
 
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
@@ -47,8 +47,15 @@ all: libwebsockets/lib/libwebsockets.a json-c/libjson-c.a weechat-slack
 weechat-slack: $(OBJS)
 	$(CXX) $(LDFLAGS) -o slack.so $(OBJS) $(LDLIBS) 
 
+ifeq ($(shell which python),)
+slack-emoji.inc: slack-emoji.pl
+	cpan LWP::Simple
+	cpan JSON
+	perl slack-emoji.pl > slack-emoji.inc
+else
 slack-emoji.inc: slack-emoji.py
 	env python3 slack-emoji.py > slack-emoji.inc
+endif
 
 libwebsockets/lib/libwebsockets.a:
 	cd libwebsockets && env CFLAGS= LDFLAGS= cmake -DLWS_STATIC_PIC=ON -DLWS_WITH_SHARED=OFF -DLWS_WITHOUT_TESTAPPS=ON -DLWS_WITH_LIBEV=OFF -DLWS_WITH_LIBUV=OFF -DLWS_WITH_LIBEVENT=OFF -DCMAKE_BUILD_TYPE=DEBUG .

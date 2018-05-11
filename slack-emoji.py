@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/python
+# Compatible with python v2 and v3
 
 import requests
 import json
