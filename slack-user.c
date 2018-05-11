@@ -17,6 +17,11 @@ const char *slack_user_get_colour(struct t_slack_user *user)
     return weechat_info_get("nick_color", user->profile.display_name);
 }
 
+const char *slack_user_get_colour_for_nicklist(struct t_slack_user *user)
+{
+    return weechat_info_get("nick_color_name", user->profile.display_name);
+}
+
 const char *slack_user_as_prefix(struct t_slack_workspace *workspace,
                                  struct t_slack_user *user,
                                  const char *name)
@@ -83,11 +88,11 @@ void slack_user_nicklist_add(struct t_slack_workspace *workspace,
                                               "+" : "...");
     weechat_nicklist_add_nick(ptr_buffer, ptr_group,
                               user->profile.display_name,
-                              weechat_color(user->is_away ? 
-                                            "weechat.color.nicklist_away" :
-                                            "bar_fg"),
+                              user->is_away ? 
+                              "weechat.color.nicklist_away" :
+                              slack_user_get_colour_for_nicklist(user),
                               user->is_away ? "+" : "",
-                              weechat_color(""),
+                              "bar_fg",
                               1);
 }
 

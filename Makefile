@@ -7,7 +7,7 @@ endif
 RM=rm -f
 CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -Ilibwebsockets/include -Ijson-c
 LDFLAGS+=-shared -g $(DBGCFLAGS) $(DBGLDFLAGS)
-LDLIBS=-lgnutls
+LDLIBS=-Wl,--push-state,--as-needed -lgnutls
 
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
@@ -73,7 +73,7 @@ distclean: clean
 
 install: slack.so
 ifeq ($(shell id -u),0)
-	$(INSTALL) -s -t $(DESTDIR)$(LIBDIR)/weechat/plugins -D -m 0755 slack.so
+	$(INSTALL) -s -t $(DESTDIR)$(LIBDIR)/weechat/plugins -D -m 0644 slack.so
 else
 	$(INSTALL) -s -t ~/.weechat/plugins -D -m 0755 slack.so
 endif
