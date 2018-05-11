@@ -26,6 +26,11 @@
   A weechat plugin in C to extend the chat client to
   support Slack workspaces via the RTM and Web APIs.
 
+* Installing
+
+  See http://github.com/bqv/weechat-extras for the suite this is part of
+  and a repository/package for your distribution.
+
 * Dependencies
 
   - libwebsockets (static, submodule)
