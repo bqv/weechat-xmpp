@@ -73,9 +73,6 @@
   - [ ] Tab completion for slack emoji (see [[http://github.com/bqv/weechat-slack/issues/3][#3]])
   - [ ] Tab completion for display/user names (see [[http://github.com/bqv/weechat-slack/issues/1][#1]])
   - [ ] Sort nick-completion by recent (see [[http://github.com/bqv/weechat-slack/issues/4][#4]])
-** TODO [#B] Implement debian packaging (milestone v0.4)
-  - [ ] Switch to system libwebsockets package (dynamically link) (see [[http://github.com/bqv/weechat-slack/issues/7][#7]])
-  - [ ] Create configure build step (cmake? autotools?)
 ** TODO [#C] Implement remaining api endpoints and events (milestone v0.5)
   - [ ] Complete api endpoint set
   - [ ] Complete api event set
