@@ -19,6 +19,7 @@ SRCS=slack.c \
 	 slack-channel.c \
 	 slack-config.c \
 	 slack-command.c \
+	 slack-completion.c \
 	 slack-emoji.c \
 	 slack-input.c \
 	 slack-message.c \

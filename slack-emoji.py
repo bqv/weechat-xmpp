@@ -1,5 +1,4 @@
-#!/usr/bin/python
-# Compatible with python v2 and v3
+#!/usr/bin/env python3
 
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, version 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +37,7 @@ struct t_slack_emoji_by_text {
      max(len(o['short_names'] if o['short_names'] else []) for o in emoji) + 1))
 print("static struct t_slack_emoji_by_name slack_emoji_by_name[] =")
 print("{"+"\n".join(", {{ {0}, {1}, {2}, {3} }}".format(
-    json.dumps(name),
+    json.dumps(":"+name+":"),
     json.dumps(ast.parse("\"\\u"+"\\u".join(o['unified'].split('-'))+"\"", mode='eval').body.s),
     json.dumps(o['text']),
     "{"+json.dumps(o['texts']+[None] if o['texts'] else [None])[1:-1]+"}")
@@ -51,8 +50,9 @@ print("static struct t_slack_emoji_by_text slack_emoji_by_text[] =")
 print("{"+"\n".join(", {{ {0}, {1}, {2}, {3} }}".format(
     json.dumps(text),
     json.dumps(ast.parse("\"\\u"+"\\u".join(o['unified'].split('-'))+"\"", mode='eval').body.s),
-    json.dumps(o['short_name']),
-    "{"+json.dumps(o['short_names']+[None] if o['short_names'] else [None])[1:-1]+"}")
+    json.dumps(":"+o['short_name']+":"),
+    "{"+json.dumps(list(map(lambda name: ":"+name+":", o['short_names']))+[None]
+                   if o['short_names'] else [None])[1:-1]+"}")
                     for o,text in sorted(((o,text) for o in emoji if o['texts'] for text in o['texts']),
                                          key=lambda x:x[1])
 ).replace("null", "NULL")[1:])

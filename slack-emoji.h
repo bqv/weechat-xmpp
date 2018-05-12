@@ -5,12 +5,17 @@
 #ifndef _SLACK_EMOJI_H_
 #define _SLACK_EMOJI_H_
 
+int slack_emoji_complete_by_name_cb(const void *pointer, void *data,
+                                    const char *completion_item,
+                                    struct t_gui_buffer *buffer,
+                                    struct t_gui_completion *completion);
+
 const char *slack_emoji_get_unicode_by_name(const char *name);
 
 const char *slack_emoji_get_unicode_by_text(const char *text);
 
 const char *slack_emoji_get_text_by_name(const char *name);
     
-const char *slack_emoji_get_text_by_text(const char *text);
+const char *slack_emoji_get_name_by_text(const char *text);
 
 #endif /*SLACK_EMOJI_H*/

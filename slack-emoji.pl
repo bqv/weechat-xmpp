@@ -51,16 +51,21 @@ my %byname = map { my $o = $_; map {($_, $o)} @{$o->{'short_names'}} } @array;
 my @sortedbyname = sort { $a cmp $b } keys %byname;
 foreach my $name (@sortedbyname)
 {
-    my $_0 = "\"$name\"";
+    my $_0 = "\":$name:\"";
     my @_1 = split /-/, $byname{$name}->{'unified'};
     my $_1 = "\"";
-    foreach my $codepoint (@_1) { $_1 .= "\\u$codepoint" };
+    foreach my $codepoint (@_1) {
+        if (hex $codepoint < 0xA0) { $_1 .= chr hex $codepoint } else { $_1 .= "\\u$codepoint" }
+    };
     $_1 .= "\"";
+    $_1 =~ tr/A-Za-z/a-za-z/;
     my $_2 = $byname{$name}->{'text'};
     if (defined $_2) { $_2 = "\"$_2\"" } else { $_2 = "NULL" };
+    $_2 =~ s/\\/\\\\/g;
     my $_3 = "{";
     foreach my $text (@{$byname{$name}->{'texts'}}) { if (defined $text) { $_3 .= "\"$text\", " } };
     $_3 .= "NULL}";
+    $_3 =~ s/\\/\\\\/g;
     print "$c { $_0, $_1, $_2, $_3 }";
     $c = ',';
 }
@@ -73,14 +78,18 @@ my @sortedbytext = sort { $a cmp $b } keys %bytext;
 foreach my $text (@sortedbytext)
 {
     my $_0 = "\"$text\"";
+    $_0 =~ s/\\/\\\\/g;
     my @_1 = split /-/, $bytext{$text}->{'unified'};
     my $_1 = "\"";
-    foreach my $codepoint (@_1) { $_1 .= "\\u$codepoint" };
+    foreach my $codepoint (@_1) {
+        if (hex $codepoint < 0xA0) { $_1 .= chr hex $codepoint } else { $_1 .= "\\u$codepoint" }
+    };
     $_1 .= "\"";
+    $_1 =~ tr/A-Za-z/a-za-z/;
     my $_2 = $bytext{$text}->{'short_name'};
-    if (defined $_2) { $_2 = "\"$_2\"" } else { $_2 = "NULL" };
+    if (defined $_2) { $_2 = "\":$_2:\"" } else { $_2 = "NULL" };
     my $_3 = "{";
-    foreach my $name (@{$bytext{$text}->{'short_names'}}) { if (defined $name) { $_3 .= "\"$name\", " } };
+    foreach my $name (@{$bytext{$text}->{'short_names'}}) { if (defined $name) { $_3 .= "\":$name:\", " } };
     $_3 .= "NULL}";
     print "$c { $_0, $_1, $_2, $_3 }";
     $c = ',';

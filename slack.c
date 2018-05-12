@@ -15,6 +15,7 @@
 #include "slack-workspace.h"
 #include "slack-api.h"
 #include "slack-buffer.h"
+#include "slack-completion.h"
 
 
 WEECHAT_PLUGIN_NAME(SLACK_PLUGIN_NAME);
@@ -49,7 +50,7 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 
     weechat_plugin = plugin;
 
-    lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE /*| LLL_INFO | LLL_DEBUG
+    lws_set_log_level(LLL_ERR | LLL_WARN /*| LLL_NOTICE | LLL_INFO | LLL_DEBUG
             | LLL_PARSER | LLL_HEADER | LLL_EXT | LLL_CLIENT
             | LLL_LATENCY | LLL_USER | LLL_COUNT*/,
             slack_lwsl_emit_weechat);
@@ -62,6 +63,8 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
     slack_command_init();
 
     slack_api_init();
+
+    slack_completion_init();
 
     slack_hook_timer = weechat_hook_timer(0.1 * 1000, 0, 0,
                                           &slack_workspace_timer_cb,
