@@ -95,6 +95,8 @@
 ** TODO [#C] Implement full weechat functionality (milestone v0.6)
   - [ ] Hook buffer closes
   - [ ] Relay compatibility
+  - [ ] Config Options
+    - [ ] Emoji translation options (see [[http://github.com/bqv/weechat-slack/issues/11][#11]])
 ** TODO [#D] Close all issues (milestone v1.0)
 
 * Contributing

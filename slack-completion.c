@@ -13,20 +13,39 @@
 #include "slack-channel.h"
 #include "slack-completion.h"
 
+int slack_completion_workspaces_cb(const void *pointer, void *data,
+                                   const char *completion_item,
+                                   struct t_gui_buffer *buffer,
+                                   struct t_gui_completion *completion)
+{
+    struct t_slack_workspace *ptr_workspace;
+
+    /* make C compiler happy */
+    (void) pointer;
+    (void) data;
+    (void) completion_item;
+    (void) buffer;
+
+    for (ptr_workspace = slack_workspaces; ptr_workspace;
+         ptr_workspace = ptr_workspace->next_workspace)
+    {
+        weechat_hook_completion_list_add(completion, ptr_workspace->domain,
+                                         0, WEECHAT_LIST_POS_SORT);
+    }
+
+    return WEECHAT_RC_OK;
+}
+
 void slack_completion_init()
 {
     struct t_config_option *option;
     const char *default_template;
     
-    /*
-    weechat_hook_command_run("/input return",
-                             &slack_emoji_input_replace_cb,
-                             NULL, NULL);
-    
-    weechat_hook_command_run("/input complete*",
-                             &slack_emoji_input_complete_cb,
-                             NULL, NULL);
-    */
+    weechat_hook_completion("slack_workspace",
+                            N_("slack workspaces"),
+                            &slack_completion_workspaces_cb,
+                            NULL, NULL);
+
     weechat_hook_completion("slack_emoji",
                             N_("slack emoji"),
                             &slack_emoji_complete_by_name_cb,
