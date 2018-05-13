@@ -5,8 +5,19 @@
 #ifndef _SLACK_WORKSPACE_H_
 #define _SLACK_WORKSPACE_H_
 
+#define SLACK_WORKSPACE_EMOJI_SHORTNAME_MAX_LEN 1 + 100 + 1
+
 extern struct t_slack_workspace *slack_workspaces;
 extern struct t_slack_workspace *last_slack_workspace;
+
+struct t_slack_workspace_emoji
+{
+    char *name;
+    char *url;
+    
+	struct t_slack_workspace_emoji *prev_emoji;
+    struct t_slack_workspace_emoji *next_emoji;
+};
 
 enum t_slack_workspace_option
 {
@@ -51,6 +62,8 @@ struct t_slack_workspace
     struct t_slack_user *last_user;
     struct t_slack_channel *channels;
     struct t_slack_channel *last_channel;
+	struct t_slack_workspace_emoji *emoji;
+    struct t_slack_workspace_emoji *last_emoji;
 	struct t_slack_workspace *prev_workspace;
     struct t_slack_workspace *next_workspace;
 };
@@ -72,5 +85,11 @@ int slack_workspace_connect(struct t_slack_workspace *workspace);
 int slack_workspace_timer_cb(const void *pointer, void *data, int remaining_calls);
 void slack_workspace_register_request(struct t_slack_workspace *workspace,
                                       struct t_slack_request *request);
+struct t_slack_workspace_emoji *slack_workspace_emoji_search(
+    struct t_slack_workspace *workspace,
+    const char *name);
+struct t_slack_workspace_emoji *slack_workspace_add_emoji(
+    struct t_slack_workspace *workspace,
+    const char *name, const char *url);
 
 #endif /*SLACK_WORKSPACE_H*/

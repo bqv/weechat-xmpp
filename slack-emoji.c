@@ -102,6 +102,7 @@ int slack_emoji_complete_by_name_cb(const void *pointer, void *data,
                                     struct t_gui_buffer *buffer,
                                     struct t_gui_completion *completion)
 {
+    struct t_slack_workspace_emoji *ptr_emoji;
     struct t_slack_workspace *workspace;
     struct t_slack_channel *channel;
     
@@ -109,15 +110,25 @@ int slack_emoji_complete_by_name_cb(const void *pointer, void *data,
     (void) data;
     (void) completion_item;
 
+    workspace = NULL;
     slack_buffer_get_workspace_and_channel(buffer, &workspace, &channel);
 
     size_t i, emoji_count = sizeof(slack_emoji_by_name)
         / sizeof(struct t_slack_emoji_by_name);
+
+    if (workspace)
+    {
+        for (ptr_emoji = workspace->emoji; ptr_emoji;
+             ptr_emoji = ptr_emoji->next_emoji)
+            weechat_hook_completion_list_add(completion,
+                                            ptr_emoji->name,
+                                            0, WEECHAT_LIST_POS_END);
     
-    for (i = 0; i < emoji_count; i++)
-        weechat_hook_completion_list_add(completion,
-                                         slack_emoji_by_name[i].name,
-                                         0, WEECHAT_LIST_POS_END);
+        for (i = 0; i < emoji_count; i++)
+            weechat_hook_completion_list_add(completion,
+                                            slack_emoji_by_name[i].name,
+                                            0, WEECHAT_LIST_POS_END);
+    }
 
     return WEECHAT_RC_OK;
 }

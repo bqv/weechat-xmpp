@@ -388,6 +388,8 @@ struct t_slack_workspace *slack_workspace_alloc(const char *domain)
     new_workspace->last_user = NULL;
     new_workspace->channels = NULL;
     new_workspace->last_channel = NULL;
+    new_workspace->emoji = NULL;
+    new_workspace->last_emoji = NULL;
 
     /* create options with null value */
     for (i = 0; i < SLACK_WORKSPACE_NUM_OPTIONS; i++)
@@ -910,4 +912,61 @@ void slack_workspace_register_request(struct t_slack_workspace *workspace,
     else
         workspace->requests = request;
     workspace->last_request = request;
+}
+
+struct t_slack_workspace_emoji *slack_workspace_emoji_search(
+    struct t_slack_workspace *workspace,
+    const char *name)
+{
+    struct t_slack_workspace_emoji *ptr_emoji;
+
+    if (!workspace || !name)
+        return NULL;
+
+    for (ptr_emoji = workspace->emoji; ptr_emoji;
+         ptr_emoji = ptr_emoji->next_emoji)
+    {
+        if (weechat_strcasecmp(ptr_emoji->name, name) == 0)
+            return ptr_emoji;
+    }
+
+    return NULL;
+}
+
+struct t_slack_workspace_emoji *slack_workspace_add_emoji(
+    struct t_slack_workspace *workspace,
+    const char *name, const char *url)
+{
+    struct t_slack_workspace_emoji *ptr_emoji, *new_emoji;
+    char shortname[SLACK_WORKSPACE_EMOJI_SHORTNAME_MAX_LEN + 1];
+    
+    (void) url;
+    
+    if (!workspace || !name || !name[0])
+        return NULL;
+
+    snprintf(shortname, SLACK_WORKSPACE_EMOJI_SHORTNAME_MAX_LEN + 1,
+             ":%s:", name);
+
+    ptr_emoji = slack_workspace_emoji_search(workspace, shortname);
+    if (ptr_emoji)
+    {
+        return ptr_emoji;
+    }
+
+    if ((new_emoji = malloc(sizeof(*new_emoji))) == NULL)
+        return NULL;
+
+    new_emoji->name = strdup(shortname);
+    new_emoji->url = strdup(url);
+
+    new_emoji->prev_emoji = workspace->last_emoji;
+    new_emoji->next_emoji = NULL;
+    if (workspace->last_emoji)
+        (workspace->last_emoji)->next_emoji = new_emoji;
+    else
+        workspace->emoji = new_emoji;
+    workspace->last_emoji = new_emoji;
+    
+    return new_emoji;
 }

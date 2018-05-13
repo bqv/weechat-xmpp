@@ -11,6 +11,7 @@
 #include "slack-api-hello.h"
 #include "../request/slack-request-channels-list.h"
 #include "../request/slack-request-users-list.h"
+#include "../request/slack-request-emoji-list.h"
 
 int slack_api_hello_handle(struct t_slack_workspace *workspace)
 {
@@ -32,6 +33,12 @@ int slack_api_hello_handle(struct t_slack_workspace *workspace)
             weechat_config_string(
                 workspace->options[SLACK_WORKSPACE_OPTION_TOKEN]),
             "");
+    if (request)
+        slack_workspace_register_request(workspace, request);
+
+    request = slack_request_emoji_list(workspace,
+            weechat_config_string(
+                workspace->options[SLACK_WORKSPACE_OPTION_TOKEN]));
     if (request)
         slack_workspace_register_request(workspace, request);
 

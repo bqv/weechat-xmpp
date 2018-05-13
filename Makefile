@@ -1,10 +1,9 @@
 ifdef DEBUG
-	CC=clang
-	CXX=g++
-	DBGCFLAGS=-fsanitize=address -fsanitize=leak
-	DBGLDFLAGS=-static-libasan -static-liblsan
+	DBGCFLAGS=-fsanitize=address -fsanitize=leak -fsanitize=undefined
+	DBGLDFLAGS=-static-libasan -static-liblsan -static-libubsan
 endif
 RM=rm -f
+FIND=find
 CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -Ilibwebsockets/include -Ijson-c
 LDFLAGS+=-shared -g $(DBGCFLAGS) $(DBGLDFLAGS)
 LDLIBS=-lgnutls
@@ -40,13 +39,14 @@ SRCS=slack.c \
 	 request/slack-request-chat-postmessage.c \
 	 request/slack-request-channels-list.c \
 	 request/slack-request-conversations-members.c \
+	 request/slack-request-emoji-list.c \
 	 request/slack-request-users-list.c
 OBJS=$(subst .c,.o,$(SRCS)) libwebsockets/lib/libwebsockets.a json-c/libjson-c.a
 
 all: libwebsockets/lib/libwebsockets.a json-c/libjson-c.a weechat-slack
 
 weechat-slack: $(OBJS)
-	$(CXX) $(LDFLAGS) -o slack.so $(OBJS) $(LDLIBS) 
+	$(CC) $(LDFLAGS) -o slack.so $(OBJS) $(LDLIBS) 
 
 ifeq ($(shell which python),)
 slack-emoji.inc: slack-emoji.pl
@@ -70,7 +70,10 @@ depend: .depend
 
 .depend: libwebsockets/lib/libwebsockets.a json-c/libjson-c.a $(SRCS)
 	$(RM) ./.depend
-	$(CC) $(CFLAGS) -MM $^>>./.depend;
+	$(CC) $(CFLAGS) -MM $^>>./.depend
+
+tidy:
+	$(FIND) . -name "*.o" -delete
 
 clean:
 	$(RM) $(OBJS)
