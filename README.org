@@ -35,7 +35,7 @@
 
   - libwebsockets (static, submodule)
   - json-c (static, submodule)
-  - weechat (>= v1.4)
+  - weechat (>= v1.7)
 
 * Building
 
@@ -84,6 +84,11 @@
 ** TODO [#B] Implement websocket ping and pong (milestone v0.4)
   - [ ] Add ping timer and pong handler (see [[http://github.com/bqv/weechat-slack/issues/9][#9]])
 ** TODO [#C] Implement remaining api endpoints and events (milestone v0.5)
+  - [ ] Support all channel types
+    - [X] +Channels+
+    - [ ] Groups
+    - [ ] MPIMs
+    - [ ] IMs
   - [ ] Complete api endpoint set
   - [ ] Complete api event set
 ** TODO [#C] Implement full weechat functionality (milestone v0.6)

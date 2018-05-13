@@ -10,6 +10,14 @@ int slack_emoji_complete_by_name_cb(const void *pointer, void *data,
                                     struct t_gui_buffer *buffer,
                                     struct t_gui_completion *completion);
 
+int slack_emoji_input_complete_cb(const void *pointer, void *data,
+                                  struct t_gui_buffer *buffer,
+                                  const char *command);
+
+int slack_emoji_input_replace_cb(const void *pointer, void *data,
+                                 struct t_gui_buffer *buffer,
+                                 const char *command);
+
 const char *slack_emoji_get_unicode_by_name(const char *name);
 
 const char *slack_emoji_get_unicode_by_text(const char *text);

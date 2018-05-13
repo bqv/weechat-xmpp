@@ -13,6 +13,14 @@
 
 void slack_completion_init()
 {
+    weechat_hook_command_run("/input return",
+                             &slack_emoji_input_replace_cb,
+                             NULL, NULL);
+    
+    weechat_hook_command_run("/input complete*",
+                             &slack_emoji_input_complete_cb,
+                             NULL, NULL);
+    
     weechat_hook_completion("slack_emoji",
                             N_("slack emoji"),
                             &slack_emoji_complete_by_name_cb,

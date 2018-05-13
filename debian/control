@@ -16,7 +16,7 @@ Vcs-Browser: https://github.com/bqv/weechat-slack
 Package: weechat-slack
 Architecture: any
 Depends:
-    weechat (>= 1.4),
+    weechat (>= 1.7),
     ${shlibs:Depends},
     ${misc:Depends}
 Description: Fast, light and extensible chat client - Slack plugin
