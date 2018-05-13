@@ -8,6 +8,9 @@
 
 #include "weechat-plugin.h"
 #include "slack.h"
+#include "slack-workspace.h"
+#include "slack-channel.h"
+#include "slack-buffer.h"
 #include "slack-emoji.h"
 
 #include "slack-emoji.inc"
@@ -99,10 +102,14 @@ int slack_emoji_complete_by_name_cb(const void *pointer, void *data,
                                     struct t_gui_buffer *buffer,
                                     struct t_gui_completion *completion)
 {
+    struct t_slack_workspace *workspace;
+    struct t_slack_channel *channel;
+    
     (void) pointer;
     (void) data;
     (void) completion_item;
-    (void) buffer;
+
+    slack_buffer_get_workspace_and_channel(buffer, &workspace, &channel);
 
     size_t i, emoji_count = sizeof(slack_emoji_by_name)
         / sizeof(struct t_slack_emoji_by_name);
@@ -200,6 +207,8 @@ int slack_emoji_input_replace_cb(const void *pointer, void *data,
     (void) data;
     (void) buffer;
     (void) command;
+
+    /* TBI */
     
     return WEECHAT_RC_OK;
 }
