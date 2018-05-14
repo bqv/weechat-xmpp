@@ -107,6 +107,10 @@ int slack_api_message_message_handle(struct t_slack_workspace *workspace,
         _("%s%s"),
         slack_user_as_prefix(workspace, ptr_user, NULL),
         message);
+    slack_channel_member_speaking_add(channel, ptr_user->profile.display_name,
+                                      weechat_string_has_highlight(
+                                          message,
+                                          ptr_user->profile.display_name));
     free(message);
     
     ptr_typing = slack_channel_typing_search(ptr_channel,

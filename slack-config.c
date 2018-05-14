@@ -15,6 +15,8 @@ struct t_config_file *slack_config_file;
 struct t_config_section *slack_config_section_workspace_default;
 struct t_config_section *slack_config_section_workspace;
 
+struct t_config_option *slack_config_look_nick_completion_smart;
+
 struct t_config_option *slack_config_workspace_default[SLACK_WORKSPACE_NUM_OPTIONS];
 
 int slack_config_workspace_check_value_cb(const void *pointer, void *data,
@@ -242,6 +244,31 @@ int slack_config_init()
 
     if(!slack_config_file)
         return 0;
+
+    ptr_section = weechat_config_new_section(
+            slack_config_file, "look",
+            0, 0,
+            NULL, NULL, NULL,
+            NULL, NULL, NULL,
+            NULL, NULL, NULL,
+            NULL, NULL, NULL,
+            NULL, NULL, NULL);
+
+    if (!ptr_section)
+    {
+        weechat_config_free(slack_config_file);
+        slack_config_file = NULL;
+        return 0;
+    }
+
+    slack_config_look_nick_completion_smart = weechat_config_new_option (
+        slack_config_file, ptr_section,
+        "nick_completion_smart", "integer",
+        N_("smart completion for nicks (completes first with last speakers): "
+           "speakers = all speakers (including highlights), "
+           "speakers_highlights = only speakers with highlight"),
+        "off|speakers|speakers_highlights", 0, 0, "speakers", NULL, 0,
+        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
     ptr_section = weechat_config_new_section(
             slack_config_file, "workspace_default",

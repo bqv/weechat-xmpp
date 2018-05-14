@@ -29,11 +29,11 @@
   
 * Usage
 
-  1. Start with `/slack register` for instructions on how
+  1. Start with =/slack register= for instructions on how
      to obtain a token, or if you already have a token, use
-     `/slack register <token>`.
+     =/slack register <token>=.
 
-  2. Use `/slack connect <workspace-name>` with the name 
+  2. Use =/slack connect <workspace-name>= with the name 
      returned by register
 
 * Installing

@@ -237,6 +237,8 @@ struct t_slack_channel *slack_channel_new(struct t_slack_workspace *workspace,
     new_channel->is_user_deleted = 0;
 
     new_channel->typing_hook_timer = typing_timer;
+    new_channel->members_speaking[0] = NULL;
+    new_channel->members_speaking[1] = NULL;
     new_channel->typings = NULL;
     new_channel->last_typing = NULL;
     new_channel->members = NULL;
@@ -253,6 +255,95 @@ struct t_slack_channel *slack_channel_new(struct t_slack_workspace *workspace,
     workspace->last_channel = new_channel;
 
     return new_channel;
+}
+
+void slack_channel_member_speaking_add_to_list(struct t_slack_channel *channel,
+                                               const char *nick,
+                                               int highlight)
+{
+    int size, to_remove, i;
+    struct t_weelist_item *ptr_item;
+
+    /* create list if it does not exist */
+    if (!channel->members_speaking[highlight])
+        channel->members_speaking[highlight] = weechat_list_new();
+
+    /* remove item if it was already in list */
+    ptr_item = weechat_list_casesearch(channel->members_speaking[highlight], nick);
+    if (ptr_item)
+        weechat_list_remove(channel->members_speaking[highlight], ptr_item);
+
+    /* add nick in list */
+    weechat_list_add(channel->members_speaking[highlight], nick,
+                     WEECHAT_LIST_POS_END, NULL);
+
+    /* reduce list size if it's too big */
+    size = weechat_list_size(channel->members_speaking[highlight]);
+    if (size > SLACK_CHANNEL_MEMBERS_SPEAKING_LIMIT)
+    {
+        to_remove = size - SLACK_CHANNEL_MEMBERS_SPEAKING_LIMIT;
+        for (i = 0; i < to_remove; i++)
+        {
+            weechat_list_remove(
+                channel->members_speaking[highlight],
+                weechat_list_get(channel->members_speaking[highlight], 0));
+        }
+    }
+}
+
+void slack_channel_member_speaking_add(struct t_slack_channel *channel,
+                                       const char *nick, int highlight)
+{
+    if (highlight < 0)
+        highlight = 0;
+    if (highlight > 1)
+        highlight = 1;
+    if (highlight)
+        slack_channel_member_speaking_add_to_list(channel, nick, 1);
+
+    slack_channel_member_speaking_add_to_list(channel, nick, 0);
+}
+
+void slack_channel_member_speaking_rename(struct t_slack_channel *channel,
+                                          const char *old_nick,
+                                          const char *new_nick)
+{
+    struct t_weelist_item *ptr_item;
+    int i;
+
+    for (i = 0; i < 2; i++)
+    {
+        if (channel->members_speaking[i])
+        {
+            ptr_item = weechat_list_search(channel->members_speaking[i], old_nick);
+            if (ptr_item)
+                weechat_list_set(ptr_item, new_nick);
+        }
+    }
+}
+
+void slack_channel_member_speaking_rename_if_present(struct t_slack_workspace *workspace,
+                                                     struct t_slack_channel *channel,
+                                                     const char *nick)
+{
+    struct t_weelist_item *ptr_item;
+    int i, j, list_size;
+
+    (void) workspace;
+
+    for (i = 0; i < 2; i++)
+    {
+        if (channel->members_speaking[i])
+        {
+            list_size = weechat_list_size(channel->members_speaking[i]);
+            for (j = 0; j < list_size; j++)
+            {
+                ptr_item = weechat_list_get (channel->members_speaking[i], j);
+                if (ptr_item && (strcasecmp(weechat_list_string(ptr_item), nick) == 0))
+                    weechat_list_set(ptr_item, nick);
+            }
+        }
+    }
 }
 
 void slack_channel_typing_free(struct t_slack_channel *channel,
@@ -473,6 +564,10 @@ void slack_channel_free(struct t_slack_workspace *workspace,
         free(channel->purpose.creator);
     if (channel->creator)
         free(channel->creator);
+    if (channel->members_speaking[0])
+        weechat_list_free(channel->members_speaking[0]);
+    if (channel->members_speaking[1])
+        weechat_list_free(channel->members_speaking[1]);
     if (channel->buffer_as_string)
         free(channel->buffer_as_string);
 

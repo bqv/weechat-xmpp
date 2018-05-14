@@ -5,6 +5,8 @@
 #ifndef _SLACK_CHANNEL_H_
 #define _SLACK_CHANNEL_H_
 
+#define SLACK_CHANNEL_MEMBERS_SPEAKING_LIMIT 128
+
 #define SLACK_CHANNEL_NAME_MAX_LEN 22
 
 enum t_slack_channel_type
@@ -76,6 +78,7 @@ struct t_slack_channel
     int is_user_deleted;
 
     struct t_hook *typing_hook_timer;
+    struct t_weelist *members_speaking[2];
     struct t_slack_channel_typing *typings;
     struct t_slack_channel_typing *last_typing;
     struct t_slack_channel_member *members;
@@ -96,6 +99,17 @@ void slack_channel_add_nicklist_groups(struct t_slack_workspace *workspace,
 struct t_slack_channel *slack_channel_new(struct t_slack_workspace *workspace,
                                           enum t_slack_channel_type type,
                                           const char *id, const char *name);
+
+void slack_channel_member_speaking_add(struct t_slack_channel *channel,
+                                       const char *nick, int highlight);
+
+void slack_channel_member_speaking_rename(struct t_slack_channel *channel,
+                                          const char *old_nick,
+                                          const char *new_nick);
+
+void slack_channel_member_speaking_rename_if_present(struct t_slack_workspace *workspace,
+                                                     struct t_slack_channel *channel,
+                                                     const char *nick);
 
 void slack_channel_typing_free(struct t_slack_channel *channel,
                                struct t_slack_channel_typing *typing);

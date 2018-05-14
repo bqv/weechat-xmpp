@@ -7,10 +7,19 @@
 
 #define SLACK_CONFIG_NAME "slack"
 
+enum t_slack_config_nick_completion
+{
+    SLACK_CONFIG_NICK_COMPLETION_SMART_OFF = 0,
+    SLACK_CONFIG_NICK_COMPLETION_SMART_SPEAKERS,
+    SLACK_CONFIG_NICK_COMPLETION_SMART_SPEAKERS_HIGHLIGHTS,
+};
+
 extern struct t_config_file *slack_config_file;
 
 extern struct t_config_section *slack_config_section_workspace_default;
 extern struct t_config_section *slack_config_section_workspace;
+
+extern struct t_config_option *slack_config_look_nick_completion_smart;
 
 extern struct t_config_option *slack_config_workspace_default[];
 
