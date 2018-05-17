@@ -124,6 +124,31 @@ int slack_api_message_message_handle(struct t_slack_workspace *workspace,
     return 1;
 }
 
+int slack_api_message_attachment_handle(struct t_slack_workspace *workspace,
+                                        const char *channel, const char *user,
+                                        const char *text, const char *ts)
+{
+    struct t_slack_channel *ptr_channel;
+    struct t_slack_user *ptr_user;
+
+    ptr_channel = slack_channel_search(workspace, channel);
+    if (!ptr_channel)
+        return 1; /* silently ignore if channel hasn't been loaded yet */
+    ptr_user = slack_user_search(workspace, user);
+    if (!ptr_user)
+        return 1; /* silently ignore if user hasn't been loaded yet */
+
+    weechat_printf_date_tags(
+        ptr_channel->buffer,
+        (time_t)atof(ts),
+        "slack_message",
+        _("%s%s"),
+        "++\t",
+        text);
+    
+    return 1;
+}
+
 int slack_api_message_route_message(struct t_slack_workspace *workspace,
                                     const char *subtype,
                                     json_object *message)
@@ -155,6 +180,8 @@ int slack_api_message(struct t_slack_workspace *workspace,
                       json_object *message)
 {
     json_object *subtype, *channel, *user, *text, *ts;
+    json_object *attachments, *attachment, *fallback;
+    int i, rc;
 
     subtype = json_object_object_get(message, "subtype");
     if (!subtype)
@@ -175,11 +202,32 @@ int slack_api_message(struct t_slack_workspace *workspace,
         if (!json_valid(ts, workspace))
             return 0;
 
-        return slack_api_message_message_handle(workspace,
+        rc = slack_api_message_message_handle(workspace,
                 json_object_get_string(channel),
                 json_object_get_string(user),
                 json_object_get_string(text),
                 json_object_get_string(ts));
+        attachments = json_object_object_get(message, "attachments");
+        if (json_valid(attachments, workspace))
+        {
+            for (i = json_object_array_length(attachments); i > 0; i--)
+            {
+                attachment = json_object_array_get_idx(attachments, i - 1);
+                if (!json_valid(attachment, workspace))
+                    continue;
+                
+                fallback = json_object_object_get(attachment, "fallback");
+                if (!json_valid(fallback, workspace))
+                    continue;
+
+                slack_api_message_attachment_handle(workspace,
+                        json_object_get_string(channel),
+                        json_object_get_string(user),
+                        json_object_get_string(fallback),
+                        json_object_get_string(ts));
+            }
+        }
+        return rc;
     }
     else
     { /* special message */

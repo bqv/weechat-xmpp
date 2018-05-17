@@ -84,6 +84,7 @@
   - [ ] Implement handling api message =message.message_changed=
   - [ ] Implement handling api message =message.message_deleted=
   - [ ] Implement handling api message =message.message_replied=
+  - [ ] Implement handling api message =message.file_share=
   - [ ] Implement sending websocket =typing= message
 ** TODO [#B] Implement completion engine (milestone v0.3)
   - [X] +Tab completion for slack emoji (see [[http://github.com/bqv/weechat-slack/issues/3][#3]])+
