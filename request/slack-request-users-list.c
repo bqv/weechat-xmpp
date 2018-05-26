@@ -219,7 +219,9 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
                     new_user = slack_user_new(request->workspace,
                                               json_object_get_string(id),
-                                              json_object_get_string(display_name));
+                                              json_object_get_string(display_name)[0] ?
+                                              json_object_get_string(display_name) :
+                                              json_object_get_string(name));
                     
                     bot_id = json_object_object_get(profile, "bot_id");
                     if (json_valid(bot_id, request->workspace))
