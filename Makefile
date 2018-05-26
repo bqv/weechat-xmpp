@@ -55,6 +55,7 @@ slack-emoji.inc: slack-emoji.pl
 	perl slack-emoji.pl > slack-emoji.inc
 else
 slack-emoji.inc: slack-emoji.py
+	pip install requests
 	env python3 slack-emoji.py > slack-emoji.inc
 endif
 

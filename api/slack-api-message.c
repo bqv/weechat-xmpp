@@ -138,13 +138,15 @@ int slack_api_message_attachment_handle(struct t_slack_workspace *workspace,
     if (!ptr_user)
         return 1; /* silently ignore if user hasn't been loaded yet */
 
+    char *message = slack_message_decode(workspace, text);
     weechat_printf_date_tags(
         ptr_channel->buffer,
         (time_t)atof(ts),
         "slack_message",
         _("%s%s"),
         "++\t",
-        text);
+        message);
+    free(message);
     
     return 1;
 }
