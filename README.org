@@ -15,11 +15,11 @@
 [[https://github.com/bqv/weechat-slack/issues][file:https://img.shields.io/github/issues/bqv/weechat-slack.svg]]
 [[https://github.com/bqv/weechat-slack/issues?q=is:issue+is:closed][file:https://img.shields.io/github/issues-closed/bqv/weechat-slack.svg]]
 [[https://github.com/bqv/weechat-slack/blob/master/LICENSE][file:https://img.shields.io/github/license/bqv/weechat-slack.svg]]
-[[https://github.com/bqv/weechat-extras/][file:https://img.shields.io/badge/weechat--extras-slack-yellow.svg]]
+[[https://github.com/bqv/weechat-extras/][file:https://img.shields.io/badge/weechat--extras-slack-blue.svg]]
 
  | Status:     | Under Development                   |
  | Location:   | [[http://github.com/bqv/weechat-slack]] |
- | Version:    | 0.1.0                               |
+ | Version:    | 0.1.5                               |
  | Disclaimer: | Slack's API is a thing of horror    |
 
 * Description
