@@ -13,9 +13,9 @@
 #include "../../slack-channel.h"
 #include "../../slack-user.h"
 #include "../slack-api-message.h"
-#include "slack-api-message-thread_broadcast.h"
+#include "slack-api-message-message-changed.h"
 
-static const char *subtype = "thread_broadcast";
+static const char *subtype = "message_changed";
 
 static inline int json_valid(json_object *object, struct t_slack_workspace *workspace)
 {
@@ -33,9 +33,9 @@ static inline int json_valid(json_object *object, struct t_slack_workspace *work
     return 1;
 }
 
-int slack_api_message_thread_broadcast_handle(struct t_slack_workspace *workspace,
-                                              json_object *root, const char *user,
-                                              const char *text, const char *ts)
+int slack_api_message_message_changed_handle(struct t_slack_workspace *workspace,
+                                             json_object *root, const char *user,
+                                             const char *text, const char *ts)
 {
     struct t_slack_channel *ptr_channel;
     struct t_slack_user *ptr_user;
@@ -71,15 +71,19 @@ int slack_api_message_thread_broadcast_handle(struct t_slack_workspace *workspac
     return 1;
 }
 
-int slack_api_message_thread_broadcast(struct t_slack_workspace *workspace,
-                                       json_object *message)
+int slack_api_message_message_changed(struct t_slack_workspace *workspace,
+                                      json_object *message)
 {
-    json_object *root, *user, *text, *ts;
-    root = json_object_object_get(message, "root");
-    if (!json_valid(root, workspace))
+    json_object *channel, *oldmsg, *user, *text, *ts;
+    channel = json_object_object_get(message, "channel");
+    if (!json_valid(channel, workspace))
         return 0;
 
-    user = json_object_object_get(message, "user");
+    oldmsg = json_object_object_get(message, "message");
+    if (!json_valid(oldmsg, workspace))
+        return 0;
+
+    user = json_object_object_get(oldmsg, "user");
     if (!json_valid(user, workspace))
         return 0;
 
@@ -91,9 +95,10 @@ int slack_api_message_thread_broadcast(struct t_slack_workspace *workspace,
     if (!json_valid(ts, workspace))
         return 0;
 
-    return slack_api_message_thread_broadcast_handle(workspace,
-            root, json_object_get_string(user),
-                  json_object_get_string(text),
-                  json_object_get_string(ts));
+    return slack_api_message_message_changed_handle(workspace,
+            json_object_get_string(channel),
+            json_object_get_string(user),
+            json_object_get_string(text),
+            json_object_get_string(ts));
 }
 

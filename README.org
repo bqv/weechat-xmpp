@@ -17,7 +17,7 @@
 [[https://github.com/bqv/weechat-slack/blob/master/LICENSE][file:https://img.shields.io/github/license/bqv/weechat-slack.svg]]
 [[https://github.com/bqv/weechat-extras/][file:https://img.shields.io/badge/weechat--extras-slack-blue.svg]]
 
- | Status:     | Under Development                   |
+ | Status:     | Aaaaaaaaaaaaaaaaa                   |
  | Location:   | [[http://github.com/bqv/weechat-slack]] |
  | Version:    | 0.1.5                               |
  | Disclaimer: | Slack's API is a thing of horror    |
@@ -79,7 +79,6 @@
 ** TODO [#A] Implement essential api endpoints and events (milestone v0.2)
   - [X] +Implement handling api message =message.me_message= (see [[http://github.com/bqv/weechat-slack/issues/5][#5]])+
   - [X] +Implement sending request =chat.meMessage= (see [[http://github.com/bqv/weechat-slack/issues/5][#5]])+
-  - [ ] Implement handling api message =message.thread_broadcast=
   - [X] +Implement handling api message =message.bot_message= (see [[http://github.com/bqv/weechat-slack/issues/2][#2]])+
   - [ ] Implement handling api message =message.message_changed=
   - [ ] Implement handling api message =message.message_deleted=
@@ -94,7 +93,9 @@
   - [ ] Sort nick-completion by recent speakers (see [[http://github.com/bqv/weechat-slack/issues/4][#4]])
 ** TODO [#B] Implement websocket ping and pong (milestone v0.4)
   - [ ] Add ping timer and pong handler (see [[http://github.com/bqv/weechat-slack/issues/9][#9]])
-** TODO [#C] Implement remaining api endpoints and events (milestone v0.5)
+** TODO [#B] Implement thread handling (milestone v0.5)
+  - [ ] Implement handling api message =message.thread_broadcast=
+** TODO [#C] Implement remaining api endpoints and events (milestone v0.6)
   - [ ] Support all channel types
     - [X] +Channels+
     - [ ] Groups
@@ -102,7 +103,7 @@
     - [ ] IMs
   - [ ] Complete api endpoint set
   - [ ] Complete api event set
-** TODO [#C] Implement full weechat functionality (milestone v0.6)
+** TODO [#C] Implement full weechat functionality (milestone v0.7)
   - [ ] Hook buffer closes
   - [ ] Relay compatibility
   - [ ] Config Options
