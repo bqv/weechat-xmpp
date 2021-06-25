@@ -1,6 +1,3 @@
-[submodule "libwebsockets"]
-	path = libwebsockets
-	url = https://github.com/warmcat/libwebsockets
 [submodule "json-c"]
 	path = json-c
 	url = https://github.com/json-c/json-c

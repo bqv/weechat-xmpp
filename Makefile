@@ -4,15 +4,17 @@ ifdef DEBUG
 endif
 RM=rm -f
 FIND=find
-CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -Ilibwebsockets/include -Ijson-c
+CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -Ilibstrophe -Ijson-c
 LDFLAGS+=-shared -g $(DBGCFLAGS) $(DBGLDFLAGS)
-LDLIBS=-lgnutls
+LDLIBS=
 
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
 INSTALL ?= /usr/bin/install
 
-SRCS=slack.c \
+SRCS=xmpp.c \
+
+OLDSRCS=slack.c \
 	 slack-api.c \
 	 slack-buffer.c \
 	 slack-channel.c \
@@ -41,35 +43,26 @@ SRCS=slack.c \
 	 request/slack-request-conversations-members.c \
 	 request/slack-request-emoji-list.c \
 	 request/slack-request-users-list.c
-OBJS=$(subst .c,.o,$(SRCS)) libwebsockets/lib/libwebsockets.a json-c/libjson-c.a
+OBJS=$(subst .c,.o,$(SRCS)) libstrophe/.libs/libstrophe.a json-c/libjson-c.a
 
-all: libwebsockets/lib/libwebsockets.a json-c/libjson-c.a weechat-slack
+all: libstrophe/.libs/libstrophe.a json-c/libjson-c.a weechat-xmpp
 
-weechat-slack: $(OBJS)
-	$(CC) $(LDFLAGS) -o slack.so $(OBJS) $(LDLIBS) 
+weechat-xmpp: $(OBJS)
+	$(CC) $(LDFLAGS) -o xmpp.so $(OBJS) $(LDLIBS) 
 
-ifeq ($(shell which python),)
-slack-emoji.inc: slack-emoji.pl
-	cpan LWP::Simple
-	cpan JSON
-	perl slack-emoji.pl > slack-emoji.inc
-else
-slack-emoji.inc: slack-emoji.py
-	pip install requests
-	env python3 slack-emoji.py > slack-emoji.inc
-endif
-
-libwebsockets/lib/libwebsockets.a:
-	cd libwebsockets && env CFLAGS= LDFLAGS= cmake -DLWS_STATIC_PIC=ON -DLWS_WITH_SHARED=OFF -DLWS_WITHOUT_TESTAPPS=ON -DLWS_WITH_LIBEV=OFF -DLWS_WITH_LIBUV=OFF -DLWS_WITH_LIBEVENT=OFF -DCMAKE_BUILD_TYPE=DEBUG .
-	$(MAKE) -C libwebsockets
+libstrophe/.libs/libstrophe.a:
+	cd libstrophe && ./bootstrap.sh && env CFLAGS= LDFLAGS= ./configure
+	$(MAKE) -C libstrophe
+libstrophe: libstrophe/.libs/libstrophe.a
 
 json-c/libjson-c.a:
 	cd json-c && env CFLAGS= LDFLAGS= cmake -DCMAKE_C_FLAGS=-fPIC .
 	$(MAKE) -C json-c json-c-static
+json-c: json-c/libjson-c.a
 
 depend: .depend
 
-.depend: libwebsockets/lib/libwebsockets.a json-c/libjson-c.a $(SRCS)
+.depend: libstrophe/.libs/libstrophe.a json-c/libjson-c.a $(SRCS)
 	$(RM) ./.depend
 	$(CC) $(CFLAGS) -MM $^>>./.depend
 
@@ -78,8 +71,9 @@ tidy:
 
 clean:
 	$(RM) $(OBJS)
-	$(MAKE) -C libwebsockets clean
-	$(MAKE) -C json-c clean
+	$(MAKE) -C libstrophe clean || true
+	$(MAKE) -C libwebsockets clean || true
+	$(MAKE) -C json-c clean || true
 	git submodule foreach --recursive git clean -xfd || true
 	git submodule foreach --recursive git reset --hard || true
 	git submodule update --init --recursive || true
@@ -87,17 +81,12 @@ clean:
 distclean: clean
 	$(RM) *~ .depend
 
-install: slack.so
+install: xmpp.so
 ifeq ($(shell id -u),0)
-	$(INSTALL) -s -t $(DESTDIR)$(LIBDIR)/weechat/plugins -D -m 0644 slack.so
+	$(INSTALL) -s -t $(DESTDIR)$(LIBDIR)/weechat/plugins -D -m 0644 xmpp.so
 else
-	$(INSTALL) -s -t ~/.weechat/plugins -D -m 0755 slack.so
+	$(INSTALL) -s -t ~/.weechat/plugins -D -m 0755 xmpp.so
 endif
-
-package-debian:
-	env ARCH=i386 gbp buildpackage --git-arch=i386 --git-ignore-new --git-pbuilder
-	env ARCH=amd64 gbp buildpackage --git-arch=amd64 --git-ignore-new --git-pbuilder
-#	gbp buildpackage -S --git-ignore-new
 
 .PHONY: tags cs
 
