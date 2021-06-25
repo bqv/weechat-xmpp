@@ -1,57 +1,56 @@
-#+TITLE:     weechat-slack
+#+TITLE:     weechat-xmpp
 #+AUTHOR:    Tony Olagbaiye
 #+EMAIL:     frony0@gmail.com
 #+DATE:      2018-05-09
-#+DESCRIPTION: Weechat plugin for Slack
-#+KEYWORDS: weechat slack c api
+#+DESCRIPTION: Weechat plugin for XMPP
+#+KEYWORDS: weechat xmpp c api
 #+LANGUAGE:  en
 #+OPTIONS:   H:3 num:nil toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
 #+OPTIONS:   TeX:t LaTeX:nil skip:nil d:nil todo:t pri:t tags:not-in-toc
 #+EXPORT_EXCLUDE_TAGS: exclude
 #+STARTUP:    showall
 
-[[https://travis-ci.org/bqv/weechat-slack][file:https://api.travis-ci.org/bqv/weechat-slack.svg?branch=master]]
-[[https://coveralls.io/github/bqv/weechat-slack?branch=master][file:https://coveralls.io/repos/github/bqv/weechat-slack/badge.svg?branch=master]]
-[[https://github.com/bqv/weechat-slack/issues][file:https://img.shields.io/github/issues/bqv/weechat-slack.svg]]
-[[https://github.com/bqv/weechat-slack/issues?q=is:issue+is:closed][file:https://img.shields.io/github/issues-closed/bqv/weechat-slack.svg]]
-[[https://github.com/bqv/weechat-slack/blob/master/LICENSE][file:https://img.shields.io/github/license/bqv/weechat-slack.svg]]
-[[https://github.com/bqv/weechat-extras/][file:https://img.shields.io/badge/weechat--extras-slack-blue.svg]]
+[[https://travis-ci.org/bqv/weechat-xmpp][file:https://api.travis-ci.org/bqv/weechat-xmpp.svg?branch=master]]
+[[https://coveralls.io/github/bqv/weechat-xmpp?branch=master][file:https://coveralls.io/repos/github/bqv/weechat-xmpp/badge.svg?branch=master]]
+[[https://github.com/bqv/weechat-xmpp/issues][file:https://img.shields.io/github/issues/bqv/weechat-xmpp.svg]]
+[[https://github.com/bqv/weechat-xmpp/issues?q=is:issue+is:closed][file:https://img.shields.io/github/issues-closed/bqv/weechat-xmpp.svg]]
+[[https://github.com/bqv/weechat-xmpp/blob/master/LICENSE][file:https://img.shields.io/github/license/bqv/weechat-xmpp.svg]]
+[[https://github.com/bqv/weechat-extras/][file:https://img.shields.io/badge/weechat--extras-xmpp-blue.svg]]
 
- | Status:     | Aaaaaaaaaaaaaaaaa                   |
- | Location:   | [[http://github.com/bqv/weechat-slack]] |
- | Version:    | 0.1.5                               |
- | Disclaimer: | Slack's API is a thing of horror    |
+ | Status:     | Aaaaaaaaaaaaaaaaa                      |
+ | Location:   | [[http://github.com/bqv/weechat-xmpp]] |
+ | Version:    | 0.1.0                                  |
+ | Disclaimer: | I'm lazy                               |
 
 * Description
 
   A weechat plugin in C to extend the chat client to
-  support Slack workspaces via the RTM and Web APIs.
+  support XMPP and ideally a maximal set of XEPs.
   
 * Usage
 
-  1. Start with =/slack register= for instructions on how
+  1. Start with =/xmpp register= for instructions on how
      to obtain a token, or if you already have a token, use
-     =/slack register <token>=.
+     =/xmpp register <token>=.
 
-  2. Use =/slack connect <workspace-name>= with the name 
+  2. Use =/xmpp connect <workspace-name>= with the name 
      returned by register
 
 * Installing
 
-  See http://github.com/bqv/weechat-extras for the suite this is part of
-  and a repository/package for your distribution.
+  Place xmpp.so in the appropriate place for weechat plugins.
 
 * Dependencies
 
-  - libwebsockets (static, submodule)
+  - libstrophe (static, submodule)
   - json-c (static, submodule)
   - weechat (>= v1.7)
 
 * Building
 
   #+begin_src sh
-  git clone git://github.com/bqv/weechat-slack.git
-  cd weechat-slack
+  git clone git://github.com/bqv/weechat-xmpp.git
+  cd weechat-xmpp
   make
   make install
   #+end_src
@@ -75,39 +74,9 @@
 
 * Tasks
 
-** DONE [#A] Implement basic functionality (milestone v0.1)
-** TODO [#A] Implement essential api endpoints and events (milestone v0.2)
-  - [X] +Implement handling api message =message.me_message= (see [[http://github.com/bqv/weechat-slack/issues/5][#5]])+
-  - [X] +Implement sending request =chat.meMessage= (see [[http://github.com/bqv/weechat-slack/issues/5][#5]])+
-  - [X] +Implement handling api message =message.bot_message= (see [[http://github.com/bqv/weechat-slack/issues/2][#2]])+
-  - [ ] Implement handling api message =message.message_changed=
-  - [ ] Implement handling api message =message.message_deleted=
-  - [ ] Implement handling api message =message.message_replied=
-  - [ ] Implement handling api message =message.file_share=
-  - [ ] Implement sending websocket =typing= message
+** TODO [#A] Implement basic functionality (milestone v0.1)
+** TODO [#A] Implement essential events (milestone v0.2)
 ** TODO [#B] Implement completion engine (milestone v0.3)
-  - [X] +Tab completion for slack emoji (see [[http://github.com/bqv/weechat-slack/issues/3][#3]])+
-    - [X] +Support Slack Emoji+
-    - [X] +Support Custom Emoji+
-  - [ ] Tab completion for display/user names (see [[http://github.com/bqv/weechat-slack/issues/1][#1]])
-  - [ ] Sort nick-completion by recent speakers (see [[http://github.com/bqv/weechat-slack/issues/4][#4]])
-** TODO [#B] Implement websocket ping and pong (milestone v0.4)
-  - [ ] Add ping timer and pong handler (see [[http://github.com/bqv/weechat-slack/issues/9][#9]])
-** TODO [#B] Implement thread handling (milestone v0.5)
-  - [ ] Implement handling api message =message.thread_broadcast=
-** TODO [#C] Implement remaining api endpoints and events (milestone v0.6)
-  - [ ] Support all channel types
-    - [X] +Channels+
-    - [ ] Groups
-    - [ ] MPIMs
-    - [ ] IMs
-  - [ ] Complete api endpoint set
-  - [ ] Complete api event set
-** TODO [#C] Implement full weechat functionality (milestone v0.7)
-  - [ ] Hook buffer closes
-  - [ ] Relay compatibility
-  - [ ] Config Options
-    - [ ] Emoji translation options (see [[http://github.com/bqv/weechat-slack/issues/11][#11]])
 ** TODO [#D] Close all issues (milestone v1.0)
 
 * Contributing
@@ -115,15 +84,8 @@
   *Your contributions are always welcome!*
   Please submit a pull request or create an issue
   to add a new or missing feature.
-  
-* Appropriating
-
-  As there is no C library for Slack at the time of
-  writing, this project implements the APIs from
-  scratch, and as such one could butcher this repository
-  to create a minimal Slack C library. Up to you.
 
 * License
 
-  weechat-slack is licensed under the Mozilla Public
+  weechat-xmpp is licensed under the Mozilla Public
   License Version 2.0 available [[https://www.mozilla.org/en-US/MPL/2.0/][here]] and in LICENSE.
