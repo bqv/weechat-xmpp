@@ -823,7 +823,7 @@ int slack_workspace_timer_cb(const void *pointer, void *data, int remaining_call
     struct t_slack_workspace *ptr_workspace;
     struct t_slack_request *ptr_request;
 
-    /* make C compiler happy */
+    
     (void) pointer;
     (void) data;
     (void) remaining_calls;

@@ -7,10 +7,10 @@
 #include <time.h>
 #include <strophe.h>
 #include <json.h>
+#include <weechat/weechat-plugin.h>
 
-#include "weechat/weechat-plugin.h"
 #include "xmpp.h"
-//#include "slack-config.h"
+#include "xmpp-config.h"
 //#include "slack-command.h"
 //#include "slack-workspace.h"
 //#include "slack-api.h"
@@ -31,34 +31,47 @@ struct t_hook *xmpp_hook_timer = NULL;
 
 struct t_gui_bar_item *xmpp_typing_bar_item = NULL;
 
-void xmpp_lwsl_emit_weechat(int level, const char *line)
+xmpp_ctx_t *xmpp_context = NULL;
+
+xmpp_conn_t *xmpp_connection = NULL;
+
+void xmpp_log_emit_weechat(void *const userdata, const xmpp_log_level_t level, const char *const area, const char *const msg)
 {
-    char buf[50];
-  //lwsl_timestamp(level, buf, sizeof(buf));
+    (void) userdata;
+    time_t date = time(NULL);
+    const char *timestamp = weechat_util_get_time_string(&date);
 
     weechat_printf(
         NULL,
-        _("%s%s: %s%s"),
+        _("%s%s %d | %s: %s - %s"),
         weechat_prefix("error"), XMPP_PLUGIN_NAME,
-        buf, line);
+        level, timestamp, area, msg);
 }
+
+xmpp_log_t xmpp_logger = {
+    &xmpp_log_emit_weechat,
+    NULL
+};
 
 int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 {
-	(void) argc;
-	(void) argv;
+    (void) argc;
+    (void) argv;
 
     weechat_plugin = plugin;
 
-  //lws_set_log_level(LLL_ERR | LLL_WARN /*| LLL_NOTICE | LLL_INFO | LLL_DEBUG
-  //        | LLL_PARSER | LLL_HEADER | LLL_EXT | LLL_CLIENT
-  //        | LLL_LATENCY | LLL_USER | LLL_COUNT*/,
-  //        xmpp_lwsl_emit_weechat);
+    if (!xmpp_config_init())
+        return WEECHAT_RC_ERROR;
 
-  //if (!xmpp_config_init())
-  //    return WEECHAT_RC_ERROR;
+    xmpp_config_read();
 
-  //xmpp_config_read();
+    xmpp_initialize();
+    xmpp_context = xmpp_ctx_new(NULL, &xmpp_logger);
+    xmpp_connection = xmpp_conn_new(xmpp_context);
+    xmpp_conn_set_jid(xmpp_connection,
+                      weechat_config_string(xmpp_config_serverdef_jid));
+    xmpp_conn_set_pass(xmpp_connection,
+                       weechat_config_string(xmpp_config_serverdef_password));
 
   //xmpp_command_init();
 
@@ -87,7 +100,7 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 
 int weechat_plugin_end(struct t_weechat_plugin *plugin)
 {
-    /* make C compiler happy */
+    // make C compiler happy
     (void) plugin;
 
     if (xmpp_typing_bar_item)
@@ -96,11 +109,13 @@ int weechat_plugin_end(struct t_weechat_plugin *plugin)
     if (xmpp_hook_timer)
         weechat_unhook(xmpp_hook_timer);
 
-  //xmpp_config_write();
+    xmpp_config_write();
 
-  //xmpp_workspace_disconnect_all();
+    xmpp_conn_release(xmpp_connection);
 
-  //xmpp_workspace_free_all();
+    xmpp_ctx_free(xmpp_context);
+
+    xmpp_shutdown();
 
     return WEECHAT_RC_OK;
 }

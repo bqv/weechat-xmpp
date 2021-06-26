@@ -307,7 +307,7 @@ int slack_command_slack(const void *pointer, void *data,
                         struct t_gui_buffer *buffer, int argc,
                         char **argv, char **argv_eol)
 {
-    /* make C compiler happy */
+    
     (void) pointer;
     (void) data;
     (void) buffer;
@@ -353,7 +353,7 @@ int slack_command_me(const void *pointer, void *data,
     struct t_slack_request *request;
     char *text;
     
-    /* make C compiler happy */
+    
     (void) pointer;
     (void) data;
     (void) buffer;

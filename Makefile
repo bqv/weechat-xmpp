@@ -6,13 +6,14 @@ RM=rm -f
 FIND=find
 CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -Ilibstrophe -Ijson-c
 LDFLAGS+=-shared -g $(DBGCFLAGS) $(DBGLDFLAGS)
-LDLIBS=
+LDLIBS=-lssl -lxml2
 
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
 INSTALL ?= /usr/bin/install
 
 SRCS=xmpp.c \
+     xmpp-config.c \
 
 OLDSRCS=slack.c \
 	 slack-api.c \
@@ -48,10 +49,10 @@ OBJS=$(subst .c,.o,$(SRCS)) libstrophe/.libs/libstrophe.a json-c/libjson-c.a
 all: libstrophe/.libs/libstrophe.a json-c/libjson-c.a weechat-xmpp
 
 weechat-xmpp: $(OBJS)
-	$(CC) $(LDFLAGS) -o xmpp.so $(OBJS) $(LDLIBS) 
+	$(CC) $(LDFLAGS) -o xmpp.so $(OBJS) $(LDLIBS)
 
 libstrophe/.libs/libstrophe.a:
-	cd libstrophe && ./bootstrap.sh && env CFLAGS= LDFLAGS= ./configure
+	cd libstrophe && ./bootstrap.sh && env CFLAGS=-fPIC LDFLAGS= ./configure
 	$(MAKE) -C libstrophe
 libstrophe: libstrophe/.libs/libstrophe.a
 

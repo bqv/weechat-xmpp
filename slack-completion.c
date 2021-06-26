@@ -54,7 +54,7 @@ int slack_completion_channel_nicks_cb(const void *pointer, void *data,
     struct t_slack_channel_member *ptr_member;
     struct t_slack_user *ptr_user;
 
-    /* make C compiler happy */
+    
     (void) pointer;
     (void) data;
     (void) completion_item;
@@ -108,7 +108,7 @@ int slack_completion_workspaces_cb(const void *pointer, void *data,
 {
     struct t_slack_workspace *ptr_workspace;
 
-    /* make C compiler happy */
+    
     (void) pointer;
     (void) data;
     (void) completion_item;
