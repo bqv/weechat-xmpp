@@ -14,6 +14,7 @@ INSTALL ?= /usr/bin/install
 
 SRCS=xmpp.c \
      xmpp-config.c \
+     xmpp-connection.c \
 
 OLDSRCS=slack.c \
 	 slack-api.c \

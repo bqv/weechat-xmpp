@@ -11,9 +11,9 @@
 
 #include "xmpp.h"
 #include "xmpp-config.h"
+#include "xmpp-connection.h"
 //#include "slack-command.h"
 //#include "slack-workspace.h"
-//#include "slack-api.h"
 //#include "slack-buffer.h"
 //#include "slack-completion.h"
 
@@ -31,28 +31,6 @@ struct t_hook *xmpp_hook_timer = NULL;
 
 struct t_gui_bar_item *xmpp_typing_bar_item = NULL;
 
-xmpp_ctx_t *xmpp_context = NULL;
-
-xmpp_conn_t *xmpp_connection = NULL;
-
-void xmpp_log_emit_weechat(void *const userdata, const xmpp_log_level_t level, const char *const area, const char *const msg)
-{
-    (void) userdata;
-    time_t date = time(NULL);
-    const char *timestamp = weechat_util_get_time_string(&date);
-
-    weechat_printf(
-        NULL,
-        _("%s%s %d | %s: %s - %s"),
-        weechat_prefix("error"), XMPP_PLUGIN_NAME,
-        level, timestamp, area, msg);
-}
-
-xmpp_log_t xmpp_logger = {
-    &xmpp_log_emit_weechat,
-    NULL
-};
-
 int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 {
     (void) argc;
@@ -65,17 +43,9 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 
     xmpp_config_read();
 
-    xmpp_initialize();
-    xmpp_context = xmpp_ctx_new(NULL, &xmpp_logger);
-    xmpp_connection = xmpp_conn_new(xmpp_context);
-    xmpp_conn_set_jid(xmpp_connection,
-                      weechat_config_string(xmpp_config_serverdef_jid));
-    xmpp_conn_set_pass(xmpp_connection,
-                       weechat_config_string(xmpp_config_serverdef_password));
+    xmpp_connection_init();
 
   //xmpp_command_init();
-
-  //xmpp_api_init();
 
   //xmpp_completion_init();
 
