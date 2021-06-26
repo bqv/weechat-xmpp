@@ -8,7 +8,7 @@
 #include <strophe.h>
 #include <json.h>
 
-#include "weechat-plugin.h"
+#include "weechat/weechat-plugin.h"
 #include "xmpp.h"
 //#include "slack-config.h"
 //#include "slack-command.h"
@@ -74,7 +74,7 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
     {
         weechat_bar_new("typing", "off", "400", "window", "${typing}",
                         "bottom", "horizontal", "vertical",
-                        "1", "1", "default", "default", "default",
+                        "1", "1", "default", "default", "default", "default",
                         "off", "xmpp_typing");
     }
 
