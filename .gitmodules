@@ -1,6 +1,3 @@
 [submodule "json-c"]
 	path = json-c
 	url = https://github.com/json-c/json-c
-[submodule "libstrophe"]
-	path = libstrophe
-	url = https://github.com/strophe/libstrophe

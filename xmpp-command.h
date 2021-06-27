@@ -2,9 +2,9 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef _SLACK_COMMAND_H_
-#define _SLACK_COMMAND_H_
+#ifndef _XMPP_COMMAND_H_
+#define _XMPP_COMMAND_H_
 
-extern void slack_command_init();
+extern void xmpp_command_init();
 
-#endif /*SLACK_COMMAND_H*/
+#endif /*XMPP_COMMAND_H*/

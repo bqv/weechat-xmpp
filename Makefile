@@ -4,67 +4,68 @@ ifdef DEBUG
 endif
 RM=rm -f
 FIND=find
-CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -Ilibstrophe -Ijson-c
+INCLUDES=-Ilibstrophe -Ijson-c
+CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers $(INCLUDES)
 LDFLAGS+=-shared -g $(DBGCFLAGS) $(DBGLDFLAGS)
-LDLIBS=-lssl -lxml2
+LDLIBS=-lstrophe -lpthread
 
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
 INSTALL ?= /usr/bin/install
 
 SRCS=xmpp.c \
+     xmpp-command.c \
      xmpp-config.c \
      xmpp-connection.c \
 
+DEPS=json-c/libjson-c.a
 OLDSRCS=slack.c \
-	 slack-api.c \
-	 slack-buffer.c \
-	 slack-channel.c \
-	 slack-config.c \
-	 slack-command.c \
-	 slack-completion.c \
-	 slack-emoji.c \
-	 slack-input.c \
-	 slack-message.c \
-	 slack-oauth.c \
-	 slack-request.c \
-	 slack-teaminfo.c \
-	 slack-user.c \
-	 slack-workspace.c \
-	 api/slack-api-hello.c \
-	 api/slack-api-error.c \
-	 api/slack-api-message.c \
-	 api/slack-api-user-typing.c \
-	 api/message/slack-api-message-bot-message.c \
-	 api/message/slack-api-message-slackbot-response.c \
-	 api/message/slack-api-message-me-message.c \
-	 api/message/slack-api-message-unimplemented.c \
-	 request/slack-request-chat-memessage.c \
-	 request/slack-request-chat-postmessage.c \
-	 request/slack-request-channels-list.c \
-	 request/slack-request-conversations-members.c \
-	 request/slack-request-emoji-list.c \
-	 request/slack-request-users-list.c
-OBJS=$(subst .c,.o,$(SRCS)) libstrophe/.libs/libstrophe.a json-c/libjson-c.a
+	slack-api.c \
+	slack-buffer.c \
+	slack-channel.c \
+	slack-config.c \
+	slack-command.c \
+	slack-completion.c \
+	slack-emoji.c \
+	slack-input.c \
+	slack-message.c \
+	slack-oauth.c \
+	slack-request.c \
+	slack-teaminfo.c \
+	slack-user.c \
+	slack-workspace.c \
+	api/slack-api-hello.c \
+	api/slack-api-error.c \
+	api/slack-api-message.c \
+	api/slack-api-user-typing.c \
+	api/message/slack-api-message-bot-message.c \
+	api/message/slack-api-message-slackbot-response.c \
+	api/message/slack-api-message-me-message.c \
+	api/message/slack-api-message-unimplemented.c \
+	request/slack-request-chat-memessage.c \
+	request/slack-request-chat-postmessage.c \
+	request/slack-request-channels-list.c \
+	request/slack-request-conversations-members.c \
+	request/slack-request-emoji-list.c \
+	request/slack-request-users-list.c
+OBJS=$(subst .c,.o,$(SRCS))
 
-all: libstrophe/.libs/libstrophe.a json-c/libjson-c.a weechat-xmpp
+all: $(DEPS) weechat-xmpp
 
 weechat-xmpp: $(OBJS)
 	$(CC) $(LDFLAGS) -o xmpp.so $(OBJS) $(LDLIBS)
-
-libstrophe/.libs/libstrophe.a:
-	cd libstrophe && ./bootstrap.sh && env CFLAGS=-fPIC LDFLAGS= ./configure
-	$(MAKE) -C libstrophe
-libstrophe: libstrophe/.libs/libstrophe.a
+	which patchelf >/dev/null && \
+		patchelf --set-rpath $(LIBRARY_PATH):$(shell patchelf --print-rpath xmpp.so) xmpp.so || true
 
 json-c/libjson-c.a:
-	cd json-c && env CFLAGS= LDFLAGS= cmake -DCMAKE_C_FLAGS=-fPIC .
+	cd json-c && env CFLAGS= LDFLAGS= \
+		cmake -DCMAKE_C_FLAGS=-fPIC .
 	$(MAKE) -C json-c json-c-static
 json-c: json-c/libjson-c.a
 
 depend: .depend
 
-.depend: libstrophe/.libs/libstrophe.a json-c/libjson-c.a $(SRCS)
+.depend: json-c/libjson-c.a $(SRCS)
 	$(RM) ./.depend
 	$(CC) $(CFLAGS) -MM $^>>./.depend
 
@@ -73,8 +74,6 @@ tidy:
 
 clean:
 	$(RM) $(OBJS)
-	$(MAKE) -C libstrophe clean || true
-	$(MAKE) -C libwebsockets clean || true
 	$(MAKE) -C json-c clean || true
 	git submodule foreach --recursive git clean -xfd || true
 	git submodule foreach --recursive git reset --hard || true

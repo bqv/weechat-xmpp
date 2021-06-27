@@ -5,13 +5,13 @@
 #ifndef _XMPP_CONNECTION_H_
 #define _XMPP_CONNECTION_H_
 
-extern xmpp_ctx_t *xmpp_context;
-
 extern xmpp_conn_t *xmpp_connection;
 
 void xmpp_connection_init();
 
-void xmpp_connection_connect(xmpp_conn_t *connection);
+void xmpp_connection_autoconnect();
+
+void xmpp_connection_connect(const char* jid, const char* password);
 
 int xmpp_connection_route_message(xmpp_conn_t *connection,
                                   const char *type, json_object *message);

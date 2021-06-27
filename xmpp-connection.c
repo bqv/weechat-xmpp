@@ -16,13 +16,12 @@
 //#include "api/xmpp-api-message.h"
 //#include "api/xmpp-api-user-typing.h"
 
-xmpp_ctx_t *xmpp_context = NULL;
-
-xmpp_conn_t *xmpp_connection = NULL;
+xmpp_conn_t *xmpp_connection;
 
 void xmpp_log_emit_weechat(void *const userdata, const xmpp_log_level_t level, const char *const area, const char *const msg)
 {
     (void) userdata;
+
     time_t date = time(NULL);
     const char *timestamp = weechat_util_get_time_string(&date);
 
@@ -40,22 +39,27 @@ xmpp_log_t xmpp_logger = {
 
 void xmpp_connection_init()
 {
-
     xmpp_initialize();
-    xmpp_context = xmpp_ctx_new(NULL, &xmpp_logger);
-    xmpp_connection = xmpp_conn_new(xmpp_context);
-    xmpp_conn_set_jid(xmpp_connection,
-                      weechat_config_string(xmpp_config_serverdef_jid));
-    xmpp_conn_set_pass(xmpp_connection,
-                       weechat_config_string(xmpp_config_serverdef_password));
-  //size_t case_count = sizeof(cases) / sizeof(cases[0]);
-  //qsort(cases, case_count, sizeof(struct stringcase), stringcase_cmp);
-
-  //xmpp_api_message_init();
 }
 
-void xmpp_connection_connect(xmpp_conn_t *connection)
+void xmpp_connection_autoconnect()
 {
+    xmpp_connection_connect(weechat_config_string(xmpp_config_serverdef_jid),
+                            weechat_config_string(xmpp_config_serverdef_password));
+    weechat_printf(NULL, _("xmpp: %s # %s"),
+                   weechat_config_string(xmpp_config_serverdef_jid),
+                   weechat_config_string(xmpp_config_serverdef_password));
+}
+
+void xmpp_connection_connect(const char* jid, const char* password)
+{
+    xmpp_ctx_t *xmpp_context = xmpp_ctx_new(NULL, &xmpp_logger);
+
+    xmpp_conn_t *xmpp_connection = xmpp_conn_new(xmpp_context);
+
+    xmpp_connection = xmpp_conn_new(xmpp_context);
+    xmpp_conn_set_jid(xmpp_connection, jid);
+    xmpp_conn_set_pass(xmpp_connection, password);
   //struct lws_context_creation_info ctxinfo;
   //struct lws_client_connect_info ccinfo;
   //const char *url_protocol, *url_path;
@@ -117,6 +121,7 @@ void xmpp_connection_connect(xmpp_conn_t *connection)
   //ccinfo.userdata = workspace;
 
   //lws_client_connect_via_info(&ccinfo);
+    return xmpp_connection;
 }
 
 int xmpp_connection_route_message(xmpp_conn_t *workspace,

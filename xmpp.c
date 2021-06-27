@@ -12,10 +12,10 @@
 #include "xmpp.h"
 #include "xmpp-config.h"
 #include "xmpp-connection.h"
-//#include "slack-command.h"
-//#include "slack-workspace.h"
-//#include "slack-buffer.h"
-//#include "slack-completion.h"
+#include "xmpp-command.h"
+//#include "xmpp-workspace.h"
+//#include "xmpp-buffer.h"
+//#include "xmpp-completion.h"
 
 
 WEECHAT_PLUGIN_NAME(XMPP_PLUGIN_NAME);
@@ -31,6 +31,15 @@ struct t_hook *xmpp_hook_timer = NULL;
 
 struct t_gui_bar_item *xmpp_typing_bar_item = NULL;
 
+/*
+void connection_check_events(void)
+{
+    conn.xmpp_in_event_loop = TRUE;
+    xmpp_run_once(conn.xmpp_ctx, 10);
+    conn.xmpp_in_event_loop = FALSE;
+}
+*/
+
 int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 {
     (void) argc;
@@ -45,7 +54,9 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 
     xmpp_connection_init();
 
-  //xmpp_command_init();
+    xmpp_command_init();
+
+    xmpp_connection_autoconnect();
 
   //xmpp_completion_init();
 
@@ -81,9 +92,17 @@ int weechat_plugin_end(struct t_weechat_plugin *plugin)
 
     xmpp_config_write();
 
-    xmpp_conn_release(xmpp_connection);
+    if (xmpp_connection)
+    {
+      xmpp_ctx_t *xmpp_context = xmpp_conn_get_context(xmpp_connection);
 
-    xmpp_ctx_free(xmpp_context);
+      if (xmpp_conn_is_connected(xmpp_connection))
+        xmpp_disconnect(xmpp_connection);
+
+      xmpp_conn_release(xmpp_connection);
+
+      xmpp_ctx_free(xmpp_context);
+    }
 
     xmpp_shutdown();
 
