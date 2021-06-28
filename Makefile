@@ -13,10 +13,10 @@ PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
 INSTALL ?= /usr/bin/install
 
-SRCS=xmpp.c \
-     xmpp-command.c \
-     xmpp-config.c \
-     xmpp-connection.c \
+SRCS=plugin.c \
+     command.c \
+     config.c \
+     connection.c \
 
 DEPS=json-c/libjson-c.a
 OLDSRCS=slack.c \

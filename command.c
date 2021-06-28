@@ -7,14 +7,14 @@
 #include <string.h>
 #include <weechat/weechat-plugin.h>
 
-#include "xmpp.h"
+#include "plugin.h"
 //#include "xmpp-oauth.h"
 //#include "xmpp-teaminfo.h"
 //#include "xmpp-workspace.h"
 //#include "xmpp-channel.h"
 //#include "xmpp-buffer.h"
 //#include "xmpp-message.h"
-#include "xmpp-command.h"
+#include "command.h"
 //#include "request/xmpp-request-chat-memessage.h"
 
 /*

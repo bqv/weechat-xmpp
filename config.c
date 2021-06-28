@@ -7,8 +7,8 @@
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
-#include "xmpp.h"
-#include "xmpp-config.h"
+#include "plugin.h"
+#include "config.h"
 
 struct t_config_file *xmpp_config_file;
 
@@ -241,7 +241,7 @@ int xmpp_config_init()
     struct t_config_section *ptr_section_server;
     struct t_config_section *ptr_section_look;
 
-    xmpp_config_file = weechat_config_new(XMPP_CONFIG_NAME,
+    xmpp_config_file = weechat_config_new(WEECHAT_XMPP_CONFIG_NAME,
                                            &xmpp_config_reload, NULL, NULL);
 
     if(!xmpp_config_file)

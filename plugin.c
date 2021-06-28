@@ -9,19 +9,19 @@
 #include <json.h>
 #include <weechat/weechat-plugin.h>
 
-#include "xmpp.h"
-#include "xmpp-config.h"
-#include "xmpp-connection.h"
-#include "xmpp-command.h"
+#include "plugin.h"
+#include "config.h"
+#include "connection.h"
+#include "command.h"
 //#include "xmpp-workspace.h"
 //#include "xmpp-buffer.h"
 //#include "xmpp-completion.h"
 
 
-WEECHAT_PLUGIN_NAME(XMPP_PLUGIN_NAME);
+WEECHAT_PLUGIN_NAME(WEECHAT_XMPP_PLUGIN_NAME);
 WEECHAT_PLUGIN_DESCRIPTION(N_("XMPP protocol"));
 WEECHAT_PLUGIN_AUTHOR("bqv <weechat@fron.io>");
-WEECHAT_PLUGIN_VERSION(XMPP_PLUGIN_VERSION);
+WEECHAT_PLUGIN_VERSION(WEECHAT_XMPP_PLUGIN_VERSION);
 WEECHAT_PLUGIN_LICENSE("MPL2");
 WEECHAT_PLUGIN_PRIORITY(5500);
 

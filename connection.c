@@ -8,9 +8,9 @@
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
-#include "xmpp.h"
-#include "xmpp-config.h"
-#include "xmpp-connection.h"
+#include "plugin.h"
+#include "config.h"
+#include "connection.h"
 //#include "api/xmpp-api-hello.h"
 //#include "api/xmpp-api-error.h"
 //#include "api/xmpp-api-message.h"
@@ -30,7 +30,7 @@ void xmpp_log_emit_weechat(void *const userdata, const xmpp_log_level_t level, c
     weechat_printf(
         NULL,
         _("%s%s/%s (%s): %s"),
-        weechat_prefix("error"), XMPP_PLUGIN_NAME, area,
+        weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME, area,
         log_level_name[level], msg);
 }
 

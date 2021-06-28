@@ -2,8 +2,8 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef _XMPP_CONNECTION_H_
-#define _XMPP_CONNECTION_H_
+#ifndef _WEECHAT_XMPP_CONNECTION_H_
+#define _WEECHAT_XMPP_CONNECTION_H_
 
 extern xmpp_conn_t *xmpp_connection;
 
@@ -18,4 +18,4 @@ int xmpp_connection_check_events(const void *pointer, void *data, int remaining_
 int xmpp_connection_route_message(xmpp_conn_t *connection,
                                   const char *type, json_object *message);
 
-#endif /*XMPP_CONNECTION_H*/
+#endif /*WEECHAT_XMPP_CONNECTION_H*/

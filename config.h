@@ -2,10 +2,10 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef _XMPP_CONFIG_H_
-#define _XMPP_CONFIG_H_
+#ifndef _WEECHAT_XMPP_CONFIG_H_
+#define _WEECHAT_XMPP_CONFIG_H_
 
-#define XMPP_CONFIG_NAME "xmpp"
+#define WEECHAT_XMPP_CONFIG_NAME "xmpp"
 
 enum t_xmpp_config_nick_completion
 {
@@ -56,4 +56,4 @@ extern int xmpp_config_read();
 extern int xmpp_config_write();
 extern void xmpp_config_free();
 
-#endif /*XMPP_CONFIG_H*/
+#endif /*WEECHAT_XMPP_CONFIG_H*/
