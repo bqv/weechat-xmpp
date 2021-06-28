@@ -19,8 +19,8 @@ extern struct t_config_file *xmpp_config_file;
 //extern struct t_config_section *xmpp_config_section_workspace_default;
 //extern struct t_config_section *xmpp_config_section_workspace;
 
-extern struct t_config_option *xmpp_config_serverdef_jid;
-extern struct t_config_option *xmpp_config_serverdef_password;
+extern struct t_config_option *xmpp_config_server_jid;
+extern struct t_config_option *xmpp_config_server_password;
 extern struct t_config_option *xmpp_config_look_nick_completion_smart;
 
 //extern struct t_config_option *xmpp_config_workspace_default[];

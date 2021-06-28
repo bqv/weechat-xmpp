@@ -15,8 +15,8 @@ struct t_config_file *xmpp_config_file;
 //struct t_config_section *xmpp_config_section_workspace_default;
 //struct t_config_section *xmpp_config_section_workspace;
 
-struct t_config_option *xmpp_config_serverdef_jid;
-struct t_config_option *xmpp_config_serverdef_password;
+struct t_config_option *xmpp_config_server_jid;
+struct t_config_option *xmpp_config_server_password;
 struct t_config_option *xmpp_config_look_nick_completion_smart;
 
 /*
@@ -238,7 +238,6 @@ int xmpp_config_reload (const void *pointer, void *data,
 
 int xmpp_config_init()
 {
-    struct t_config_section *ptr_section_serverdef;
     struct t_config_section *ptr_section_server;
     struct t_config_section *ptr_section_look;
 
@@ -247,15 +246,6 @@ int xmpp_config_init()
 
     if(!xmpp_config_file)
         return 0;
-
-    ptr_section_serverdef = weechat_config_new_section(
-            xmpp_config_file, "server_default",
-            0, 0,
-            NULL, NULL, NULL,
-            NULL, NULL, NULL,
-            NULL, NULL, NULL,
-            NULL, NULL, NULL,
-            NULL, NULL, NULL);
 
     ptr_section_server = weechat_config_new_section(
             xmpp_config_file, "server",
@@ -275,7 +265,7 @@ int xmpp_config_init()
             NULL, NULL, NULL,
             NULL, NULL, NULL);
 
-    if (!ptr_section_serverdef
+    if (!ptr_section_server
      || !ptr_section_server
      || !ptr_section_look)
     {
@@ -284,15 +274,15 @@ int xmpp_config_init()
         return 0;
     }
 
-    xmpp_config_serverdef_jid = weechat_config_new_option (
-        xmpp_config_file, ptr_section_serverdef,
+    xmpp_config_server_jid = weechat_config_new_option (
+        xmpp_config_file, ptr_section_server,
         "jid", "string",
         N_("XMPP Server JID"),
         NULL, 0, 0, "", "", 0,
         NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
-    xmpp_config_serverdef_password = weechat_config_new_option (
-        xmpp_config_file, ptr_section_serverdef,
+    xmpp_config_server_password = weechat_config_new_option (
+        xmpp_config_file, ptr_section_server,
         "password", "string",
         N_("XMPP Server Password"),
         NULL, 0, 0, "", "", 0,

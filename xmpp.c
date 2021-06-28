@@ -31,15 +31,6 @@ struct t_hook *xmpp_hook_timer = NULL;
 
 struct t_gui_bar_item *xmpp_typing_bar_item = NULL;
 
-/*
-void connection_check_events(void)
-{
-    conn.xmpp_in_event_loop = TRUE;
-    xmpp_run_once(conn.xmpp_ctx, 10);
-    conn.xmpp_in_event_loop = FALSE;
-}
-*/
-
 int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 {
     (void) argc;
@@ -56,13 +47,15 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 
     xmpp_command_init();
 
-    xmpp_connection_autoconnect();
-
   //xmpp_completion_init();
 
-  //xmpp_hook_timer = weechat_hook_timer(0.1 * 1000, 0, 0,
-  //                                      &xmpp_workspace_timer_cb,
-  //                                      NULL, NULL);
+    xmpp_hook_timer = weechat_hook_timer(1 * 1000, 0, 1,
+                                         &xmpp_connection_autoconnect,
+                                         NULL, NULL);
+
+    xmpp_hook_timer = weechat_hook_timer(0.1 * 1000, 0, 0,
+                                         &xmpp_connection_check_events,
+                                         NULL, NULL);
 
     if (!weechat_bar_search("typing"))
     {
