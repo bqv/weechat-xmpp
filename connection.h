@@ -16,6 +16,6 @@ void xmpp_connection_connect(const char* jid, const char* password);
 int xmpp_connection_check_events(const void *pointer, void *data, int remaining_calls);
 
 int xmpp_connection_route_message(xmpp_conn_t *connection,
-                                  const char *type, json_object *message);
+                                  const char *type, void *message);
 
 #endif /*WEECHAT_XMPP_CONNECTION_H*/

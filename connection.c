@@ -2,7 +2,6 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include <json.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strophe.h>
@@ -260,7 +259,7 @@ int xmpp_connection_check_events(const void *pointer, void *data, int remaining_
 }
 
 int xmpp_connection_route_message(xmpp_conn_t *workspace,
-                                  const char *type, json_object *message)
+                                  const char *type, void *message)
 {
   //struct stringcase key;
   //key.string = type;

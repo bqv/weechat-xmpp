@@ -4,7 +4,7 @@ ifdef DEBUG
 endif
 RM=rm -f
 FIND=find
-INCLUDES=-Ilibstrophe -Ijson-c
+INCLUDES=-Ilibstrophe
 CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers $(INCLUDES)
 LDFLAGS+=-shared -g $(DBGCFLAGS) $(DBGLDFLAGS)
 LDLIBS=-lstrophe -lpthread
@@ -18,36 +18,7 @@ SRCS=plugin.c \
      config.c \
      connection.c \
 
-DEPS=json-c/libjson-c.a
-OLDSRCS=slack.c \
-	slack-api.c \
-	slack-buffer.c \
-	slack-channel.c \
-	slack-config.c \
-	slack-command.c \
-	slack-completion.c \
-	slack-emoji.c \
-	slack-input.c \
-	slack-message.c \
-	slack-oauth.c \
-	slack-request.c \
-	slack-teaminfo.c \
-	slack-user.c \
-	slack-workspace.c \
-	api/slack-api-hello.c \
-	api/slack-api-error.c \
-	api/slack-api-message.c \
-	api/slack-api-user-typing.c \
-	api/message/slack-api-message-bot-message.c \
-	api/message/slack-api-message-slackbot-response.c \
-	api/message/slack-api-message-me-message.c \
-	api/message/slack-api-message-unimplemented.c \
-	request/slack-request-chat-memessage.c \
-	request/slack-request-chat-postmessage.c \
-	request/slack-request-channels-list.c \
-	request/slack-request-conversations-members.c \
-	request/slack-request-emoji-list.c \
-	request/slack-request-users-list.c
+DEPS=
 OBJS=$(subst .c,.o,$(SRCS))
 
 all: $(DEPS) weechat-xmpp
@@ -57,15 +28,9 @@ weechat-xmpp: $(OBJS)
 	which patchelf >/dev/null && \
 		patchelf --set-rpath $(LIBRARY_PATH):$(shell patchelf --print-rpath xmpp.so) xmpp.so || true
 
-json-c/libjson-c.a:
-	cd json-c && env CFLAGS= LDFLAGS= \
-		cmake -DCMAKE_C_FLAGS=-fPIC .
-	$(MAKE) -C json-c json-c-static
-json-c: json-c/libjson-c.a
-
 depend: .depend
 
-.depend: json-c/libjson-c.a $(SRCS)
+.depend: $(SRCS)
 	$(RM) ./.depend
 	$(CC) $(CFLAGS) -MM $^>>./.depend
 
@@ -74,10 +39,6 @@ tidy:
 
 clean:
 	$(RM) $(OBJS)
-	$(MAKE) -C json-c clean || true
-	git submodule foreach --recursive git clean -xfd || true
-	git submodule foreach --recursive git reset --hard || true
-	git submodule update --init --recursive || true
 
 distclean: clean
 	$(RM) *~ .depend

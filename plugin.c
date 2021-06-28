@@ -6,7 +6,6 @@
 #include <string.h>
 #include <time.h>
 #include <strophe.h>
-#include <json.h>
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
