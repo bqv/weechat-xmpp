@@ -14,15 +14,13 @@ enum t_account_option
     ACCOUNT_OPTION_PASSWORD,
     ACCOUNT_OPTION_TLS,
     ACCOUNT_OPTION_NICKNAME,
+    ACCOUNT_OPTION_AUTOCONNECT,
     ACCOUNT_NUM_OPTIONS,
 };
 
 struct t_account
 {
     const char *name;
-    const char *jid;
-    const char *password;
-    int tls;
     struct t_config_option *options[ACCOUNT_NUM_OPTIONS];
 
     int reloading_from_config;

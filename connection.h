@@ -7,14 +7,10 @@
 
 void connection__init();
 
-int connection__connect(xmpp_ctx_t *context, xmpp_conn_t **connection,
-                        xmpp_log_t *logger, const char* jid,
-                        const char* password, int tls);
+int connection__connect(struct t_account *account, xmpp_conn_t **connection,
+                        const char* jid, const char* password, int tls);
 
 void connection__process(xmpp_ctx_t *context, xmpp_conn_t *connection,
                          const unsigned long timeout);
-
-int connection__route_message(xmpp_conn_t *connection,
-                              const char *type, void *message);
 
 #endif /*WEECHAT_XMPP_CONNECTION_H*/

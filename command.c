@@ -33,7 +33,7 @@ void command__display_account(struct t_account *account)
             weechat_color("reset"),
             weechat_color("chat_delimiters"),
             weechat_color("chat_server"),
-            (account->jid) ? account->jid : "???",
+            weechat_config_string(account->options[ACCOUNT_OPTION_JID]),
             weechat_color("chat_delimiters"),
             weechat_color("reset"),
             (account->is_connected) ? _("connected") : _("not connected"),
@@ -53,7 +53,7 @@ void command__display_account(struct t_account *account)
             weechat_color("reset"),
             weechat_color("chat_delimiters"),
             weechat_color("chat_server"),
-            (account->jid) ? account->jid : "???",
+            weechat_config_string(account->options[ACCOUNT_OPTION_JID]),
             weechat_color("chat_delimiters"),
             weechat_color("reset"));
     }
@@ -138,17 +138,14 @@ void command__add_account(const char *name, const char *jid, const char *passwor
 
     account->name = strdup(name);
     if (jid)
-        account->jid = strdup(jid);
+        weechat_config_option_set(account->options[ACCOUNT_OPTION_JID],
+                                  strdup(jid), 1);
     if (password)
-        account->password = strdup(password);
-    weechat_config_option_set(account->options[ACCOUNT_OPTION_JID],
-                              account->jid, 1);
-    weechat_config_option_set(account->options[ACCOUNT_OPTION_PASSWORD],
-                              account->password, 1);
-    weechat_config_option_set(account->options[ACCOUNT_OPTION_NICKNAME],
-                              account->jid ? xmpp_jid_node(account->context,
-                                                           account->jid)
-                              : NULL, 1);
+        weechat_config_option_set(account->options[ACCOUNT_OPTION_PASSWORD],
+                                  strdup(password), 1);
+    if (jid)
+        weechat_config_option_set(account->options[ACCOUNT_OPTION_NICKNAME],
+                                  strdup(xmpp_jid_node(account->context, jid)), 1);
 
     weechat_printf (
         NULL,
@@ -159,7 +156,7 @@ void command__add_account(const char *name, const char *jid, const char *passwor
         weechat_color("reset"),
         weechat_color("chat_delimiters"),
         weechat_color("chat_server"),
-        account->jid ? account->jid : "???",
+        jid ? jid : "???",
         weechat_color("chat_delimiters"),
         weechat_color("reset"));
 }

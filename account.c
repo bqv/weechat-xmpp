@@ -28,6 +28,7 @@ char *account_options[ACCOUNT_NUM_OPTIONS][2] =
   { "password", "" },
   { "tls", "normal" },
   { "nickname", "" },
+  { "autoconnect", "" },
 };
 
 struct t_account *account__search(const char *name)
@@ -83,8 +84,8 @@ int account__search_option(const char *option_name)
     return -1;
 }
 
-void log_emit_weechat(void *const userdata, const xmpp_log_level_t level,
-                      const char *const area, const char *const msg)
+void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t level,
+                               const char *const area, const char *const msg)
 {
     struct t_account *account = (struct t_account*)userdata;
 
@@ -131,18 +132,13 @@ struct t_account *account__alloc(const char *name)
     /* set name */
     new_account->name = strdup(name);
 
-    /* set properties */
-    new_account->jid = NULL;
-    new_account->password = NULL;
-    new_account->tls = 1;
-
     /* internal vars */
     new_account->reloading_from_config = 0;
 
     new_account->is_connected = 0;
     new_account->disconnected = 0;
 
-    new_account->logger.handler = &log_emit_weechat;
+    new_account->logger.handler = &account__log_emit_weechat;
     new_account->logger.userdata = new_account;
     new_account->context = xmpp_ctx_new(NULL, &new_account->logger);
     new_account->connection = NULL;
@@ -236,19 +232,12 @@ void account__free_data(struct t_account *account)
 
     if (account->name)
         free(account->name);
-    if (account->jid)
-        free(account->jid);
-    if (account->password)
-        free(account->password);
-
-    if (account->nickname)
-        free(account->nickname);
 
     if (account->buffer_as_string)
         free(account->buffer_as_string);
 
-    channel__free_all(account);
-    user__free_all(account);
+  //channel__free_all(account);
+  //user__free_all(account);
 }
 
 void account__free(struct t_account *account)
@@ -459,19 +448,11 @@ int account__connect(struct t_account *account)
 
     account__close_connection(account);
 
-    account->jid = !account->options[ACCOUNT_OPTION_JID] ? NULL :
-        weechat_config_string(account->options[ACCOUNT_OPTION_JID]);
-    account->password = !account->options[ACCOUNT_OPTION_PASSWORD] ? NULL :
-        weechat_config_string(account->options[ACCOUNT_OPTION_PASSWORD]);
-    account->tls = !account->options[ACCOUNT_OPTION_TLS] ? NULL :
-        weechat_config_integer(account->options[ACCOUNT_OPTION_TLS]);
-    account->nickname = !account->options[ACCOUNT_OPTION_NICKNAME] ? NULL :
-        weechat_config_string(account->options[ACCOUNT_OPTION_NICKNAME]);
-
     account->is_connected =
-        connection__connect(account->context, &account->connection,
-                            &account->logger, account->jid,
-                            account->password, account->tls);
+        connection__connect(account, &account->connection,
+                            weechat_config_string(account->options[ACCOUNT_OPTION_JID]),
+                            weechat_config_string(account->options[ACCOUNT_OPTION_PASSWORD]),
+                            weechat_config_string(account->options[ACCOUNT_OPTION_TLS]));
 
     return account->is_connected;
 }

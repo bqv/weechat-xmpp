@@ -126,7 +126,23 @@ config__account_new_option (struct t_config_file *config_file,
             new_option = weechat_config_new_option (
                 config_file, section,
                 option_name, "string",
-                N_("XMPP Server JID"),
+                N_("XMPP Account Nickname"),
+                NULL, 0, 0,
+                default_value, value,
+                null_value_allowed,
+                callback_check_value,
+                callback_check_value_pointer,
+                callback_check_value_data,
+                callback_change,
+                callback_change_pointer,
+                callback_change_data,
+                NULL, NULL, NULL);
+            break;
+        case ACCOUNT_OPTION_AUTOCONNECT:
+            new_option = weechat_config_new_option (
+                config_file, section,
+                option_name, "boolean",
+                N_("Autoconnect XMPP Account"),
                 NULL, 0, 0,
                 default_value, value,
                 null_value_allowed,
@@ -216,6 +232,14 @@ int config__account_read_cb (const void *pointer, void *data,
                             ACCOUNT_NUM_OPTIONS;
                         rc = weechat_config_option_set(
                             ptr_account->options[index_option], value, 1);
+                        if (!ptr_account->reloading_from_config)
+                        {
+                            const char *ac_global = weechat_info_get("auto_connect", NULL);
+                            int ac_local = weechat_config_boolean(
+                                ptr_account->options[ACCOUNT_OPTION_AUTOCONNECT]);
+                            if (ac_local && (strcmp(ac_global, "1") == 0))
+                                account__connect(ptr_account);
+                        }
                     }
                     else
                     {

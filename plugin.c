@@ -26,7 +26,6 @@ WEECHAT_PLUGIN_PRIORITY(5500);
 
 struct t_weechat_plugin *weechat_xmpp_plugin = NULL;
 
-struct t_hook *weechat_xmpp_autoconnect_timer = NULL;
 struct t_hook *weechat_xmpp_process_timer = NULL;
 
 struct t_gui_bar_item *weechat_xmpp_typing_bar_item = NULL;
@@ -76,8 +75,6 @@ int weechat_plugin_end(struct t_weechat_plugin *plugin)
     if (weechat_xmpp_typing_bar_item)
         weechat_bar_item_remove(weechat_xmpp_typing_bar_item);
 
-    if (weechat_xmpp_autoconnect_timer)
-        weechat_unhook(weechat_xmpp_autoconnect_timer);
     if (weechat_xmpp_process_timer)
         weechat_unhook(weechat_xmpp_process_timer);
 

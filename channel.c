@@ -17,7 +17,7 @@
 #include "buffer.h"
 
 struct t_channel *channel__search(struct t_account *account,
-                                             const char *id)
+                                  const char *id)
 {
     struct t_channel *ptr_channel;
 
@@ -35,8 +35,8 @@ struct t_channel *channel__search(struct t_account *account,
 }
 
 struct t_gui_buffer *channel__search_buffer(struct t_account *account,
-                                                 enum t_channel_type type,
-                                                 const char *name)
+                                            enum t_channel_type type,
+                                            const char *name)
 {
     struct t_hdata *hdata_buffer;
     struct t_gui_buffer *ptr_buffer;
@@ -57,11 +57,9 @@ struct t_gui_buffer *channel__search_buffer(struct t_account *account,
             if (ptr_type && ptr_type[0]
                 && ptr_account_name && ptr_account_name[0]
                 && ptr_channel_name && ptr_channel_name[0]
-                && (   ((   (type == CHANNEL_TYPE_CHANNEL)
-                         || (type == CHANNEL_TYPE_GROUP))
+                && (   ((  (type == CHANNEL_TYPE_MUC))
                         && (strcmp(ptr_type, "channel") == 0))
-                    || ((   (type == CHANNEL_TYPE_MPIM)
-                         || (type == CHANNEL_TYPE_IM))
+                    || ((  (type == CHANNEL_TYPE_PM))
                         && (strcmp(ptr_type, "private") == 0)))
                 && (strcmp(ptr_account_name, account->name) == 0)
                 && (weechat_strcasecmp(ptr_channel_name, name) == 0))
@@ -76,8 +74,8 @@ struct t_gui_buffer *channel__search_buffer(struct t_account *account,
 }
 
 struct t_gui_buffer *channel__create_buffer(struct t_account *account,
-                                                 enum t_channel_type type,
-                                                 const char *name)
+                                            enum t_channel_type type,
+                                            const char *name)
 {
     struct t_gui_buffer *ptr_buffer;
     int buffer_created;
@@ -125,8 +123,7 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
 
     weechat_buffer_set(ptr_buffer, "name", buffer_name);
     weechat_buffer_set(ptr_buffer, "localvar_set_type",
-                       (type == CHANNEL_TYPE_IM ||
-                        type == CHANNEL_TYPE_MPIM) ? "private" : "channel");
+                       (type == CHANNEL_TYPE_PM) ? "private" : "channel");
     weechat_buffer_set(ptr_buffer, "localvar_set_nick", account->nickname);
     weechat_buffer_set(ptr_buffer, "localvar_set_server", account->name);
     weechat_buffer_set(ptr_buffer, "localvar_set_channel", name);
@@ -137,7 +134,7 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
                                          WEECHAT_HOOK_SIGNAL_POINTER,
                                          ptr_buffer);
         weechat_buffer_set(ptr_buffer, "input_get_unknown_commands", "1");
-        if (type != CHANNEL_TYPE_IM)
+        if (type != CHANNEL_TYPE_PM)
         {
             weechat_buffer_set(ptr_buffer, "nicklist", "1");
             weechat_buffer_set(ptr_buffer, "nicklist_display_groups", "0");
@@ -157,14 +154,12 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
 }
 
 void channel__add_nicklist_groups(struct t_account *account,
-                                       struct t_channel *channel)
+                                  struct t_channel *channel)
 {
     struct t_gui_buffer *ptr_buffer;
     char str_group[32];
 
-    if (channel && channel->type == CHANNEL_TYPE_MPIM)
-        return;
-    if (channel && channel->type == CHANNEL_TYPE_IM)
+    if (channel && channel->type == CHANNEL_TYPE_PM)
         return;
 
     ptr_buffer = channel ? channel->buffer : account->buffer;
@@ -180,13 +175,13 @@ void channel__add_nicklist_groups(struct t_account *account,
 }
 
 struct t_channel *channel__new(struct t_account *account,
-                                          enum t_channel_type type,
-                                          const char *id, const char *name)
+                               enum t_channel_type type,
+                               const char *id, const char *name)
 {
     struct t_channel *new_channel, *ptr_channel;
     struct t_gui_buffer *ptr_buffer;
     struct t_hook *typing_timer;
-    char buffer_name[CHANNEL_NAME_MAX_LEN + 2];
+    char buffer_name[128];
 
     if (!account || !id || !name || !name[0])
         return NULL;
@@ -198,7 +193,7 @@ struct t_channel *channel__new(struct t_account *account,
     }
 
     buffer_name[0] = '#';
-    strncpy(&buffer_name[1], name, CHANNEL_NAME_MAX_LEN + 1);
+    strncpy(&buffer_name[1], name, sizeof(buffer_name));
 
     ptr_buffer = channel__create_buffer(account, type, buffer_name);
     if (!ptr_buffer)
@@ -214,28 +209,15 @@ struct t_channel *channel__new(struct t_account *account,
     new_channel->type = type;
     new_channel->id = strdup(id);
     new_channel->name = strdup(name);
-    new_channel->created = 0;
-
-    new_channel->is_general = 0;
-    new_channel->name_normalized = NULL;
-    new_channel->is_shared = 0;
-    new_channel->is_org_shared = 0;
-    new_channel->is_member = 0;
 
     new_channel->topic.value = NULL;
     new_channel->topic.creator = NULL;
     new_channel->topic.last_set = 0;
-    new_channel->purpose.value = NULL;
-    new_channel->purpose.creator = NULL;
-    new_channel->purpose.last_set = 0;
-    new_channel->is_archived = 0;
 
     new_channel->creator = NULL;
     new_channel->last_read = 0.0;
     new_channel->unread_count = 0;
     new_channel->unread_count_display = 0;
-
-    new_channel->is_user_deleted = 0;
 
     new_channel->typing_hook_timer = typing_timer;
     new_channel->members_speaking[0] = NULL;
@@ -259,8 +241,8 @@ struct t_channel *channel__new(struct t_account *account,
 }
 
 void channel__member_speaking_add_to_list(struct t_channel *channel,
-                                               const char *nick,
-                                               int highlight)
+                                          const char *nick,
+                                          int highlight)
 {
     int size, to_remove, i;
     struct t_weelist_item *ptr_item;
@@ -293,7 +275,7 @@ void channel__member_speaking_add_to_list(struct t_channel *channel,
 }
 
 void channel__member_speaking_add(struct t_channel *channel,
-                                       const char *nick, int highlight)
+                                  const char *nick, int highlight)
 {
     if (highlight < 0)
         highlight = 0;
@@ -306,8 +288,8 @@ void channel__member_speaking_add(struct t_channel *channel,
 }
 
 void channel__member_speaking_rename(struct t_channel *channel,
-                                          const char *old_nick,
-                                          const char *new_nick)
+                                     const char *old_nick,
+                                     const char *new_nick)
 {
     struct t_weelist_item *ptr_item;
     int i;
@@ -324,8 +306,8 @@ void channel__member_speaking_rename(struct t_channel *channel,
 }
 
 void channel__member_speaking_rename_if_present(struct t_account *account,
-                                                     struct t_channel *channel,
-                                                     const char *nick)
+                                                struct t_channel *channel,
+                                                const char *nick)
 {
     struct t_weelist_item *ptr_item;
     int i, j, list_size;
@@ -348,7 +330,7 @@ void channel__member_speaking_rename_if_present(struct t_account *account,
 }
 
 void channel__typing_free(struct t_channel *channel,
-                               struct t_channel_typing *typing)
+                          struct t_channel_typing *typing)
 {
     struct t_channel_typing *new_typings;
 
@@ -387,8 +369,8 @@ void channel__typing_free_all(struct t_channel *channel)
 }
 
 int channel__typing_cb(const void *pointer,
-                            void *data,
-                            int remaining_calls)
+                       void *data,
+                       int remaining_calls)
 {
     struct t_channel_typing *ptr_typing, *next_typing;
     struct t_channel *channel;
@@ -437,9 +419,8 @@ int channel__typing_cb(const void *pointer,
     return WEECHAT_RC_OK;
 }
 
-struct t_channel_typing *channel__typing_search(
-                                struct t_channel *channel,
-                                const char *id)
+struct t_channel_typing *channel__typing_search(struct t_channel *channel,
+                                                const char *id)
 {
     struct t_channel_typing *ptr_typing;
 
@@ -457,7 +438,7 @@ struct t_channel_typing *channel__typing_search(
 }
 
 void channel__add_typing(struct t_channel *channel,
-                              struct t_user *user)
+                         struct t_user *user)
 {
     struct t_channel_typing *new_typing;
 
@@ -482,7 +463,7 @@ void channel__add_typing(struct t_channel *channel,
 }
 
 void channel__member_free(struct t_channel *channel,
-                               struct t_channel_member *member)
+                          struct t_channel_member *member)
 {
     struct t_channel_member *new_members;
 
@@ -519,7 +500,7 @@ void channel__member_free_all(struct t_channel *channel)
 }
 
 void channel__free(struct t_account *account,
-                        struct t_channel *channel)
+                   struct t_channel *channel)
 {
     struct t_channel *new_channels;
 
@@ -553,16 +534,10 @@ void channel__free(struct t_account *account,
         free(channel->id);
     if (channel->name)
         free(channel->name);
-    if (channel->name_normalized)
-        free(channel->name_normalized);
     if (channel->topic.value)
         free(channel->topic.value);
     if (channel->topic.creator)
         free(channel->topic.creator);
-    if (channel->purpose.value)
-        free(channel->purpose.value);
-    if (channel->purpose.creator)
-        free(channel->purpose.creator);
     if (channel->creator)
         free(channel->creator);
     if (channel->members_speaking[0])
@@ -584,9 +559,9 @@ void channel__free_all(struct t_account *account)
 }
 
 void channel__update_topic(struct t_channel *channel,
-                                const char* topic,
-                                const char* creator,
-                                int last_set)
+                           const char* topic,
+                           const char* creator,
+                           int last_set)
 {
     if (channel->topic.value)
         free(channel->topic.value);
@@ -602,24 +577,9 @@ void channel__update_topic(struct t_channel *channel,
         weechat_buffer_set(channel->buffer, "title", "");
 }
 
-void channel__update_purpose(struct t_channel *channel,
-                                  const char* purpose,
-                                  const char* creator,
-                                  int last_set)
-{
-    if (channel->purpose.value)
-        free(channel->purpose.value);
-    if (channel->purpose.creator)
-        free(channel->purpose.creator);
-    channel->purpose.value = (purpose) ? strdup(purpose) : NULL;
-    channel->purpose.creator = (creator) ? strdup(creator) : NULL;
-    channel->purpose.last_set = last_set;
-}
-
-struct t_channel_member *channel__add_member(
-                                struct t_account *account,
-                                struct t_channel *channel,
-                                const char *id)
+struct t_channel_member *channel__add_member(struct t_account *account,
+                                             struct t_channel *channel,
+                                             const char *id)
 {
     struct t_channel_member *member;
     struct t_user *user;

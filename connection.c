@@ -9,13 +9,9 @@
 
 #include "plugin.h"
 #include "config.h"
+#include "account.h"
+#include "channel.h"
 #include "connection.h"
-//#include "api/xmpp-api-hello.h"
-//#include "api/xmpp-api-error.h"
-//#include "api/xmpp-api-message.h"
-//#include "api/xmpp-api-user-typing.h"
-
-xmpp_conn_t *connection;
 
 void connection__init()
 {
@@ -26,37 +22,39 @@ int version_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 {
     xmpp_stanza_t *reply, *query, *name, *version, *text;
     const char *ns;
-    xmpp_ctx_t *ctx = (xmpp_ctx_t *)userdata;
+    struct t_account *account = (struct t_account *)userdata;
+    const char *weechat_name = "weechat";
+    const char *weechat_version = weechat_info_get("version", NULL);
 
     weechat_printf(NULL, "Received version request from %s", xmpp_stanza_get_from(stanza));
 
     reply = xmpp_stanza_reply(stanza);
     xmpp_stanza_set_type(reply, "result");
 
-    query = xmpp_stanza_new(ctx);
+    query = xmpp_stanza_new(account->context);
     xmpp_stanza_set_name(query, "query");
     ns = xmpp_stanza_get_ns(xmpp_stanza_get_children(stanza));
     if (ns) {
         xmpp_stanza_set_ns(query, ns);
     }
 
-    name = xmpp_stanza_new(ctx);
+    name = xmpp_stanza_new(account->context);
     xmpp_stanza_set_name(name, "name");
     xmpp_stanza_add_child(query, name);
     xmpp_stanza_release(name);
 
-    text = xmpp_stanza_new(ctx);
-    xmpp_stanza_set_text(text, "libstrophe example bot");
+    text = xmpp_stanza_new(account->context);
+    xmpp_stanza_set_text(text, weechat_name);
     xmpp_stanza_add_child(name, text);
     xmpp_stanza_release(text);
 
-    version = xmpp_stanza_new(ctx);
+    version = xmpp_stanza_new(account->context);
     xmpp_stanza_set_name(version, "version");
-    xmpp_stanza_add_child(query, version);
+    xmpp_stanza_add_child(query, weechat_version);
     xmpp_stanza_release(version);
 
-    text = xmpp_stanza_new(ctx);
-    xmpp_stanza_set_text(text, "1.0");
+    text = xmpp_stanza_new(account->context);
+    xmpp_stanza_set_text(text, version);
     xmpp_stanza_add_child(version, text);
     xmpp_stanza_release(text);
 
@@ -65,14 +63,17 @@ int version_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 
     xmpp_send(conn, reply);
     xmpp_stanza_release(reply);
+    if (version)
+        free (version);
+
     return 1;
 }
 
 int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 {
-    xmpp_ctx_t *ctx = (xmpp_ctx_t *)userdata;
+    struct t_account *account = (struct t_account *)userdata;
     xmpp_stanza_t *body, *reply;
-    const char *type;
+    const char *type, *from, *from_jid;
     char *intext, *replytext;
     int quit = 0;
 
@@ -82,68 +83,68 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
     type = xmpp_stanza_get_type(stanza);
     if (type != NULL && strcmp(type, "error") == 0)
         return 1;
+    from = xmpp_stanza_get_from(stanza);
+    from_jid = xmpp_jid_bare(account->context, from);
 
     intext = xmpp_stanza_get_text(body);
 
-    weechat_printf(NULL, "Incoming message from %s: %s", xmpp_stanza_get_from(stanza),
-           intext);
+    struct t_channel *channel = channel__search(account, from_jid);
+    if (!channel)
+        channel = channel__new(account, CHANNEL_TYPE_PM, from_jid, from_jid);
+
+    weechat_printf(channel->buffer, "%s: %s", from_jid, intext);
 
     reply = xmpp_stanza_reply(stanza);
     if (xmpp_stanza_get_type(reply) == NULL)
         xmpp_stanza_set_type(reply, "chat");
 
-    if (strcmp(intext, "quit") == 0) {
-        replytext = strdup("bye!");
-        quit = 1;
-    } else {
-        replytext = (char *)malloc(strlen(" to you too!") + strlen(intext) + 1);
-        strcpy(replytext, intext);
-        strcat(replytext, " to you too!");
-    }
-    xmpp_free(ctx, intext);
+    replytext = (char *)malloc(strlen(" received!") + strlen(intext) + 1);
+    strcpy(replytext, intext);
+    strcat(replytext, " received!");
+
+    xmpp_free(account->context, intext);
     xmpp_message_set_body(reply, replytext);
 
     xmpp_send(conn, reply);
     xmpp_stanza_release(reply);
+    weechat_printf(channel->buffer, "%s: %s",
+                   weechat_config_string(account->options[ACCOUNT_OPTION_JID]),
+                   replytext);
     free(replytext);
-
-    if (quit)
-        xmpp_disconnect(conn);
 
     return 1;
 }
 
 void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
-                             int error, xmpp_stream_error_t *stream_error,
-                             void *userdata)
+                         int error, xmpp_stream_error_t *stream_error,
+                         void *userdata)
 {
-    xmpp_ctx_t *ctx = (xmpp_ctx_t *)userdata;
+    struct t_account *account = (struct t_account *)userdata;
 
     (void)error;
     (void)stream_error;
 
     if (status == XMPP_CONN_CONNECT) {
         xmpp_stanza_t *pres;
-        weechat_printf(NULL, "DEBUG: connected");
+        weechat_printf(account->buffer, "DEBUG: connected");
         xmpp_handler_add(conn, version_handler, "jabber:iq:version", "iq", NULL,
-                         ctx);
-        xmpp_handler_add(conn, message_handler, NULL, "message", NULL, ctx);
+                         account);
+        xmpp_handler_add(conn, message_handler, NULL, "message", NULL, account);
 
         /* Send initial <presence/> so that we appear online to contacts */
-        pres = xmpp_presence_new(ctx);
+        pres = xmpp_presence_new(account->context);
         xmpp_send(conn, pres);
         xmpp_stanza_release(pres);
     } else {
-        weechat_printf(NULL, "DEBUG: disconnected");
-        xmpp_stop(ctx);
+        weechat_printf(account->buffer, "DEBUG: disconnected");
+      //xmpp_stop(account->context);
     }
 }
 
-int connection__connect(xmpp_ctx_t *context, xmpp_conn_t **connection,
-                        xmpp_log_t *logger, const char* jid,
-                        const char* password, int tls)
+int connection__connect(struct t_account *account, xmpp_conn_t **connection,
+                        const char* jid, const char* password, int tls)
 {
-    *connection = xmpp_conn_new(context);
+    *connection = xmpp_conn_new(account->context);
     xmpp_conn_set_jid(*connection, jid);
     xmpp_conn_set_pass(*connection, password);
 
@@ -163,7 +164,7 @@ int connection__connect(xmpp_ctx_t *context, xmpp_conn_t **connection,
     }
     xmpp_conn_set_flags(*connection, flags);
 
-    if (xmpp_connect_client(*connection, NULL, 0, &connection__handler, context)
+    if (xmpp_connect_client(*connection, NULL, 0, &connection__handler, account)
         != XMPP_EOK)
     {
         weechat_printf(
@@ -174,11 +175,6 @@ int connection__connect(xmpp_ctx_t *context, xmpp_conn_t **connection,
         return 0;
     }
 
-        weechat_printf(
-            NULL,
-            _("%s%s: c'necting to %s"),
-            weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME,
-            jid);
     return 1;
 }
 
@@ -190,30 +186,4 @@ void connection__process(xmpp_ctx_t *context, xmpp_conn_t *connection,
         xmpp_run_once(context ? context : xmpp_conn_get_context(connection),
                       timeout);
     }
-}
-
-int connection__route_message(xmpp_conn_t *workspace,
-                                  const char *type, void *message)
-{
-  //struct stringcase key;
-  //key.string = type;
-
-  //size_t case_count = sizeof(cases) / sizeof(cases[0]);
-  //void *entry_ptr = bsearch(&key, cases, case_count,
-  //        sizeof(struct stringcase), stringcase_cmp);
-
-  //if (entry_ptr)
-  //{
-  //    struct stringcase *entry = (struct stringcase *)entry_ptr;
-  //    return (*entry->func)(workspace, message);
-  //}
-  //else
-  //{
-  //    weechat_printf(
-  //        workspace->buffer,
-  //        _("%s%s: got unhandled message of type: %s"),
-  //        weechat_prefix("error"), XMPP_PLUGIN_NAME,
-  //        type);
-        return 1;
-  //}
 }
