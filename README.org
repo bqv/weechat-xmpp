@@ -17,24 +17,23 @@
 [[https://github.com/bqv/weechat-xmpp/blob/master/LICENSE][file:https://img.shields.io/github/license/bqv/weechat-xmpp.svg]]
 [[https://github.com/bqv/weechat-extras/][file:https://img.shields.io/badge/weechat--extras-xmpp-blue.svg]]
 
- | Status:     | Aaaaaaaaaaaaaaaaa                      |
- | Location:   | [[http://github.com/bqv/weechat-xmpp]] |
- | Version:    | 0.1.0                                  |
- | Disclaimer: | I'm lazy                               |
+ | Status:     | XMPP for power users and digital masochists |
+ | Location:   | [[http://github.com/bqv/weechat-xmpp]]          |
+ | Version:    | 0.1.1                                       |
+ | Disclaimer: | I'm lazy and unashamedly clinically insane  |
 
 * Description
 
   A weechat plugin in C to extend the chat client to
-  support XMPP and ideally a maximal set of XEPs.
-  
+  support XMPP and a currently minimal but ideally maximal
+  set of XEPs.
+
 * Usage
 
-  1. Start with =/xmpp register= for instructions on how
-     to obtain a token, or if you already have a token, use
-     =/xmpp register <token>=.
+  1. Start with =/xmpp add=, use =/help xmpp= for instructions.
 
-  2. Use =/xmpp connect <workspace-name>= with the name 
-     returned by register
+  2. Use =/xmpp connect <account-name>= with the name set at
+     add-time.
 
 * Installing
 
@@ -42,9 +41,9 @@
 
 * Dependencies
 
-  - libstrophe (static, submodule)
-  - json-c (static, submodule)
-  - weechat (>= v1.7)
+  - libstrophe (dynamic, dependency)
+  - libxml2 (dynamic, dependency)
+  - weechat (>= v2.5)
 
 * Building
 
@@ -54,19 +53,19 @@
   make
   make install
   #+end_src
-  
+
   Do *NOT* run make install as root, it installs the plugin to your
   local weechat plugins directory
-  
+
 * Development
-  
+
   I use emacs for development of this, although I am also a fan of vim.
   My debug build process involves static analysis with clang and cppcheck,
   and dynamic analysis with address-sanitizer and leak-sanitizer.
   My debug evaluation process involves gdb/mi run with the arguments
   =-ex "handle SIGPIPE nostop noprint pass" --args weechat -a 2>asan.log=
   since part of weechat and it's default plugins use SIGPIPE as control.
-  
+
   I have no real requests for style of pull requests besides a wish that
   you keep vaguely to the style I have adopted for this project.
 
@@ -74,8 +73,16 @@
 
 * Tasks
 
-** TODO [#A] Implement basic functionality (milestone v0.1)
-** TODO [#A] Implement essential events (milestone v0.2)
+** DONE [#A] Implement basic functionality (milestone v0.1)
+   * [x] Connecting
+   * [x] Pretty-printing stanzas
+   * [x] Receiveing and formatting PMs to a dedicated buffer
+   * [x] Responding to PMs and formatting responses
+** TODO [#A] Implement essential functionality (milestone v0.2)
+   * [ ] MUCs
+   * [ ] OMEMO presence
+   * [ ] OMEMO messages
+   * [ ] MUC PMs
 ** TODO [#B] Implement completion engine (milestone v0.3)
 ** TODO [#D] Close all issues (milestone v1.0)
 

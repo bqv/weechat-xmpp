@@ -597,3 +597,9 @@ struct t_channel_member *channel__add_member(struct t_account *account,
 
     return member;
 }
+
+void channel__send_message(struct t_account *account, struct t_channel *channel,
+                           const char *to, const char *message)
+{
+
+}

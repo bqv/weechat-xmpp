@@ -7,7 +7,7 @@
 
 #define weechat_plugin weechat_xmpp_plugin
 #define WEECHAT_XMPP_PLUGIN_NAME "xmpp"
-#define WEECHAT_XMPP_PLUGIN_VERSION "0.1"
+#define WEECHAT_XMPP_PLUGIN_VERSION "0.1.1"
 
 extern struct t_weechat_plugin *weechat_xmpp_plugin;
 

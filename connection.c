@@ -95,23 +95,7 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 
     weechat_printf(channel->buffer, "<-(%s)- %s: %s", to, from, intext);
 
-    reply = xmpp_stanza_reply(stanza);
-    if (xmpp_stanza_get_type(reply) == NULL)
-        xmpp_stanza_set_type(reply, "chat");
-
-    replytext = (char *)malloc(strlen(" received!") + strlen(intext) + 1);
-    strcpy(replytext, intext);
-    strcat(replytext, " received!");
-
     xmpp_free(account->context, intext);
-    xmpp_message_set_body(reply, replytext);
-
-    xmpp_send(conn, reply);
-    xmpp_stanza_release(reply);
-    weechat_printf(channel->buffer, "-> %s: %s",
-                   weechat_config_string(account->options[ACCOUNT_OPTION_JID]),
-                   replytext);
-    free(replytext);
 
     return 1;
 }
