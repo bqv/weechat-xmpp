@@ -72,8 +72,8 @@ int version_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 {
     struct t_account *account = (struct t_account *)userdata;
-    xmpp_stanza_t *body, *reply;
-    const char *type, *from, *from_jid;
+    xmpp_stanza_t *body, *reply, *to;
+    const char *type, *from, *from_bare;
     char *intext, *replytext;
     int quit = 0;
 
@@ -84,15 +84,16 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
     if (type != NULL && strcmp(type, "error") == 0)
         return 1;
     from = xmpp_stanza_get_from(stanza);
-    from_jid = xmpp_jid_bare(account->context, from);
+    from_bare = xmpp_jid_bare(account->context, from);
+    to = xmpp_stanza_get_to(stanza);
 
     intext = xmpp_stanza_get_text(body);
 
-    struct t_channel *channel = channel__search(account, from_jid);
+    struct t_channel *channel = channel__search(account, from_bare);
     if (!channel)
-        channel = channel__new(account, CHANNEL_TYPE_PM, from_jid, from_jid);
+        channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
 
-    weechat_printf(channel->buffer, "%s: %s", from_jid, intext);
+    weechat_printf(channel->buffer, "<-(%s)- %s: %s", to, from, intext);
 
     reply = xmpp_stanza_reply(stanza);
     if (xmpp_stanza_get_type(reply) == NULL)
@@ -107,7 +108,7 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 
     xmpp_send(conn, reply);
     xmpp_stanza_release(reply);
-    weechat_printf(channel->buffer, "%s: %s",
+    weechat_printf(channel->buffer, "-> %s: %s",
                    weechat_config_string(account->options[ACCOUNT_OPTION_JID]),
                    replytext);
     free(replytext);

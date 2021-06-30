@@ -10,7 +10,6 @@
 #include "account.h"
 #include "channel.h"
 #include "buffer.h"
-//#include "request.h"
 #include "message.h"
 #include "input.h"
 
@@ -18,7 +17,7 @@ int input__data(struct t_gui_buffer *buffer, const char *text)
 {
     struct t_account *account = NULL;
     struct t_channel *channel = NULL;
-    struct t_request *request;
+    struct xmpp_stanza_t *message;
 
     buffer__get_account_and_channel(buffer, &account, &channel);
 
@@ -35,13 +34,13 @@ int input__data(struct t_gui_buffer *buffer, const char *text)
             return WEECHAT_RC_OK;
         }
 
-        //TODO: SEND
-      //request = request_chat_postmessage(account,
-      //            weechat_config_string(
-      //                account->options[ACCOUNT_OPTION_TOKEN]),
-      //            channel->id, text);
-      //if (request)
-      //    account__register_request(account, request);
+        message = xmpp_message_new(account->context, "chat", channel->id, NULL);
+        xmpp_message_set_body(message, text);
+        xmpp_send(account->connection, message);
+        xmpp_stanza_release(message);
+        weechat_printf(channel->buffer, "-> %s: %s",
+                       weechat_config_string(account->options[ACCOUNT_OPTION_JID]),
+                       text);
     }
     else
     {
