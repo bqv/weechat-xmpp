@@ -181,7 +181,6 @@ struct t_channel *channel__new(struct t_account *account,
     struct t_channel *new_channel, *ptr_channel;
     struct t_gui_buffer *ptr_buffer;
     struct t_hook *typing_timer;
-    char buffer_name[128];
 
     if (!account || !id || !name || !name[0])
         return NULL;
@@ -192,10 +191,7 @@ struct t_channel *channel__new(struct t_account *account,
         return ptr_channel;
     }
 
-    buffer_name[0] = '#';
-    strncpy(&buffer_name[1], name, sizeof(buffer_name));
-
-    ptr_buffer = channel__create_buffer(account, type, buffer_name);
+    ptr_buffer = channel__create_buffer(account, type, name);
     if (!ptr_buffer)
         return NULL;
 

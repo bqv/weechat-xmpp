@@ -4,10 +4,10 @@ ifdef DEBUG
 endif
 RM=rm -f
 FIND=find
-INCLUDES=-Ilibstrophe
+INCLUDES=-Ilibstrophe $(shell xml2-config --cflags)
 CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers $(INCLUDES)
 LDFLAGS+=$(DBGLDFLAGS) -shared -g $(DBGCFLAGS)
-LDLIBS=-lstrophe -lpthread
+LDLIBS=-lstrophe -lpthread $(shell xml2-config --libs)
 
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib

@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
+#include <libxml/xmlwriter.h>
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
@@ -14,8 +15,6 @@
 #include "input.h"
 #include "account.h"
 #include "connection.h"
-//#include "xmpp-api.h"
-//#include "xmpp-request.h"
 #include "user.h"
 #include "channel.h"
 #include "buffer.h"
@@ -94,11 +93,60 @@ void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t leve
     time_t date = time(NULL);
     const char *timestamp = weechat_util_get_time_string(&date);
 
-    weechat_printf(
-        account ? account->buffer : NULL,
-        _("%s%s (%s): %s"),
-        weechat_prefix("error"), area,
-        log_level_name[level], msg);
+    char *xml;
+    if ((level == XMPP_LEVEL_DEBUG) && ((xml = strchr(msg, '<')) != NULL))
+    {
+        FILE *nullfd = fopen("/dev/null", "w+");
+        xmlGenericErrorContext = nullfd;
+
+        const char *header = strndup(msg, xml - msg);
+        xmlDocPtr *doc = xmlRecoverMemory(xml, strlen(xml));
+        if (doc == NULL) {
+            weechat_printf(
+                account ? account->buffer : NULL,
+                "xml: Error parsing the xml document");
+            fclose(nullfd);
+            return;
+        }
+        xmlChar *buf = malloc(strlen(xml) * 2);
+        if (buf == NULL) {
+            weechat_printf(
+                account ? account->buffer : NULL,
+                "xml: Error allocating the xml buffer");
+            fclose(nullfd);
+            return;
+        }
+        int size = -1;
+        xmlDocDumpFormatMemory(doc, &buf, &size, 1);
+        if (size <= 0) {
+            weechat_printf(
+                account ? account->buffer : NULL,
+                "xml: Error formatting the xml document");
+            fclose(nullfd);
+            return;
+        }
+        const char **lines = weechat_string_split(buf, "\r\n", NULL,
+                                                  0, 0, &size);
+        weechat_printf(
+            account ? account->buffer : NULL,
+            _("%s%s (%s): %s"),
+            weechat_prefix("error"), area,
+            log_level_name[level], header);
+        for (int i = 1; i < size; i++)
+            weechat_printf(
+                account ? account->buffer : NULL,
+                _("%s"), lines[i]);
+
+        fclose(nullfd);
+    }
+    else
+    {
+        weechat_printf(
+            account ? account->buffer : NULL,
+            _("%s%s (%s): %s"),
+            weechat_prefix("error"), area,
+            log_level_name[level], msg);
+    }
 }
 
 struct t_account *account__alloc(const char *name)
