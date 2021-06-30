@@ -5,6 +5,6 @@
 #ifndef _WEECHAT_XMPP_COMMAND_H_
 #define _WEECHAT_XMPP_COMMAND_H_
 
-extern void xmpp_command_init();
+void command__init();
 
 #endif /*WEECHAT_XMPP_COMMAND_H*/

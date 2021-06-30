@@ -12,13 +12,13 @@
 #include "config.h"
 #include "connection.h"
 #include "command.h"
-//#include "xmpp-workspace.h"
-//#include "xmpp-buffer.h"
+#include "account.h"
+#include "buffer.h"
 //#include "xmpp-completion.h"
 
 
 WEECHAT_PLUGIN_NAME(WEECHAT_XMPP_PLUGIN_NAME);
-WEECHAT_PLUGIN_DESCRIPTION(N_("XMPP protocol"));
+WEECHAT_PLUGIN_DESCRIPTION(N_("XMPP client protocol"));
 WEECHAT_PLUGIN_AUTHOR("bqv <weechat@fron.io>");
 WEECHAT_PLUGIN_VERSION(WEECHAT_XMPP_PLUGIN_VERSION);
 WEECHAT_PLUGIN_LICENSE("MPL2");
@@ -26,35 +26,32 @@ WEECHAT_PLUGIN_PRIORITY(5500);
 
 struct t_weechat_plugin *weechat_xmpp_plugin = NULL;
 
-struct t_hook *xmpp_hook_timer = NULL;
+struct t_hook *weechat_xmpp_autoconnect_timer = NULL;
+struct t_hook *weechat_xmpp_process_timer = NULL;
 
-struct t_gui_bar_item *xmpp_typing_bar_item = NULL;
+struct t_gui_bar_item *weechat_xmpp_typing_bar_item = NULL;
 
 int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 {
     (void) argc;
     (void) argv;
 
-    weechat_plugin = plugin;
+    weechat_xmpp_plugin = plugin;
 
-    if (!xmpp_config_init())
+    if (!config__init())
         return WEECHAT_RC_ERROR;
 
-    xmpp_config_read();
+    config__read();
 
-    xmpp_connection_init();
+    connection__init();
 
-    xmpp_command_init();
+    command__init();
 
-  //xmpp_completion_init();
+  //completion__init();
 
-    xmpp_hook_timer = weechat_hook_timer(1 * 1000, 0, 1,
-                                         &xmpp_connection_autoconnect,
-                                         NULL, NULL);
-
-    xmpp_hook_timer = weechat_hook_timer(0.1 * 1000, 0, 0,
-                                         &xmpp_connection_check_events,
-                                         NULL, NULL);
+    weechat_xmpp_process_timer = weechat_hook_timer(0.1 * 1000, 0, 0,
+                                                    &account__timer_cb,
+                                                    NULL, NULL);
 
     if (!weechat_bar_search("typing"))
     {
@@ -64,9 +61,9 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
                         "off", "xmpp_typing");
     }
 
-  //xmpp_typing_bar_item = weechat_bar_item_new("xmpp_typing",
-  //                                             &xmpp_buffer_typing_bar_cb,
-  //                                             NULL, NULL);
+    weechat_xmpp_typing_bar_item = weechat_bar_item_new("xmpp_typing",
+                                                        &buffer__typing_bar_cb,
+                                                        NULL, NULL);
 
     return WEECHAT_RC_OK;
 }
@@ -76,25 +73,19 @@ int weechat_plugin_end(struct t_weechat_plugin *plugin)
     // make C compiler happy
     (void) plugin;
 
-    if (xmpp_typing_bar_item)
-        weechat_bar_item_remove(xmpp_typing_bar_item);
+    if (weechat_xmpp_typing_bar_item)
+        weechat_bar_item_remove(weechat_xmpp_typing_bar_item);
 
-    if (xmpp_hook_timer)
-        weechat_unhook(xmpp_hook_timer);
+    if (weechat_xmpp_autoconnect_timer)
+        weechat_unhook(weechat_xmpp_autoconnect_timer);
+    if (weechat_xmpp_process_timer)
+        weechat_unhook(weechat_xmpp_process_timer);
 
-    xmpp_config_write();
+    config__write();
 
-    if (xmpp_connection)
-    {
-      xmpp_ctx_t *xmpp_context = xmpp_conn_get_context(xmpp_connection);
+    account__disconnect_all();
 
-      if (xmpp_conn_is_connected(xmpp_connection))
-        xmpp_disconnect(xmpp_connection);
-
-      xmpp_conn_release(xmpp_connection);
-
-      xmpp_ctx_free(xmpp_context);
-    }
+    account__free_all();
 
     xmpp_shutdown();
 

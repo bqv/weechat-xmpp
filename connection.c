@@ -15,40 +15,11 @@
 //#include "api/xmpp-api-message.h"
 //#include "api/xmpp-api-user-typing.h"
 
-xmpp_conn_t *xmpp_connection;
+xmpp_conn_t *connection;
 
-void xmpp_log_emit_weechat(void *const userdata, const xmpp_log_level_t level, const char *const area, const char *const msg)
-{
-    (void) userdata;
-
-    static const char *log_level_name[4] = {"debug", "info", "warn", "error"};
-
-    time_t date = time(NULL);
-    const char *timestamp = weechat_util_get_time_string(&date);
-
-    weechat_printf(
-        NULL,
-        _("%s%s/%s (%s): %s"),
-        weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME, area,
-        log_level_name[level], msg);
-}
-
-xmpp_log_t xmpp_logger = {
-    &xmpp_log_emit_weechat,
-    NULL
-};
-
-void xmpp_connection_init()
+void connection__init()
 {
     xmpp_initialize();
-}
-
-int xmpp_connection_autoconnect(const void *pointer, void *data, int remaining_calls)
-{
-    xmpp_connection_connect(weechat_config_string(xmpp_config_server_jid),
-                            weechat_config_string(xmpp_config_server_password));
-
-    return WEECHAT_RC_OK;
 }
 
 int version_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
@@ -142,9 +113,9 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
     return 1;
 }
 
-void xmpp_connection_on_connected(xmpp_conn_t *conn, xmpp_conn_event_t status,
-                                  int error, xmpp_stream_error_t *stream_error,
-                                  void *userdata)
+void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
+                             int error, xmpp_stream_error_t *stream_error,
+                             void *userdata)
 {
     xmpp_ctx_t *ctx = (xmpp_ctx_t *)userdata;
 
@@ -168,97 +139,60 @@ void xmpp_connection_on_connected(xmpp_conn_t *conn, xmpp_conn_event_t status,
     }
 }
 
-void xmpp_connection_connect(const char* jid, const char* password)
+int connection__connect(xmpp_ctx_t *context, xmpp_conn_t **connection,
+                        xmpp_log_t *logger, const char* jid,
+                        const char* password, int tls)
 {
-    xmpp_ctx_t *xmpp_context = xmpp_ctx_new(NULL, &xmpp_logger);
+    *connection = xmpp_conn_new(context);
+    xmpp_conn_set_jid(*connection, jid);
+    xmpp_conn_set_pass(*connection, password);
 
-    xmpp_connection = xmpp_conn_new(xmpp_context);
-    xmpp_conn_set_jid(xmpp_connection, jid);
-    xmpp_conn_set_pass(xmpp_connection, password);
-    auto flags = xmpp_conn_get_flags(xmpp_connection);
-  //flags |= XMPP_CONN_FLAG_TRUST_TLS;
-    xmpp_conn_set_flags(xmpp_connection, flags);
-    xmpp_connect_client(xmpp_connection, NULL, 0, xmpp_connection_on_connected, xmpp_context);
-  //struct lws_context_creation_info ctxinfo;
-  //struct lws_client_connect_info ccinfo;
-  //const char *url_protocol, *url_path;
-  //char path[512];
-
-  //memset(&ctxinfo, 0, sizeof(ctxinfo));
-  //memset(&ccinfo, 0, sizeof(ccinfo));
-
-  //ccinfo.port = 443;
-
-  //if (lws_parse_uri(workspace->ws_url,
-  //                  &url_protocol, &ccinfo.address,
-  //                  &ccinfo.port, &url_path))
-  //{
-  //    weechat_printf(
-  //        workspace->buffer,
-  //        _("%s%s: error connecting to xmpp: bad websocket uri"),
-  //        weechat_prefix("error"), XMPP_PLUGIN_NAME);
-  //    return;
-  //}
-
-  //path[0] = '/';
-  //strncpy(path + 1, url_path, sizeof(path) - 2);
-  //path[sizeof(path) - 1] = '\0';
-
-  //ccinfo.path = path;
-
-  //ctxinfo.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-  //ctxinfo.port = CONTEXT_PORT_NO_LISTEN;
-  //ctxinfo.protocols = protocols;
-  //ctxinfo.uid = -1;
-  //ctxinfo.gid = -1;
-
-  //workspace->context = lws_create_context(&ctxinfo);
-  //if (!workspace->context)
-  //{
-  //    weechat_printf(
-  //        workspace->buffer,
-  //        _("%s%s: error connecting to xmpp: lws init failed"),
-  //        weechat_prefix("error"), XMPP_PLUGIN_NAME);
-  //    return;
-  //}
-  //else
-  //{
-  //    weechat_printf(
-  //        workspace->buffer,
-  //        _("%s%s: connecting to %s://%s:%d%s"),
-  //        weechat_prefix("network"), XMPP_PLUGIN_NAME,
-  //        url_protocol, ccinfo.address, ccinfo.port, path);
-  //}
-
-  //ccinfo.context = workspace->context;
-  //ccinfo.ssl_connection = LCCSCF_USE_SSL;
-  //ccinfo.host = ccinfo.address;
-  //ccinfo.origin = ccinfo.address;
-  //ccinfo.ietf_version_or_minus_one = -1;
-  //ccinfo.protocol = protocols[0].name;
-  //ccinfo.pwsi = &workspace->client_wsi;
-  //ccinfo.userdata = workspace;
-
-  //lws_client_connect_via_info(&ccinfo);
-}
-
-int xmpp_connection_check_events(const void *pointer, void *data, int remaining_calls)
-{
-    (void) pointer;
-    (void) data;
-    (void) remaining_calls;
-
-    if (xmpp_connection)
+    auto flags = xmpp_conn_get_flags(*connection);
+    switch (tls)
     {
-        xmpp_ctx_t *xmpp_context = xmpp_conn_get_context(xmpp_connection);
+        case 0:
+            flags |= XMPP_CONN_FLAG_DISABLE_TLS;
+            break;
+        case 1:
+            break;
+        case 2:
+            flags |= XMPP_CONN_FLAG_TRUST_TLS;
+            break;
+        default:
+            break;
+    }
+    xmpp_conn_set_flags(*connection, flags);
 
-        xmpp_run_once(xmpp_context, 10);
+    if (xmpp_connect_client(*connection, NULL, 0, &connection__handler, context)
+        != XMPP_EOK)
+    {
+        weechat_printf(
+            NULL,
+            _("%s%s: error connecting to %s"),
+            weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME,
+            jid);
+        return 0;
     }
 
-    return WEECHAT_RC_OK;
+        weechat_printf(
+            NULL,
+            _("%s%s: c'necting to %s"),
+            weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME,
+            jid);
+    return 1;
 }
 
-int xmpp_connection_route_message(xmpp_conn_t *workspace,
+void connection__process(xmpp_ctx_t *context, xmpp_conn_t *connection,
+                         const unsigned long timeout)
+{
+    if (connection)
+    {
+        xmpp_run_once(context ? context : xmpp_conn_get_context(connection),
+                      timeout);
+    }
+}
+
+int connection__route_message(xmpp_conn_t *workspace,
                                   const char *type, void *message)
 {
   //struct stringcase key;

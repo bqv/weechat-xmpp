@@ -5,17 +5,16 @@
 #ifndef _WEECHAT_XMPP_CONNECTION_H_
 #define _WEECHAT_XMPP_CONNECTION_H_
 
-extern xmpp_conn_t *xmpp_connection;
+void connection__init();
 
-void xmpp_connection_init();
+int connection__connect(xmpp_ctx_t *context, xmpp_conn_t **connection,
+                        xmpp_log_t *logger, const char* jid,
+                        const char* password, int tls);
 
-int xmpp_connection_autoconnect(const void *pointer, void *data, int remaining_calls);
+void connection__process(xmpp_ctx_t *context, xmpp_conn_t *connection,
+                         const unsigned long timeout);
 
-void xmpp_connection_connect(const char* jid, const char* password);
-
-int xmpp_connection_check_events(const void *pointer, void *data, int remaining_calls);
-
-int xmpp_connection_route_message(xmpp_conn_t *connection,
-                                  const char *type, void *message);
+int connection__route_message(xmpp_conn_t *connection,
+                              const char *type, void *message);
 
 #endif /*WEECHAT_XMPP_CONNECTION_H*/

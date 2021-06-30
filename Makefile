@@ -1,12 +1,12 @@
 ifdef DEBUG
-	DBGCFLAGS=-fsanitize=address -fsanitize=leak -fsanitize=undefined
-	DBGLDFLAGS=-static-libasan -static-liblsan -static-libubsan
+	DBGCFLAGS=-fsanitize=address -fsanitize=undefined -fsanitize=leak
+	DBGLDFLAGS=-lasan -lubsan -llsan
 endif
 RM=rm -f
 FIND=find
 INCLUDES=-Ilibstrophe
 CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers $(INCLUDES)
-LDFLAGS+=-shared -g $(DBGCFLAGS) $(DBGLDFLAGS)
+LDFLAGS+=$(DBGLDFLAGS) -shared -g $(DBGCFLAGS)
 LDLIBS=-lstrophe -lpthread
 
 PREFIX ?= /usr/local
@@ -14,19 +14,35 @@ LIBDIR ?= $(PREFIX)/lib
 INSTALL ?= /usr/bin/install
 
 SRCS=plugin.c \
-     command.c \
-     config.c \
-     connection.c \
+	 account.c \
+	 buffer.c \
+	 channel.c \
+	 command.c \
+	 config.c \
+	 connection.c \
+	 input.c \
+	 message.c \
+	 user.c \
 
 DEPS=
 OBJS=$(subst .c,.o,$(SRCS))
 
-all: $(DEPS) weechat-xmpp
+all: weechat-xmpp
+weechat-xmpp: $(DEPS) xmpp.so
 
-weechat-xmpp: $(OBJS)
+xmpp.so: $(OBJS)
 	$(CC) $(LDFLAGS) -o xmpp.so $(OBJS) $(LDLIBS)
 	which patchelf >/dev/null && \
-		patchelf --set-rpath $(LIBRARY_PATH):$(shell patchelf --print-rpath xmpp.so) xmpp.so || true
+		patchelf --set-rpath $(LIBRARY_PATH):$(shell realpath $(shell dirname $(shell gcc --print-libgcc-file-name))/../../../) xmpp.so && \
+		patchelf --shrink-rpath xmpp.so || true
+
+test: xmpp.so
+	env LD_PRELOAD=$(DEBUG) \
+		weechat -a -P buflist -r '/plugin load ./xmpp.so'
+
+debug: xmpp.so
+	gdb -ex "handle SIGPIPE nostop noprint pass" --args \
+		weechat -a -r '/plugin load ./xmpp.so'
 
 depend: .depend
 

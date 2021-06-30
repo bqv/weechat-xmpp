@@ -8,32 +8,39 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
+#include "account.h"
 #include "config.h"
 
-struct t_config_file *xmpp_config_file;
+struct t_config_file *config_file;
 
-//struct t_config_section *xmpp_config_section_workspace_default;
-//struct t_config_section *xmpp_config_section_workspace;
+struct t_config_section *config_section_account_default;
+struct t_config_section *config_section_account;
 
-struct t_config_option *xmpp_config_server_jid;
-struct t_config_option *xmpp_config_server_password;
-struct t_config_option *xmpp_config_look_nick_completion_smart;
+struct t_config_option *config_look_nick_completion_smart;
 
-/*
-struct t_config_option *xmpp_config_workspace_default[XMPP_WORKSPACE_NUM_OPTIONS];
+struct t_config_option *config_account_default[ACCOUNT_NUM_OPTIONS];
 
-int xmpp_config_workspace_check_value_cb(const void *pointer, void *data,
-                                              struct t_config_option *option,
-                                          const char *value)
+int config__account_check_value_cb(const void *pointer, void *data,
+                                  struct t_config_option *option,
+                                  const char *value)
 {
     (void) pointer;
     (void) data;
     (void) option;
     (void) value;
-        return 1;
+
+    return 1;
 }
 
-void xmpp_config_workspace_change_cb(const void *pointer, void *data,
+void config__account_change_cb(const void *pointer, void *data,
+                              struct t_config_option *option)
+{
+    (void) pointer;
+    (void) data;
+    (void) option;
+}
+
+void config__account_default_change_cb(const void *pointer, void *data,
                                       struct t_config_option *option)
 {
     (void) pointer;
@@ -41,45 +48,37 @@ void xmpp_config_workspace_change_cb(const void *pointer, void *data,
     (void) option;
 }
 
-void xmpp_config_workspace_default_change_cb(const void *pointer, void *data,
-                                              struct t_config_option *option)
-{
-    (void) pointer;
-    (void) data;
-    (void) option;
-}
-
 struct t_config_option *
-xmpp_config_workspace_new_option (struct t_config_file *config_file,
-                              struct t_config_section *section,
-                              int index_option,
-                              const char *option_name,
-                              const char *default_value,
-                              const char *value,
-                              int null_value_allowed,
-                              int (*callback_check_value)(const void *pointer,
-                                                          void *data,
-                                                          struct t_config_option *option,
-                                                          const char *value),
-                              const void *callback_check_value_pointer,
-                              void *callback_check_value_data,
-                              void (*callback_change)(const void *pointer,
-                                                      void *data,
-                                                      struct t_config_option *option),
-                              const void *callback_change_pointer,
-                              void *callback_change_data)
+config__account_new_option (struct t_config_file *config_file,
+                           struct t_config_section *section,
+                           int index_option,
+                           const char *option_name,
+                           const char *default_value,
+                           const char *value,
+                           int null_value_allowed,
+                           int (*callback_check_value)(const void *pointer,
+                                                       void *data,
+                                                       struct t_config_option *option,
+                                                       const char *value),
+                           const void *callback_check_value_pointer,
+                           void *callback_check_value_data,
+                           void (*callback_change)(const void *pointer,
+                                                   void *data,
+                                                   struct t_config_option *option),
+                           const void *callback_change_pointer,
+                           void *callback_change_data)
 {
-        struct t_config_option *new_option;
+    struct t_config_option *new_option;
 
     new_option = NULL;
 
     switch (index_option)
     {
-        case XMPP_WORKSPACE_OPTION_TOKEN:
+        case ACCOUNT_OPTION_JID:
             new_option = weechat_config_new_option (
                 config_file, section,
                 option_name, "string",
-                N_("xmpp api token"),
+                N_("XMPP Account JID"),
                 NULL, 0, 0,
                 default_value, value,
                 null_value_allowed,
@@ -91,46 +90,94 @@ xmpp_config_workspace_new_option (struct t_config_file *config_file,
                 callback_change_data,
                 NULL, NULL, NULL);
             break;
-                case XMPP_WORKSPACE_NUM_OPTIONS:
+        case ACCOUNT_OPTION_PASSWORD:
+            new_option = weechat_config_new_option (
+                config_file, section,
+                option_name, "string",
+                N_("XMPP Account Password"),
+                NULL, 0, 0,
+                default_value, value,
+                null_value_allowed,
+                callback_check_value,
+                callback_check_value_pointer,
+                callback_check_value_data,
+                callback_change,
+                callback_change_pointer,
+                callback_change_data,
+                NULL, NULL, NULL);
+            break;
+        case ACCOUNT_OPTION_TLS:
+            new_option = weechat_config_new_option (
+                config_file, section,
+                option_name, "integer",
+                N_("XMPP Server TLS Policy"),
+                "disable|normal|trust", 0, 0,
+                default_value, value,
+                null_value_allowed,
+                callback_check_value,
+                callback_check_value_pointer,
+                callback_check_value_data,
+                callback_change,
+                callback_change_pointer,
+                callback_change_data,
+                NULL, NULL, NULL);
+            break;
+        case ACCOUNT_OPTION_NICKNAME:
+            new_option = weechat_config_new_option (
+                config_file, section,
+                option_name, "string",
+                N_("XMPP Server JID"),
+                NULL, 0, 0,
+                default_value, value,
+                null_value_allowed,
+                callback_check_value,
+                callback_check_value_pointer,
+                callback_check_value_data,
+                callback_change,
+                callback_change_pointer,
+                callback_change_data,
+                NULL, NULL, NULL);
+            break;
+        case ACCOUNT_NUM_OPTIONS:
             break;
     }
 
     return new_option;
 }
 
-void xmpp_config_workspace_create_default_options(struct t_config_section *section)
+void config__account_create_default_options(struct t_config_section *section)
 {
     int i;
 
-        for (i = 0; i < XMPP_WORKSPACE_NUM_OPTIONS; i++)
-        {
-                xmpp_config_workspace_default[i] = xmpp_config_workspace_new_option(
-                        xmpp_config_file,
-                        section,
-                        i,
-                        xmpp_workspace_options[i][0],
-                        xmpp_workspace_options[i][1],
-                        xmpp_workspace_options[i][1],
-                        0,
-                        &xmpp_config_workspace_check_value_cb,
-                        xmpp_workspace_options[i][0],
-                        NULL,
-                        &xmpp_config_workspace_default_change_cb,
-                        xmpp_workspace_options[i][0],
-                        NULL);
-        }
+    for (i = 0; i < ACCOUNT_NUM_OPTIONS; i++)
+    {
+        config_account_default[i] = config__account_new_option(
+            config_file,
+            section,
+            i,
+            account_options[i][0],
+            account_options[i][1],
+            account_options[i][1],
+            0,
+            &config__account_check_value_cb,
+            account_options[i][0],
+            NULL,
+            &config__account_default_change_cb,
+            account_options[i][0],
+            NULL);
+    }
 }
 
 
 
-int xmpp_config_workspace_read_cb (const void *pointer, void *data,
-                                    struct t_config_file *config_file,
-                                    struct t_config_section *section,
-                                    const char *option_name, const char *value)
+int config__account_read_cb (const void *pointer, void *data,
+                            struct t_config_file *config_file,
+                            struct t_config_section *section,
+                            const char *option_name, const char *value)
 {
-    struct t_xmpp_workspace *ptr_workspace;
+    struct t_account *ptr_account;
     int index_option, rc, i;
-    char *pos_option, *workspace_domain;
+    char *pos_option, *account_name;
 
     (void) pointer;
     (void) data;
@@ -144,42 +191,42 @@ int xmpp_config_workspace_read_cb (const void *pointer, void *data,
         pos_option = strrchr(option_name, '.');
         if (pos_option)
         {
-            workspace_domain = weechat_strndup(option_name,
-                                               pos_option - option_name);
+            account_name = weechat_strndup(option_name,
+                                           pos_option - option_name);
             pos_option++;
-            if (workspace_domain)
+            if (account_name)
             {
-                index_option = xmpp_workspace_search_option(pos_option);
+                index_option = account__search_option(pos_option);
                 if (index_option >= 0)
                 {
-                    ptr_workspace = xmpp_workspace_search(workspace_domain);
-                    if (!ptr_workspace)
-                        ptr_workspace = xmpp_workspace_alloc(workspace_domain);
-                    if (ptr_workspace)
+                    ptr_account = account__search(account_name);
+                    if (!ptr_account)
+                        ptr_account = account__alloc(account_name);
+                    if (ptr_account)
                     {
-                        if (ptr_workspace->reloading_from_config
-                            && !ptr_workspace->reloaded_from_config)
+                        if (!ptr_account->reloading_from_config++)
                         {
-                            for (i = 0; i < XMPP_WORKSPACE_NUM_OPTIONS; i++)
+                            for (i = 0; i < ACCOUNT_NUM_OPTIONS; i++)
                             {
                                 weechat_config_option_set(
-                                    ptr_workspace->options[i], NULL, 1);
+                                    ptr_account->options[i], NULL, 1);
                             }
-                            ptr_workspace->reloaded_from_config = 1;
                         }
+                        ptr_account->reloading_from_config %=
+                            ACCOUNT_NUM_OPTIONS;
                         rc = weechat_config_option_set(
-                            ptr_workspace->options[index_option], value, 1);
+                            ptr_account->options[index_option], value, 1);
                     }
                     else
                     {
                         weechat_printf(
                             NULL,
-                            _("%s%s: error adding workspace \"%s\""),
-                            weechat_prefix("error"), XMPP_PLUGIN_NAME,
-                            workspace_domain);
+                            _("%s%s: error adding account \"%s\""),
+                            weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME,
+                            account_name);
                     }
                 }
-                free(workspace_domain);
+                free(account_name);
             }
         }
     }
@@ -188,18 +235,18 @@ int xmpp_config_workspace_read_cb (const void *pointer, void *data,
     {
         weechat_printf(
             NULL,
-            _("%s%s: error creating workspace option \"%s\""),
-            weechat_prefix("error"), XMPP_PLUGIN_NAME, option_name);
+            _("%s%s: error creating account option \"%s\""),
+            weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME, option_name);
     }
 
     return rc;
 }
 
-int xmpp_config_workspace_write_cb (const void *pointer, void *data,
-                                     struct t_config_file *config_file,
-                                     const char *section_name)
+int config__account_write_cb (const void *pointer, void *data,
+                             struct t_config_file *config_file,
+                             const char *section_name)
 {
-    struct t_xmpp_workspace *ptr_workspace;
+    struct t_account *ptr_account;
     int i;
 
     (void) pointer;
@@ -208,88 +255,61 @@ int xmpp_config_workspace_write_cb (const void *pointer, void *data,
     if (!weechat_config_write_line(config_file, section_name, NULL))
         return WEECHAT_CONFIG_WRITE_ERROR;
 
-    for (ptr_workspace = xmpp_workspaces; ptr_workspace;
-         ptr_workspace = ptr_workspace->next_workspace)
+    for (ptr_account = accounts; ptr_account;
+         ptr_account = ptr_account->next_account)
     {
-        for (i = 0; i < XMPP_WORKSPACE_NUM_OPTIONS; i++)
+        for (i = 0; i < ACCOUNT_NUM_OPTIONS; i++)
         {
             if (!weechat_config_write_option(config_file,
-                                             ptr_workspace->options[i]))
+                                             ptr_account->options[i]))
                 return WEECHAT_CONFIG_WRITE_ERROR;
         }
     }
 
     return WEECHAT_CONFIG_WRITE_OK;
 }
-*/
 
-int xmpp_config_reload (const void *pointer, void *data,
-                         struct t_config_file *config_file)
+int config__reload (const void *pointer, void *data,
+                   struct t_config_file *config_file)
 {
     (void) pointer;
     (void) data;
 
-    //weechat_config_section_free_options(xmpp_config_section_workspace_default);
-    //weechat_config_section_free_options(xmpp_config_section_workspace);
-    //xmpp_workspace_free_all();
+    weechat_config_section_free_options(config_section_account_default);
+    weechat_config_section_free_options(config_section_account);
+    account__free_all();
 
     return weechat_config_reload(config_file);
 }
 
-int xmpp_config_init()
+int config__init()
 {
-    struct t_config_section *ptr_section_server;
-    struct t_config_section *ptr_section_look;
+    struct t_config_section *ptr_section;
 
-    xmpp_config_file = weechat_config_new(WEECHAT_XMPP_CONFIG_NAME,
-                                           &xmpp_config_reload, NULL, NULL);
+    config_file = weechat_config_new(WEECHAT_XMPP_CONFIG_NAME,
+                                     &config__reload, NULL, NULL);
 
-    if(!xmpp_config_file)
+    if(!config_file)
         return 0;
 
-    ptr_section_server = weechat_config_new_section(
-            xmpp_config_file, "server",
-            0, 0,
-            NULL, NULL, NULL,
-            NULL, NULL, NULL,
-            NULL, NULL, NULL,
-            NULL, NULL, NULL,
-            NULL, NULL, NULL);
+    ptr_section = weechat_config_new_section(
+        config_file, "look",
+        0, 0,
+        NULL, NULL, NULL,
+        NULL, NULL, NULL,
+        NULL, NULL, NULL,
+        NULL, NULL, NULL,
+        NULL, NULL, NULL);
 
-    ptr_section_look = weechat_config_new_section(
-            xmpp_config_file, "look",
-            0, 0,
-            NULL, NULL, NULL,
-            NULL, NULL, NULL,
-            NULL, NULL, NULL,
-            NULL, NULL, NULL,
-            NULL, NULL, NULL);
-
-    if (!ptr_section_server
-     || !ptr_section_server
-     || !ptr_section_look)
+    if (!ptr_section)
     {
-        weechat_config_free(xmpp_config_file);
-        xmpp_config_file = NULL;
+        weechat_config_free(config_file);
+        config_file = NULL;
         return 0;
     }
 
-    xmpp_config_server_jid = weechat_config_new_option (
-        xmpp_config_file, ptr_section_server,
-        "jid", "string",
-        N_("XMPP Server JID"),
-        NULL, 0, 0, "", "", 0,
-        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-
-    xmpp_config_server_password = weechat_config_new_option (
-        xmpp_config_file, ptr_section_server,
-        "password", "string",
-        N_("XMPP Server Password"),
-        NULL, 0, 0, "", "", 0,
-        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-
-    xmpp_config_look_nick_completion_smart = weechat_config_new_option (
-        xmpp_config_file, ptr_section_look,
+    config_look_nick_completion_smart = weechat_config_new_option (
+        config_file, ptr_section,
         "nick_completion_smart", "integer",
         N_("smart completion for nicks (completes first with last speakers): "
            "speakers = all speakers (including highlights), "
@@ -297,61 +317,61 @@ int xmpp_config_init()
         "off|speakers|speakers_highlights", 0, 0, "speakers", NULL, 0,
         NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
-  //ptr_section = weechat_config_new_section(
-  //        xmpp_config_file, "workspace_default",
-  //        0, 0,
-  //        NULL, NULL, NULL,
-  //        NULL, NULL, NULL,
-  //        NULL, NULL, NULL,
-  //        NULL, NULL, NULL,
-  //        NULL, NULL, NULL);
+    ptr_section = weechat_config_new_section(
+        config_file, "account_default",
+        0, 0,
+        NULL, NULL, NULL,
+        NULL, NULL, NULL,
+        NULL, NULL, NULL,
+        NULL, NULL, NULL,
+        NULL, NULL, NULL);
 
-  //if (!ptr_section)
-  //{
-  //    weechat_config_free(xmpp_config_file);
-  //    xmpp_config_file = NULL;
-  //    return 0;
-  //}
+    if (!ptr_section)
+    {
+        weechat_config_free(config_file);
+        config_file = NULL;
+        return 0;
+    }
 
-  //xmpp_config_section_workspace_default = ptr_section;
+    config_section_account_default = ptr_section;
 
-  //xmpp_config_workspace_create_default_options(ptr_section);
+    config__account_create_default_options(ptr_section);
 
-  //    ptr_section = weechat_config_new_section(
-  //    xmpp_config_file, "workspace",
-  //    0, 0,
-  //    &xmpp_config_workspace_read_cb, NULL, NULL,
-  //    &xmpp_config_workspace_write_cb, NULL, NULL,
-  //    NULL, NULL, NULL,
-  //    NULL, NULL, NULL,
-  //    NULL, NULL, NULL);
+    ptr_section = weechat_config_new_section(
+        config_file, "account",
+        0, 0,
+        &config__account_read_cb, NULL, NULL,
+        &config__account_write_cb, NULL, NULL,
+        NULL, NULL, NULL,
+        NULL, NULL, NULL,
+        NULL, NULL, NULL);
 
-  //if (!ptr_section)
-  //{
-  //    weechat_config_free(xmpp_config_file);
-  //    xmpp_config_file = NULL;
-  //    return 0;
-  //}
+    if (!ptr_section)
+    {
+        weechat_config_free(config_file);
+        config_file = NULL;
+        return 0;
+    }
 
-  //xmpp_config_section_workspace = ptr_section;
+    config_section_account = ptr_section;
 
     return 1;
 }
 
-int xmpp_config_read()
+int config__read()
 {
-        int rc;
+    int rc;
 
-    rc = weechat_config_read(xmpp_config_file);
+    rc = weechat_config_read(config_file);
 
     return rc;
 }
 
-int xmpp_config_write()
+int config__write()
 {
-    return weechat_config_write(xmpp_config_file);
+    return weechat_config_write(config_file);
 }
 
-void xmpp_config_free()
+void config__free()
 {
 }
