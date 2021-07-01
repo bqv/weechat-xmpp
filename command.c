@@ -327,6 +327,126 @@ int command__account(const void *pointer, void *data,
     return WEECHAT_RC_OK;
 }
 
+int command__enter(const void *pointer, void *data,
+                   struct t_gui_buffer *buffer, int argc,
+                   char **argv, char **argv_eol)
+{
+    struct t_account *ptr_account = NULL;
+    struct t_channel *ptr_channel = NULL;
+    struct xmpp_stanza_t *pres;
+    char *jid, *pres_jid, *text;
+
+    (void) pointer;
+    (void) data;
+    (void) argv;
+
+    buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);
+
+    if (!ptr_account)
+        return WEECHAT_RC_ERROR;
+
+    if (!ptr_account->is_connected)
+    {
+        weechat_printf(buffer,
+                        _("%s%s: you are not connected to server"),
+                        weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME);
+        return WEECHAT_RC_OK;
+    }
+
+    if (argc > 1)
+    {
+        jid = argv[1];
+        pres_jid = argv[1];
+
+        if(!xmpp_jid_resource(ptr_account->context, pres_jid))
+            pres_jid = xmpp_jid_new(
+                ptr_account->context,
+                xmpp_jid_node(ptr_account->context, jid),
+                xmpp_jid_domain(ptr_account->context, jid),
+                weechat_config_string(ptr_account->options[ACCOUNT_OPTION_NICKNAME])
+                && strlen(weechat_config_string(ptr_account->options[ACCOUNT_OPTION_NICKNAME]))
+                ? weechat_config_string(ptr_account->options[ACCOUNT_OPTION_NICKNAME])
+                : xmpp_jid_node(ptr_account->context,
+                                weechat_config_string(ptr_account->options[ACCOUNT_OPTION_JID])));
+
+        ptr_channel = channel__search(ptr_account, jid);
+        if (!ptr_channel)
+            ptr_channel = channel__new(ptr_account, CHANNEL_TYPE_MUC, jid, jid);
+
+        pres = xmpp_presence_new(ptr_account->context);
+        xmpp_stanza_set_to(pres, pres_jid);
+        xmpp_stanza_set_from(pres, weechat_config_string(ptr_account->options[ACCOUNT_OPTION_JID]));
+
+        struct xmpp_stanza_t *pres__x = xmpp_stanza_new(ptr_account->context);
+        xmpp_stanza_set_name(pres__x, "x");
+        xmpp_stanza_set_ns(pres__x, "http://jabber.org/protocol/muc");
+        xmpp_stanza_add_child(pres, pres__x);
+
+        xmpp_send(ptr_account->connection, pres);
+        xmpp_stanza_release(pres__x);
+        xmpp_stanza_release(pres);
+
+        if (argc > 2)
+        {
+            text = argv_eol[2];
+
+            channel__send_message(ptr_account, ptr_channel, jid, text);
+        }
+    }
+
+    return WEECHAT_RC_OK;
+}
+
+int command__open(const void *pointer, void *data,
+                  struct t_gui_buffer *buffer, int argc,
+                  char **argv, char **argv_eol)
+{
+    struct t_account *ptr_account = NULL;
+    struct t_channel *ptr_channel = NULL;
+    struct xmpp_stanza_t *pres;
+    char *jid, *text;
+
+    (void) pointer;
+    (void) data;
+    (void) argv;
+
+    buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);
+
+    if (!ptr_account)
+        return WEECHAT_RC_ERROR;
+
+    if (!ptr_account->is_connected)
+    {
+        weechat_printf(buffer,
+                        _("%s%s: you are not connected to server"),
+                        weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME);
+        return WEECHAT_RC_OK;
+    }
+
+    if (argc > 1)
+    {
+        jid = argv[1];
+
+        pres = xmpp_presence_new(ptr_account->context);
+        xmpp_stanza_set_to(pres, jid);
+        xmpp_send(ptr_account->connection, pres);
+        xmpp_stanza_release(pres);
+
+        ptr_channel = channel__search(ptr_account, jid);
+        if (!ptr_channel)
+            ptr_channel = channel__new(ptr_account, CHANNEL_TYPE_PM, jid, jid);
+
+        if (argc > 2)
+        {
+            text = argv_eol[2];
+
+            channel__send_message(ptr_account, ptr_channel, jid, text);
+        }
+    }
+
+    return WEECHAT_RC_OK;
+}
+
 int command__me(const void *pointer, void *data,
                struct t_gui_buffer *buffer, int argc,
                char **argv, char **argv_eol)
@@ -400,6 +520,24 @@ void command__init()
         &command__account, NULL, NULL);
     if (!hook)
         weechat_printf(NULL, "Failed to setup command /account");
+
+    hook = weechat_hook_command(
+        "enter",
+        N_("enter an xmpp multi-user-chat (muc)"),
+        N_("<jid>"),
+        N_("jid: muc to enter"),
+        NULL, &command__enter, NULL, NULL);
+    if (!hook)
+        weechat_printf(NULL, "Failed to setup command /enter");
+
+    hook = weechat_hook_command(
+        "open",
+        N_("open a direct xmpp chat"),
+        N_("<jid>"),
+        N_("jid: jid to target"),
+        NULL, &command__open, NULL, NULL);
+    if (!hook)
+        weechat_printf(NULL, "Failed to setup command /chat");
 
     hook = weechat_hook_command(
         "me",

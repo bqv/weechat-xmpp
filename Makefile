@@ -38,7 +38,7 @@ xmpp.so: $(OBJS)
 
 test: xmpp.so
 	env LD_PRELOAD=$(DEBUG) \
-		weechat -a -P 'buflist,irc' -r '/plugin load ./xmpp.so'
+		weechat -a -P 'alias,buflist,irc' -r '/plugin load ./xmpp.so'
 
 debug: xmpp.so
 	gdb -ex "handle SIGPIPE nostop noprint pass" --args \

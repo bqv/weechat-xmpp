@@ -92,6 +92,15 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
     if (!channel)
         channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
 
+    if (weechat_strcasecmp(type, "groupchat") == 0)
+    {
+        from = weechat_strcasecmp(channel->name,
+                                  xmpp_jid_bare(account->context,
+                                                from)) == 0
+            ? xmpp_jid_resource(account->context, from)
+            : from;
+    }
+
     if (strcmp(to, channel->id) == 0)
         weechat_printf(channel->buffer, "%s [to %s]: %s", from, to, intext);
     else if (strncmp(intext, "/me ", 4) == 0)

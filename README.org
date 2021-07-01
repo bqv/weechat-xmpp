@@ -74,18 +74,28 @@
 * Tasks
 
 ** DONE [#A] Implement basic functionality (milestone v0.1)
-   * [x] Connecting
-   * [x] Pretty-printing stanzas
-   * [x] Receiveing and formatting PMs to a dedicated buffer
-   * [x] Responding to PMs and formatting responses
+   * [X] Connecting
+   * [X] Pretty-printing stanzas
+   * [X] Receiveing and formatting PMs to a dedicated buffer
+   * [X] Responding to PMs and formatting responses
+   * [X] Opening PMs (/chat)
 ** TODO [#A] Implement essential functionality (milestone v0.2)
+   * [X] Opening PMs with initial message
+   * [ ] Handle wide errors gracefully
    * [ ] MUCs
+     * [X] Opening (/enter)
+     * [X] Receiving
+     * [X] Sending
+     * [ ] [#B] Handle errors gracefully
+     * [ ] [#B] Presence/nicklist
+     * [ ] [#B] Show topic
+     * [ ] [#B] Edits
    * [ ] OMEMO presence
    * [ ] OMEMO messages
    * [ ] MUC PMs
    * [ ] Send typing notifications
    * [ ] Recv typing notifications
-** TODO [#B] Implement completion engine (milestone v0.3)
+** TODO [#C] Implement completion engine (milestone v0.3)
 ** TODO [#D] Close all issues (milestone v1.0)
 
 * Contributing
