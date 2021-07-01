@@ -83,6 +83,8 @@
    * [ ] OMEMO presence
    * [ ] OMEMO messages
    * [ ] MUC PMs
+   * [ ] Send typing notifications
+   * [ ] Recv typing notifications
 ** TODO [#B] Implement completion engine (milestone v0.3)
 ** TODO [#D] Close all issues (milestone v1.0)
 

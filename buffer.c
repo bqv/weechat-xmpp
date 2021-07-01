@@ -12,8 +12,8 @@
 #include "buffer.h"
 
 void buffer__get_account_and_channel(struct t_gui_buffer *buffer,
-                                            struct t_account **account,
-                                            struct t_channel **channel)
+                                     struct t_account **account,
+                                     struct t_channel **channel)
 {
     struct t_account *ptr_account;
     struct t_channel *ptr_channel;
@@ -21,7 +21,7 @@ void buffer__get_account_and_channel(struct t_gui_buffer *buffer,
     if (!buffer)
         return;
 
-	/* look for a account or channel using this buffer */
+    /* look for a account or channel using this buffer */
     for (ptr_account = accounts; ptr_account;
          ptr_account = ptr_account->next_account)
     {
@@ -49,12 +49,11 @@ void buffer__get_account_and_channel(struct t_gui_buffer *buffer,
     /* no account or channel found */
 }
 
-char *buffer__typing_bar_cb(const void *pointer,
-                                 void *data,
-                                 struct t_gui_bar_item *item,
-                                 struct t_gui_window *window,
-                                 struct t_gui_buffer *buffer,
-                                 struct t_hashtable *extra_info)
+char *buffer__typing_bar_cb(const void *pointer, void *data,
+                            struct t_gui_bar_item *item,
+                            struct t_gui_window *window,
+                            struct t_gui_buffer *buffer,
+                            struct t_hashtable *extra_info)
 {
     struct t_channel_typing *ptr_typing;
     struct t_account *account;
@@ -111,9 +110,9 @@ char *buffer__typing_bar_cb(const void *pointer,
 }
 
 int buffer__nickcmp_cb(const void *pointer, void *data,
-                            struct t_gui_buffer *buffer,
-                            const char *nick1,
-                            const char *nick2)
+                       struct t_gui_buffer *buffer,
+                       const char *nick1,
+                       const char *nick2)
 {
     struct t_account *account;
 
@@ -135,7 +134,7 @@ int buffer__nickcmp_cb(const void *pointer, void *data,
 }
 
 int buffer__close_cb(const void *pointer, void *data,
-                          struct t_gui_buffer *buffer)
+                     struct t_gui_buffer *buffer)
 {
     struct t_weechat_plugin *buffer_plugin = NULL;
     struct t_account *ptr_account = NULL;

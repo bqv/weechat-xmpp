@@ -75,7 +75,6 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
     xmpp_stanza_t *body, *reply, *to;
     const char *type, *from, *from_bare;
     char *intext, *replytext;
-    int quit = 0;
 
     body = xmpp_stanza_get_child_by_name(stanza, "body");
     if (body == NULL)
@@ -93,7 +92,12 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
     if (!channel)
         channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
 
-    weechat_printf(channel->buffer, "<-(%s)- %s: %s", to, from, intext);
+    if (strcmp(to, channel->id) == 0)
+        weechat_printf(channel->buffer, "%s [to %s]: %s", from, to, intext);
+    else if (strncmp(intext, "/me ", 4) == 0)
+        weechat_printf(channel->buffer, "* %s %s", from, intext+4);
+    else
+        weechat_printf(channel->buffer, "%s: %s", from, intext);
 
     xmpp_free(account->context, intext);
 
@@ -111,7 +115,7 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
 
     if (status == XMPP_CONN_CONNECT) {
         xmpp_stanza_t *pres;
-        weechat_printf(account->buffer, "DEBUG: connected");
+      //weechat_printf(account->buffer, "DEBUG: connected");
         xmpp_handler_add(conn, version_handler, "jabber:iq:version", "iq", NULL,
                          account);
         xmpp_handler_add(conn, message_handler, NULL, "message", NULL, account);
@@ -121,7 +125,7 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         xmpp_send(conn, pres);
         xmpp_stanza_release(pres);
     } else {
-        weechat_printf(account->buffer, "DEBUG: disconnected");
+      //weechat_printf(account->buffer, "DEBUG: disconnected");
       //xmpp_stop(account->context);
     }
 }

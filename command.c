@@ -332,13 +332,12 @@ int command__me(const void *pointer, void *data,
                char **argv, char **argv_eol)
 {
     struct t_account *ptr_account = NULL;
-    struct t_xmpp_channel *ptr_channel = NULL;
-  //struct t_xmpp_request *request;
+    struct t_channel *ptr_channel = NULL;
+    struct xmpp_stanza_t *message;
     char *text;
 
     (void) pointer;
     (void) data;
-    (void) buffer;
     (void) argv;
 
     buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);
@@ -365,14 +364,15 @@ int command__me(const void *pointer, void *data,
 
     if (argc > 1)
     {
-        text = argv_eol[1];
+        text = argv_eol[0];
 
-      //request = xmpp_request_chat_memessage(ptr_account,
-      //            weechat_config_string(
-      //                ptr_account->options[XMPP_ACCOUNT_OPTION_TOKEN]),
-      //            ptr_channel->id, text);
-      //if (request)
-      //    xmpp_account_register_request(ptr_account, request);
+        message = xmpp_message_new(ptr_account->context, "chat", ptr_channel->name, NULL);
+        xmpp_message_set_body(message, text);
+        xmpp_send(ptr_account->connection, message);
+        xmpp_stanza_release(message);
+        weechat_printf(ptr_channel->buffer, "* %s %s",
+                       weechat_config_string(ptr_account->options[ACCOUNT_OPTION_JID]),
+                       text);
     }
 
     return WEECHAT_RC_OK;

@@ -115,7 +115,7 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
                                                       "localvar_channel");
 
         if (!short_name ||
-                (localvar_channel && (strcmp(localvar_channel, short_name) == 0)))
+            (localvar_channel && (strcmp(localvar_channel, short_name) == 0)))
         {
             weechat_buffer_set (ptr_buffer, "short_name", name);
         }
@@ -599,7 +599,13 @@ struct t_channel_member *channel__add_member(struct t_account *account,
 }
 
 void channel__send_message(struct t_account *account, struct t_channel *channel,
-                           const char *to, const char *message)
+                           const char *to, const char *body)
 {
-
+    struct xmpp_stanza_t *message = xmpp_message_new(account->context, "chat", to, NULL);
+    xmpp_message_set_body(message, body);
+    xmpp_send(account->connection, message);
+    xmpp_stanza_release(message);
+    weechat_printf(channel->buffer, "%s: %s",
+                   weechat_config_string(account->options[ACCOUNT_OPTION_JID]),
+                   body);
 }
