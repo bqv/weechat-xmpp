@@ -81,20 +81,26 @@
    * [X] Opening PMs (/chat)
 ** TODO [#A] Implement essential functionality (milestone v0.2)
    * [X] Opening PMs with initial message
-   * [ ] Handle wide errors gracefully
+   * [ ] [#B] Handle wide errors gracefully
    * [ ] MUCs
      * [X] Opening (/enter)
      * [X] Receiving
      * [X] Sending
+     * [ ] [#B] Edits
      * [ ] [#B] Handle errors gracefully
      * [ ] [#B] Presence/nicklist
-     * [ ] [#B] Show topic
-     * [ ] [#B] Edits
-   * [ ] OMEMO presence
-   * [ ] OMEMO messages
+       * [ ] [#B] Enters
+       * [ ] [#B] Leaves
+       * [ ] [#B] Tracking
+     * [ ] [#B] Set/show topic
+   * [ ] OMEMO (libsignal-protocol-c / axc)
+     * [ ] Presence
+     * [ ] Messages
    * [ ] MUC PMs
    * [ ] Send typing notifications
    * [ ] Recv typing notifications
+   * [ ] OTR (libotr)
+   * [ ] PGP (libgpgme)
 ** TODO [#C] Implement completion engine (milestone v0.3)
 ** TODO [#D] Close all issues (milestone v1.0)
 

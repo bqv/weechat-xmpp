@@ -14,27 +14,31 @@ LIBDIR ?= $(PREFIX)/lib
 INSTALL ?= /usr/bin/install
 
 SRCS=plugin.c \
-	 account.c \
-	 buffer.c \
-	 channel.c \
-	 command.c \
-	 config.c \
-	 connection.c \
-	 input.c \
-	 message.c \
-	 user.c \
+     account.c \
+     buffer.c \
+     channel.c \
+     command.c \
+     config.c \
+     connection.c \
+     input.c \
+     message.c \
+     user.c \
 
-DEPS=
+DEPS=axc/build/libaxc.a
 OBJS=$(subst .c,.o,$(SRCS))
 
 all: weechat-xmpp
 weechat-xmpp: $(DEPS) xmpp.so
 
-xmpp.so: $(OBJS)
-	$(CC) $(LDFLAGS) -o xmpp.so $(OBJS) $(LDLIBS)
+xmpp.so: $(OBJS) $(DEPS)
+	$(CC) $(LDFLAGS) -o xmpp.so $(OBJS) $(DEPS) $(LDLIBS)
 	which patchelf >/dev/null && \
 		patchelf --set-rpath $(LIBRARY_PATH):$(shell realpath $(shell dirname $(shell gcc --print-libgcc-file-name))/../../../) xmpp.so && \
 		patchelf --shrink-rpath xmpp.so || true
+
+axc/build/libaxc.a:
+	$(MAKE) -C axc
+axc: axc/build/libaxc.a
 
 test: xmpp.so
 	env LD_PRELOAD=$(DEBUG) \
@@ -55,6 +59,10 @@ tidy:
 
 clean:
 	$(RM) $(OBJS)
+	$(MAKE) -C axc clean
+	git submodule foreach --recursive git clean -xfd || true
+	git submodule foreach --recursive git reset --hard || true
+	git submodule update --init --recursive || true
 
 distclean: clean
 	$(RM) *~ .depend
