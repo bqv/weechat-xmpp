@@ -23,11 +23,25 @@ const char *user__get_colour_for_nicklist(struct t_user *user)
     return weechat_info_get("nick_color_name", user->profile.display_name);
 }
 
-const char *user__as_prefix(struct t_account *account,
-                                 struct t_user *user,
-                                 const char *name)
+const char *user__as_prefix_raw(struct t_account *account,
+                                const char *name)
 {
-    static char result[256];
+    static char result[2048];
+
+    (void) account;
+
+    snprintf(result, sizeof(result), "%s%s\t",
+             weechat_info_get("nick_color", name),
+             name);
+
+    return result;
+}
+
+const char *user__as_prefix(struct t_account *account,
+                            struct t_user *user,
+                            const char *name)
+{
+    static char result[2048];
 
     (void) account;
 
@@ -39,7 +53,7 @@ const char *user__as_prefix(struct t_account *account,
 }
 
 struct t_user *user__bot_search(struct t_account *account,
-                                           const char *bot_id)
+                                const char *bot_id)
 {
     struct t_user *ptr_user;
 
@@ -58,7 +72,7 @@ struct t_user *user__bot_search(struct t_account *account,
 }
 
 struct t_user *user__search(struct t_account *account,
-                                       const char *id)
+                            const char *id)
 {
     struct t_user *ptr_user;
 
@@ -76,8 +90,8 @@ struct t_user *user__search(struct t_account *account,
 }
 
 void user__nicklist_add(struct t_account *account,
-                             struct t_channel *channel,
-                             struct t_user *user)
+                        struct t_channel *channel,
+                        struct t_user *user)
 {
     struct t_gui_nick_group *ptr_group;
     struct t_gui_buffer *ptr_buffer;
@@ -89,7 +103,7 @@ void user__nicklist_add(struct t_account *account,
                                               "+" : "...");
     weechat_nicklist_add_nick(ptr_buffer, ptr_group,
                               user->profile.display_name,
-                              user->is_away ? 
+                              user->is_away ?
                               "weechat.color.nicklist_away" :
                               user__get_colour_for_nicklist(user),
                               user->is_away ? "+" : "",
@@ -98,7 +112,7 @@ void user__nicklist_add(struct t_account *account,
 }
 
 struct t_user *user__new(struct t_account *account,
-                                    const char *id, const char *display_name)
+                         const char *id, const char *display_name)
 {
     struct t_user *new_user, *ptr_user;
 

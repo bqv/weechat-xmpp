@@ -11,6 +11,7 @@
 //#include "oauth.h"
 //#include "teaminfo.h"
 #include "account.h"
+#include "user.h"
 #include "channel.h"
 #include "buffer.h"
 #include "message.h"
@@ -490,9 +491,11 @@ int command__me(const void *pointer, void *data,
         xmpp_message_set_body(message, text);
         xmpp_send(ptr_account->connection, message);
         xmpp_stanza_release(message);
-        weechat_printf(ptr_channel->buffer, "* %s %s",
-                       weechat_config_string(ptr_account->options[ACCOUNT_OPTION_JID]),
-                       text);
+        if (ptr_channel->type != CHANNEL_TYPE_MUC)
+            weechat_printf(ptr_channel->buffer, "%s%s %s",
+                           weechat_prefix("action"),
+                           weechat_config_string(ptr_account->options[ACCOUNT_OPTION_JID]),
+                           text);
     }
 
     return WEECHAT_RC_OK;

@@ -53,23 +53,26 @@ struct t_channel;
 
 const char *user__get_colour(struct t_user *user);
 
+const char *user__as_prefix_raw(struct t_account *account,
+                                const char *name);
+
 const char *user__as_prefix(struct t_account *account,
-                                 struct t_user *user,
-                                 const char *name);
+                            struct t_user *user,
+                            const char *name);
 
 struct t_user *user__bot_search(struct t_account *account,
-                                           const char *bot_id);
+                                const char *bot_id);
 
 struct t_user *user__search(struct t_account *account,
-                                       const char *id);
+                            const char *id);
 
 struct t_user *user__new(struct t_account *account,
-                                    const char *id, const char *display_name);
+                         const char *id, const char *display_name);
 
 void user__free_all(struct t_account *account);
 
 void user__nicklist_add(struct t_account *account,
-                             struct t_channel *channel,
-                             struct t_user *user);
+                        struct t_channel *channel,
+                        struct t_user *user);
 
 #endif /*WEECHAT_XMPP_USER_H*/

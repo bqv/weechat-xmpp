@@ -130,7 +130,7 @@ void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t leve
         weechat_printf(
             account ? account->buffer : NULL,
             _("%s%s (%s): %s"),
-            weechat_prefix("error"), area,
+            weechat_prefix("network"), area,
             log_level_name[level], header);
         for (int i = 1; i < size; i++)
             weechat_printf(
@@ -144,7 +144,7 @@ void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t leve
         weechat_printf(
             account ? account->buffer : NULL,
             _("%s%s (%s): %s"),
-            weechat_prefix("error"), area,
+            weechat_prefix("network"), area,
             log_level_name[level], msg);
     }
 }

@@ -610,7 +610,9 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
     xmpp_send(account->connection, message);
     xmpp_stanza_release(message);
     if (channel->type != CHANNEL_TYPE_MUC)
-        weechat_printf(channel->buffer, "%s: %s",
-                       weechat_config_string(account->options[ACCOUNT_OPTION_JID]),
+        weechat_printf(channel->buffer, "%s%s",
+                       user__as_prefix_raw(
+                           account,
+                           weechat_config_string(account->options[ACCOUNT_OPTION_JID])),
                        body);
 }

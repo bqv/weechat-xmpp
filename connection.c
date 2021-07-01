@@ -10,6 +10,7 @@
 #include "plugin.h"
 #include "config.h"
 #include "account.h"
+#include "user.h"
 #include "channel.h"
 #include "connection.h"
 
@@ -106,11 +107,16 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
     }
 
     if (strcmp(to, channel->id) == 0)
-        weechat_printf(channel->buffer, "%s [to %s]: %s", from, to, intext);
+        weechat_printf(channel->buffer, "%s[to %s]: %s",
+                       user__as_prefix_raw(account->context, from),
+                       to, intext);
     else if (weechat_string_match(intext, "/me *", 0))
-        weechat_printf(channel->buffer, "* %s %s", from, intext+4);
+        weechat_printf(channel->buffer, "%s%s %s",
+                       weechat_prefix("action"), from, intext+4);
     else
-        weechat_printf(channel->buffer, "%s: %s", from, intext);
+        weechat_printf(channel->buffer, "%s%s",
+                       user__as_prefix_raw(account->context, from),
+                       intext);
 
     xmpp_free(account->context, intext);
 
