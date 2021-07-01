@@ -83,10 +83,14 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
     if (type != NULL && strcmp(type, "error") == 0)
         return 1;
     from = xmpp_stanza_get_from(stanza);
+    if (from == NULL)
+        return 1;
     from_bare = xmpp_jid_bare(account->context, from);
     to = xmpp_stanza_get_to(stanza);
 
     intext = xmpp_stanza_get_text(body);
+    if (intext == NULL)
+        intext = strdup("");
 
     struct t_channel *channel = channel__search(account, from_bare);
     if (!channel)
@@ -103,7 +107,7 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 
     if (strcmp(to, channel->id) == 0)
         weechat_printf(channel->buffer, "%s [to %s]: %s", from, to, intext);
-    else if (strncmp(intext, "/me ", 4) == 0)
+    else if (weechat_string_match(intext, "/me *", 0))
         weechat_printf(channel->buffer, "* %s %s", from, intext+4);
     else
         weechat_printf(channel->buffer, "%s: %s", from, intext);
