@@ -99,6 +99,7 @@
    * [ ] MUC PMs
    * [ ] Send typing notifications
    * [ ] Recv typing notifications
+   * [ ] Read receipts
    * [ ] OTR (libotr)
    * [ ] PGP (libgpgme)
 ** TODO [#C] Implement completion engine (milestone v0.3)

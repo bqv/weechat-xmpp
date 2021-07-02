@@ -100,13 +100,28 @@ void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t leve
         xmlGenericErrorContext = nullfd;
 
         const char *header = strndup(msg, xml - msg);
-        xmlDocPtr *doc = xmlRecoverMemory(xml, strlen(xml));
+        xmlDocPtr doc = xmlRecoverMemory(xml, strlen(xml));
         if (doc == NULL) {
             weechat_printf(
                 account ? account->buffer : NULL,
                 "xml: Error parsing the xml document");
             fclose(nullfd);
             return;
+        }
+        xmlNodePtr root = xmlDocGetRootElement(doc);
+        const char *tag = root ? root->name : "";
+        const char *colour = weechat_color("blue");
+        if (weechat_strcasecmp(tag, "message"))
+        {
+            colour = weechat_color("green");
+        }
+        else if (weechat_strcasecmp(tag, "presence"))
+        {
+            colour = weechat_color("yellow");
+        }
+        else if (weechat_strcasecmp(tag, "iq"))
+        {
+            colour = weechat_color("red");
         }
         xmlChar *buf = malloc(strlen(xml) * 2);
         if (buf == NULL) {
@@ -135,7 +150,7 @@ void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t leve
         for (int i = 1; i < size; i++)
             weechat_printf(
                 account ? account->buffer : NULL,
-                _("%s"), lines[i]);
+                _("%s%s"), colour, lines[i]);
 
         fclose(nullfd);
     }
@@ -190,8 +205,6 @@ struct t_account *account__alloc(const char *name)
     new_account->logger.userdata = new_account;
     new_account->context = xmpp_ctx_new(NULL, &new_account->logger);
     new_account->connection = NULL;
-
-    new_account->nickname = NULL;
 
     new_account->buffer = NULL;
     new_account->buffer_as_string = NULL;
@@ -497,10 +510,8 @@ int account__connect(struct t_account *account)
     account__close_connection(account);
 
     account->is_connected =
-        connection__connect(account, &account->connection,
-                            weechat_config_string(account->options[ACCOUNT_OPTION_JID]),
-                            weechat_config_string(account->options[ACCOUNT_OPTION_PASSWORD]),
-                            weechat_config_string(account->options[ACCOUNT_OPTION_TLS]));
+        connection__connect(account, &account->connection, account_jid(account),
+                            account_password(account), account_tls(account));
 
     return account->is_connected;
 }

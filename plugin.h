@@ -8,6 +8,7 @@
 #define weechat_plugin weechat_xmpp_plugin
 #define WEECHAT_XMPP_PLUGIN_NAME "xmpp"
 #define WEECHAT_XMPP_PLUGIN_VERSION "0.1.1"
+#define TIMER_INTERVAL_SEC 0.01
 
 extern struct t_weechat_plugin *weechat_xmpp_plugin;
 

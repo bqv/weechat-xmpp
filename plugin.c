@@ -48,7 +48,7 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 
   //completion__init();
 
-    weechat_xmpp_process_timer = weechat_hook_timer(0.1 * 1000, 0, 0,
+    weechat_xmpp_process_timer = weechat_hook_timer(TIMER_INTERVAL_SEC * 1000, 0, 0,
                                                     &account__timer_cb,
                                                     NULL, NULL);
 

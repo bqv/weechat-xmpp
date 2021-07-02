@@ -1,3 +1,6 @@
 [submodule "axc"]
 	path = axc
 	url = https://github.com/gkdr/axc
+[submodule "omemo"]
+	path = omemo
+	url = https://github.com/gkdr/libomemo

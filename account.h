@@ -18,6 +18,26 @@ enum t_account_option
     ACCOUNT_NUM_OPTIONS,
 };
 
+#define account__option_string(account, option) \
+    weechat_config_string(account->options[ACCOUNT_OPTION_ ## option])
+#define account__option_integer(account, option) \
+    weechat_config_integer(account->options[ACCOUNT_OPTION_ ## option])
+#define account__option_boolean(account, option) \
+    weechat_config_boolean(account->options[ACCOUNT_OPTION_ ## option])
+#define account_option_set(account, option, value) \
+    weechat_config_option_set(account->options[option], value, 1)
+
+#define account_jid(account) \
+    weechat_config_string(account->options[ACCOUNT_OPTION_JID])
+#define account_password(account) \
+    weechat_config_string(account->options[ACCOUNT_OPTION_PASSWORD])
+#define account_tls(account) \
+    weechat_config_integer(account->options[ACCOUNT_OPTION_TLS])
+#define account_nickname(account) \
+    weechat_config_string(account->options[ACCOUNT_OPTION_NICKNAME])
+#define account_autoconnect(account) \
+    weechat_config_boolean(account->options[ACCOUNT_OPTION_AUTOCONNECT])
+
 struct t_account
 {
     const char *name;
@@ -31,8 +51,6 @@ struct t_account
     xmpp_log_t logger;
     struct xmpp_ctx_t *context;
     struct xmpp_conn_t *connection;
-
-    char *nickname;
 
     struct t_gui_buffer *buffer;
     char *buffer_as_string;

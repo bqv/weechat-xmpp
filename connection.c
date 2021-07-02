@@ -163,6 +163,8 @@ int connection__connect(struct t_account *account, xmpp_conn_t **connection,
             flags |= XMPP_CONN_FLAG_DISABLE_TLS;
             break;
         case 1:
+            flags |= ~XMPP_CONN_FLAG_DISABLE_TLS;
+            flags |= ~XMPP_CONN_FLAG_TRUST_TLS;
             break;
         case 2:
             flags |= XMPP_CONN_FLAG_TRUST_TLS;

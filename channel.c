@@ -111,21 +111,25 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
     else
     {
         short_name = weechat_buffer_get_string (ptr_buffer, "short_name");
-        localvar_channel = weechat_buffer_get_string (ptr_buffer,
-                                                      "localvar_channel");
+        localvar_channel = weechat_buffer_get_string(ptr_buffer,
+                                                     "localvar_channel");
 
         if (!short_name ||
             (localvar_channel && (strcmp(localvar_channel, short_name) == 0)))
         {
-            weechat_buffer_set (ptr_buffer, "short_name", xmpp_jid_node(account->context,
-                                                                        name));
+            weechat_buffer_set(ptr_buffer, "short_name",
+                               xmpp_jid_node(account->context, name));
         }
     }
+    if(!(account_nickname(account) && strlen(account_nickname(account))))
+        account_option_set(account, ACCOUNT_OPTION_NICKNAME,
+                           xmpp_jid_node(account->context, account_jid(account)));
 
     weechat_buffer_set(ptr_buffer, "name", name);
     weechat_buffer_set(ptr_buffer, "localvar_set_type",
                        (type == CHANNEL_TYPE_PM) ? "private" : "channel");
-    weechat_buffer_set(ptr_buffer, "localvar_set_nick", account->nickname);
+    weechat_buffer_set(ptr_buffer, "localvar_set_nick",
+                       account_nickname(account));
     weechat_buffer_set(ptr_buffer, "localvar_set_server", account->name);
     weechat_buffer_set(ptr_buffer, "localvar_set_channel", name);
 
@@ -146,7 +150,7 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
         }
 
         weechat_buffer_set(ptr_buffer, "highlight_words_add",
-                           account->nickname);
+                           account_nickname(account));
         weechat_buffer_set(ptr_buffer, "highlight_tags_restrict",
                            "message");
     }
@@ -611,8 +615,6 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
     xmpp_stanza_release(message);
     if (channel->type != CHANNEL_TYPE_MUC)
         weechat_printf(channel->buffer, "%s%s",
-                       user__as_prefix_raw(
-                           account,
-                           weechat_config_string(account->options[ACCOUNT_OPTION_JID])),
+                       user__as_prefix_raw(account, account_jid(account)),
                        body);
 }

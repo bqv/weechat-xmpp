@@ -34,7 +34,7 @@ void command__display_account(struct t_account *account)
             weechat_color("reset"),
             weechat_color("chat_delimiters"),
             weechat_color("chat_server"),
-            weechat_config_string(account->options[ACCOUNT_OPTION_JID]),
+            account_jid(account),
             weechat_color("chat_delimiters"),
             weechat_color("reset"),
             (account->is_connected) ? _("connected") : _("not connected"),
@@ -54,7 +54,7 @@ void command__display_account(struct t_account *account)
             weechat_color("reset"),
             weechat_color("chat_delimiters"),
             weechat_color("chat_server"),
-            weechat_config_string(account->options[ACCOUNT_OPTION_JID]),
+            account_jid(account),
             weechat_color("chat_delimiters"),
             weechat_color("reset"));
     }
@@ -139,14 +139,12 @@ void command__add_account(const char *name, const char *jid, const char *passwor
 
     account->name = strdup(name);
     if (jid)
-        weechat_config_option_set(account->options[ACCOUNT_OPTION_JID],
-                                  strdup(jid), 1);
+        account_option_set(account, ACCOUNT_OPTION_JID, strdup(jid));
     if (password)
-        weechat_config_option_set(account->options[ACCOUNT_OPTION_PASSWORD],
-                                  strdup(password), 1);
+        account_option_set(account, ACCOUNT_OPTION_PASSWORD, strdup(password));
     if (jid)
-        weechat_config_option_set(account->options[ACCOUNT_OPTION_NICKNAME],
-                                  strdup(xmpp_jid_node(account->context, jid)), 1);
+        account_option_set(account, ACCOUNT_OPTION_NICKNAME,
+                           strdup(xmpp_jid_node(account->context, jid)));
 
     weechat_printf (
         NULL,
@@ -364,11 +362,11 @@ int command__enter(const void *pointer, void *data,
                 ptr_account->context,
                 xmpp_jid_node(ptr_account->context, jid),
                 xmpp_jid_domain(ptr_account->context, jid),
-                weechat_config_string(ptr_account->options[ACCOUNT_OPTION_NICKNAME])
-                && strlen(weechat_config_string(ptr_account->options[ACCOUNT_OPTION_NICKNAME]))
-                ? weechat_config_string(ptr_account->options[ACCOUNT_OPTION_NICKNAME])
+                account_nickname(ptr_account)
+                && strlen(account_nickname(ptr_account))
+                ? account_nickname(ptr_account)
                 : xmpp_jid_node(ptr_account->context,
-                                weechat_config_string(ptr_account->options[ACCOUNT_OPTION_JID])));
+                                account_jid(ptr_account)));
 
         ptr_channel = channel__search(ptr_account, jid);
         if (!ptr_channel)
@@ -376,7 +374,7 @@ int command__enter(const void *pointer, void *data,
 
         pres = xmpp_presence_new(ptr_account->context);
         xmpp_stanza_set_to(pres, pres_jid);
-        xmpp_stanza_set_from(pres, weechat_config_string(ptr_account->options[ACCOUNT_OPTION_JID]));
+        xmpp_stanza_set_from(pres, account_jid(ptr_account));
 
         struct xmpp_stanza_t *pres__x = xmpp_stanza_new(ptr_account->context);
         xmpp_stanza_set_name(pres__x, "x");
@@ -493,8 +491,7 @@ int command__me(const void *pointer, void *data,
         xmpp_stanza_release(message);
         if (ptr_channel->type != CHANNEL_TYPE_MUC)
             weechat_printf(ptr_channel->buffer, "%s%s %s",
-                           weechat_prefix("action"),
-                           weechat_config_string(ptr_account->options[ACCOUNT_OPTION_JID]),
+                           weechat_prefix("action"), account_jid(ptr_account),
                            text);
     }
 
