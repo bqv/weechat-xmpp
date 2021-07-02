@@ -43,13 +43,19 @@
 
   - libstrophe (dynamic, dependency)
   - libxml2 (dynamic, dependency)
+  - glib (dynamic, dependency of libomemo)
+  - sqlite (dynamic, dependency of libomemo/axc)
+  - libsignal-protocol-c (dynamic, dependency of axc)
   - weechat (>= v2.5)
+
+  .. or just use the guix spec in .envrc
 
 * Building
 
   #+begin_src sh
   git clone git://github.com/bqv/weechat-xmpp.git
   cd weechat-xmpp
+  git submodule update --init --recursive
   make
   make install
   #+end_src

@@ -11,7 +11,6 @@ LDLIBS=-lstrophe -lpthread $(shell xml2-config --libs) $(shell pkg-config --libs
 
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
-INSTALL ?= /usr/bin/install
 
 SRCS=plugin.c \
      account.c \
@@ -59,8 +58,8 @@ tidy:
 	$(FIND) . -name "*.o" -delete
 
 clean:
-	$(RM) $(OBJS)
-	$(MAKE) -C axc clean
+	$(RM) -f $(OBJS)
+	$(MAKE) -C axc clean || true
 	git submodule foreach --recursive git clean -xfd || true
 	git submodule foreach --recursive git reset --hard || true
 	git submodule update --init --recursive || true
@@ -70,9 +69,13 @@ distclean: clean
 
 install: xmpp.so
 ifeq ($(shell id -u),0)
-	$(INSTALL) -s -t $(DESTDIR)$(LIBDIR)/weechat/plugins -D -m 0644 xmpp.so
+	mkdir -p $(DESTDIR)$(LIBDIR)/weechat/plugins
+	cp xmpp.so $(DESTDIR)$(LIBDIR)/weechat/plugins/xmpp.so
+	chmod 644 $(DESTDIR)$(LIBDIR)/weechat/plugins/xmpp.so
 else
-	$(INSTALL) -s -t ~/.weechat/plugins -D -m 0755 xmpp.so
+	mkdir -p ~/.weechat/plugins
+	cp xmpp.so ~/.weechat/plugins/xmpp.so
+	chmod 755 ~/.weechat/plugins/xmpp.so
 endif
 
 .PHONY: tags cs
