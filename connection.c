@@ -191,7 +191,7 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
     (void)stream_error;
 
     if (status == XMPP_CONN_CONNECT) {
-        xmpp_stanza_t *pres, *pres__c;
+        xmpp_stanza_t *pres, *pres__c, *pres__status, *pres__status__text;
         char cap_hash[28+1] = {0};
 
         xmpp_handler_add(conn, version_handler, "jabber:iq:version", "iq", NULL, account);
@@ -211,6 +211,17 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         xmpp_stanza_set_attribute(pres__c, "ver", cap_hash);
         xmpp_stanza_add_child(pres, pres__c);
         xmpp_stanza_release(pres__c);
+
+        pres__status = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(pres__status, "status");
+
+        pres__status__text = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_text(pres__status__text, account_status(account));
+        xmpp_stanza_add_child(pres__status, pres__status__text);
+        xmpp_stanza_release(pres__status__text);
+
+        xmpp_stanza_add_child(pres, pres__status);
+        xmpp_stanza_release(pres__status);
 
         xmpp_send(conn, pres);
         xmpp_stanza_release(pres);

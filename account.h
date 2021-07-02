@@ -16,6 +16,7 @@ enum t_account_option
     ACCOUNT_OPTION_NICKNAME,
     ACCOUNT_OPTION_AUTOCONNECT,
     ACCOUNT_OPTION_RESOURCE,
+    ACCOUNT_OPTION_STATUS,
     ACCOUNT_NUM_OPTIONS,
 };
 
@@ -47,6 +48,8 @@ enum t_account_option
     weechat_config_boolean(account->options[ACCOUNT_OPTION_AUTOCONNECT])
 #define account_resource(account) \
     weechat_config_string(account->options[ACCOUNT_OPTION_RESOURCE])
+#define account_status(account) \
+    weechat_config_string(account->options[ACCOUNT_OPTION_STATUS])
 
 struct t_account
 {
