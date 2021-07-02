@@ -323,7 +323,8 @@ void channel__member_speaking_rename_if_present(struct t_account *account,
             for (j = 0; j < list_size; j++)
             {
                 ptr_item = weechat_list_get (channel->members_speaking[i], j);
-                if (ptr_item && (strcasecmp(weechat_list_string(ptr_item), nick) == 0))
+                if (ptr_item && (weechat_strcasecmp(weechat_list_string(ptr_item),
+                                                    nick) == 0))
                     weechat_list_set(ptr_item, nick);
             }
         }

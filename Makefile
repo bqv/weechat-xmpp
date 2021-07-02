@@ -5,7 +5,7 @@ endif
 RM=rm -f
 FIND=find
 INCLUDES=-Ilibstrophe $(shell xml2-config --cflags)
-CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -D_XOPEN_SOURCE=500 $(INCLUDES)
+CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -D_XOPEN_SOURCE=700 $(INCLUDES)
 LDFLAGS+=$(DBGLDFLAGS) -shared -g $(DBGCFLAGS)
 LDLIBS=-lstrophe -lpthread $(shell xml2-config --libs)
 

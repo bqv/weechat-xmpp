@@ -95,6 +95,10 @@ void user__nicklist_add(struct t_account *account,
 {
     struct t_gui_nick_group *ptr_group;
     struct t_gui_buffer *ptr_buffer;
+    char *name = user->profile.display_name;
+    if (channel && weechat_strcasecmp(xmpp_jid_bare(account->context, name),
+                                      channel->id) == 0)
+        name = xmpp_jid_resource(account->context, name);
 
     ptr_buffer = channel ? channel->buffer : account->buffer;
 
@@ -102,7 +106,7 @@ void user__nicklist_add(struct t_account *account,
                                               user->is_away ?
                                               "+" : "...");
     weechat_nicklist_add_nick(ptr_buffer, ptr_group,
-                              user->profile.display_name,
+                              name,
                               user->is_away ?
                               "weechat.color.nicklist_away" :
                               user__get_colour_for_nicklist(user),
@@ -165,7 +169,7 @@ struct t_user *user__new(struct t_account *account,
     new_user->profile.real_name = NULL;
     new_user->profile.display_name = display_name[0] ?
         strdup(display_name) :
-        strdup("xmppbot");
+        strdup("???");
     new_user->profile.real_name_normalized = NULL;
     new_user->profile.email = NULL;
     new_user->profile.team = NULL;

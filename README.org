@@ -90,10 +90,10 @@
      * [ ] [#B] Edits
      * [ ] [#B] Handle errors gracefully
      * [ ] [#B] Presence/nicklist
-       * [ ] [#B] Enters
+       * [X] [#B] Enters
        * [ ] [#B] Leaves
-       * [ ] [#B] Tracking
-     * [ ] [#B] Set/show topic
+       * [X] [#B] Tracking
+     * [X] [#B] Set/show topic
    * [ ] OMEMO (libsignal-protocol-c / axc)
      * [ ] Presence
      * [ ] Messages

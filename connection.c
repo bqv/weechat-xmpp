@@ -75,6 +75,8 @@ int version_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 int presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 {
     struct t_account *account = (struct t_account *)userdata;
+    struct t_user *user;
+    struct t_channel *channel;
     const char *to, *from, *from_bare;
 
     from = xmpp_stanza_get_from(stanza);
@@ -83,13 +85,14 @@ int presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
     from_bare = xmpp_jid_bare(account->context, from);
     to = xmpp_stanza_get_to(stanza);
 
-    struct t_user *user = user__search(account, from);
+    user = user__search(account, from);
     if (!user)
         user = user__new(account, from, from);
 
-    struct t_channel *channel = channel__search(account, from_bare);
+    channel = channel__search(account, from_bare);
     if (!channel)
         channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
+    channel__add_member(account, channel, from);
 
     weechat_printf(account->buffer, "%s%s (%s) presence",
                    weechat_prefix("action"),
@@ -101,7 +104,8 @@ int presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 {
     struct t_account *account = (struct t_account *)userdata;
-    xmpp_stanza_t *body, *reply, *delay;
+    struct t_channel *channel;
+    xmpp_stanza_t *body, *reply, *delay, *topic;
     const char *type, *from, *from_bare, *to, *timestamp = 0;
     char *intext, *replytext;
     struct tm time = {0};
@@ -109,7 +113,24 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 
     body = xmpp_stanza_get_child_by_name(stanza, "body");
     if (body == NULL)
+    {
+        topic = xmpp_stanza_get_child_by_name(stanza, "subject");
+        if (topic == NULL)
+            return 1;
+        intext = xmpp_stanza_get_text(topic);
+        from = xmpp_stanza_get_from(stanza);
+        if (from == NULL)
+            return 1;
+        from_bare = xmpp_jid_bare(account->context, from);
+        from = xmpp_jid_resource(account->context, from);
+        channel = channel__search(account, from_bare);
+        if (!channel)
+            channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
+        channel__update_topic(channel, intext ? intext : "", from, 0);
+        if (intext != NULL)
+            xmpp_free(account->context, intext);
         return 1;
+    }
     type = xmpp_stanza_get_type(stanza);
     if (type != NULL && strcmp(type, "error") == 0)
         return 1;
@@ -120,10 +141,8 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
     to = xmpp_stanza_get_to(stanza);
 
     intext = xmpp_stanza_get_text(body);
-    if (intext == NULL)
-        intext = strdup("");
 
-    struct t_channel *channel = channel__search(account, from_bare);
+    channel = channel__search(account, from_bare);
     if (!channel)
         channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
 
@@ -146,16 +165,18 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
     if (strcmp(to, channel->id) == 0)
         weechat_printf_date_tags(channel->buffer, date, NULL, "%s[to %s]: %s",
                                  user__as_prefix_raw(account->context, from),
-                                 to, intext);
+                                 to, intext ? intext : "");
     else if (weechat_string_match(intext, "/me *", 0))
         weechat_printf_date_tags(channel->buffer, date, NULL, "%s%s %s",
-                                 weechat_prefix("action"), from, intext+4);
+                                 weechat_prefix("action"), from,
+                                 intext ? intext+4 : "");
     else
         weechat_printf_date_tags(channel->buffer, date, NULL, "%s%s",
                                  user__as_prefix_raw(account->context, from),
-                                 intext);
+                                 intext ? intext : "");
 
-    xmpp_free(account->context, intext);
+    if (intext)
+        xmpp_free(account->context, intext);
 
     return 1;
 }
