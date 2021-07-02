@@ -4,10 +4,10 @@ ifdef DEBUG
 endif
 RM=rm -f
 FIND=find
-INCLUDES=-Ilibstrophe $(shell xml2-config --cflags)
+INCLUDES=-Ilibstrophe $(shell xml2-config --cflags) $(shell pkg-config --cflags glib-2.0) $(shell pkg-config --cflags libsignal-protocol-c)
 CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -D_XOPEN_SOURCE=700 $(INCLUDES)
 LDFLAGS+=$(DBGLDFLAGS) -shared -g $(DBGCFLAGS)
-LDLIBS=-lstrophe -lpthread $(shell xml2-config --libs)
+LDLIBS=-lstrophe -lpthread $(shell xml2-config --libs) $(shell pkg-config --libs glib-2.0) $(shell pkg-config --libs libsignal-protocol-c)
 
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
@@ -22,6 +22,7 @@ SRCS=plugin.c \
      connection.c \
      input.c \
      message.c \
+     omemo.c \
      user.c \
 
 DEPS=axc/build/libaxc.a

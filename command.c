@@ -380,9 +380,9 @@ int command__enter(const void *pointer, void *data,
         xmpp_stanza_set_name(pres__x, "x");
         xmpp_stanza_set_ns(pres__x, "http://jabber.org/protocol/muc");
         xmpp_stanza_add_child(pres, pres__x);
+        xmpp_stanza_release(pres__x);
 
         xmpp_send(ptr_account->connection, pres);
-        xmpp_stanza_release(pres__x);
         xmpp_stanza_release(pres);
 
         if (argc > 2)

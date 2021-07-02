@@ -191,7 +191,8 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
     (void)stream_error;
 
     if (status == XMPP_CONN_CONNECT) {
-        xmpp_stanza_t *pres;
+        xmpp_stanza_t *pres, *pres__c;
+        char cap_hash[28+1] = {0};
 
         xmpp_handler_add(conn, version_handler, "jabber:iq:version", "iq", NULL, account);
         xmpp_handler_add(conn, presence_handler, NULL, "presence", NULL, account);
@@ -200,6 +201,17 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         /* Send initial <presence/> so that we appear online to contacts */
         pres = xmpp_presence_new(account->context);
         xmpp_stanza_set_from(pres, account_jid(account));
+
+        pres__c = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(pres__c, "c");
+        xmpp_stanza_set_ns(pres__c, "http://jabber.org/protocol/caps");
+        xmpp_stanza_set_attribute(pres__c, "hash", "sha-1");
+        xmpp_stanza_set_attribute(pres__c, "node", "http://weechat.org");
+        snprintf(cap_hash, sizeof(cap_hash), "%027d=", time(NULL));
+        xmpp_stanza_set_attribute(pres__c, "ver", cap_hash);
+        xmpp_stanza_add_child(pres, pres__c);
+        xmpp_stanza_release(pres__c);
+
         xmpp_send(conn, pres);
         xmpp_stanza_release(pres);
     } else {
