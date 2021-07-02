@@ -82,6 +82,7 @@
 ** TODO [#A] Implement essential functionality (milestone v0.2)
    * [X] Opening PMs with initial message
    * [ ] [#B] Handle wide errors gracefully
+     * [ ] [#B] Event-driven MUC entrance
    * [ ] MUCs
      * [X] Opening (/enter)
      * [X] Receiving

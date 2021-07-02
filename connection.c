@@ -72,12 +72,40 @@ int version_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
     return 1;
 }
 
+int presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
+{
+    struct t_account *account = (struct t_account *)userdata;
+    const char *to, *from, *from_bare;
+
+    from = xmpp_stanza_get_from(stanza);
+    if (from == NULL)
+        return 1;
+    from_bare = xmpp_jid_bare(account->context, from);
+    to = xmpp_stanza_get_to(stanza);
+
+    struct t_user *user = user__search(account, from);
+    if (!user)
+        user = user__new(account, from, from);
+
+    struct t_channel *channel = channel__search(account, from_bare);
+    if (!channel)
+        channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
+
+    weechat_printf(account->buffer, "%s%s (%s) presence",
+                   weechat_prefix("action"),
+                   user->name, user->profile.display_name);
+
+    return 1;
+}
+
 int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 {
     struct t_account *account = (struct t_account *)userdata;
-    xmpp_stanza_t *body, *reply, *to;
-    const char *type, *from, *from_bare;
+    xmpp_stanza_t *body, *reply, *delay;
+    const char *type, *from, *from_bare, *to, *timestamp = 0;
     char *intext, *replytext;
+    struct tm time = {0};
+    time_t date = 0;
 
     body = xmpp_stanza_get_child_by_name(stanza, "body");
     if (body == NULL)
@@ -107,18 +135,25 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
             ? xmpp_jid_resource(account->context, from)
             : from;
     }
+    delay = xmpp_stanza_get_child_by_name_and_ns(stanza, "delay", "urn:xmpp:delay");
+    timestamp = delay ? xmpp_stanza_get_attribute(delay, "stamp") : NULL;
+    if (timestamp)
+    {
+        strptime(timestamp, "%FT%T", &time);
+        date = mktime(&time);
+    }
 
     if (strcmp(to, channel->id) == 0)
-        weechat_printf(channel->buffer, "%s[to %s]: %s",
-                       user__as_prefix_raw(account->context, from),
-                       to, intext);
+        weechat_printf_date_tags(channel->buffer, date, NULL, "%s[to %s]: %s",
+                                 user__as_prefix_raw(account->context, from),
+                                 to, intext);
     else if (weechat_string_match(intext, "/me *", 0))
-        weechat_printf(channel->buffer, "%s%s %s",
-                       weechat_prefix("action"), from, intext+4);
+        weechat_printf_date_tags(channel->buffer, date, NULL, "%s%s %s",
+                                 weechat_prefix("action"), from, intext+4);
     else
-        weechat_printf(channel->buffer, "%s%s",
-                       user__as_prefix_raw(account->context, from),
-                       intext);
+        weechat_printf_date_tags(channel->buffer, date, NULL, "%s%s",
+                                 user__as_prefix_raw(account->context, from),
+                                 intext);
 
     xmpp_free(account->context, intext);
 
@@ -136,10 +171,10 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
 
     if (status == XMPP_CONN_CONNECT) {
         xmpp_stanza_t *pres;
-      //weechat_printf(account->buffer, "DEBUG: connected");
-        xmpp_handler_add(conn, version_handler, "jabber:iq:version", "iq", NULL,
-                         account);
-        xmpp_handler_add(conn, message_handler, NULL, "message", NULL, account);
+
+        xmpp_handler_add(conn, version_handler, "jabber:iq:version", "iq", NULL, account);
+        xmpp_handler_add(conn, presence_handler, NULL, "presence", NULL, account);
+        xmpp_handler_add(conn, message_handler, NULL, "message", /*type*/ NULL, account);
 
         /* Send initial <presence/> so that we appear online to contacts */
         pres = xmpp_presence_new(account->context);
@@ -196,8 +231,8 @@ int connection__connect(struct t_account *account, xmpp_conn_t **connection,
             flags |= XMPP_CONN_FLAG_DISABLE_TLS;
             break;
         case 1:
-            flags |= ~XMPP_CONN_FLAG_DISABLE_TLS;
-            flags |= ~XMPP_CONN_FLAG_TRUST_TLS;
+            flags &= ~XMPP_CONN_FLAG_DISABLE_TLS;
+            flags &= ~XMPP_CONN_FLAG_TRUST_TLS;
             break;
         case 2:
             flags |= XMPP_CONN_FLAG_TRUST_TLS;
