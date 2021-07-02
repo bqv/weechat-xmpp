@@ -15,6 +15,7 @@ enum t_account_option
     ACCOUNT_OPTION_TLS,
     ACCOUNT_OPTION_NICKNAME,
     ACCOUNT_OPTION_AUTOCONNECT,
+    ACCOUNT_OPTION_RESOURCE,
     ACCOUNT_NUM_OPTIONS,
 };
 
@@ -29,6 +30,13 @@ enum t_account_option
 
 #define account_jid(account) \
     weechat_config_string(account->options[ACCOUNT_OPTION_JID])
+#define account_jid_device(account) \
+    xmpp_jid_new(account->context, \
+        xmpp_jid_node(account->context, \
+                      weechat_config_string(account->options[ACCOUNT_OPTION_JID])), \
+        xmpp_jid_domain(account->context, \
+                        weechat_config_string(account->options[ACCOUNT_OPTION_JID])), \
+        "weechat")
 #define account_password(account) \
     weechat_config_string(account->options[ACCOUNT_OPTION_PASSWORD])
 #define account_tls(account) \
@@ -37,6 +45,8 @@ enum t_account_option
     weechat_config_string(account->options[ACCOUNT_OPTION_NICKNAME])
 #define account_autoconnect(account) \
     weechat_config_boolean(account->options[ACCOUNT_OPTION_AUTOCONNECT])
+#define account_resource(account) \
+    weechat_config_string(account->options[ACCOUNT_OPTION_RESOURCE])
 
 struct t_account
 {

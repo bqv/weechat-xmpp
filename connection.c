@@ -2,7 +2,9 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include <time.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
@@ -141,6 +143,7 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
 
         /* Send initial <presence/> so that we appear online to contacts */
         pres = xmpp_presence_new(account->context);
+        xmpp_stanza_set_from(pres, account_jid(account));
         xmpp_send(conn, pres);
         xmpp_stanza_release(pres);
     } else {
@@ -149,11 +152,41 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
     }
 }
 
+char *const rand_string(int length)
+{
+    char *string = malloc(length);
+    srand(time(NULL));
+    for(int i = 0; i < length; ++i){
+        string[i] = '0' + rand()%72; // starting on '0', ending on '}'
+        if (!((string[i] >= '0' && string[i] <= '9') ||
+              (string[i] >= 'A' && string[i] <= 'Z') ||
+              (string[i] >= 'a' && string[i] <= 'z')))
+            i--; // reroll
+    }
+    string[length] = 0;
+    return string;
+}
+
 int connection__connect(struct t_account *account, xmpp_conn_t **connection,
                         const char* jid, const char* password, int tls)
 {
     *connection = xmpp_conn_new(account->context);
-    xmpp_conn_set_jid(*connection, jid);
+    char *resource = account_resource(account);
+    if (!(resource && strlen(resource)))
+    {
+        char *const rand = rand_string(8);
+        char ident[64] = {0};
+        snprintf(ident, sizeof(ident), "weechat.%s", rand);
+        free(rand);
+
+        account_option_set(account, ACCOUNT_OPTION_RESOURCE, ident);
+        resource = account_resource(account);
+    }
+    xmpp_conn_set_jid(*connection,
+                      xmpp_jid_new(account->context,
+                                   xmpp_jid_node(account->context, jid),
+                                   xmpp_jid_domain(account->context, jid),
+                                   resource));
     xmpp_conn_set_pass(*connection, password);
 
     auto flags = xmpp_conn_get_flags(*connection);

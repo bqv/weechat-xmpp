@@ -28,6 +28,7 @@ char *account_options[ACCOUNT_NUM_OPTIONS][2] =
   { "tls", "normal" },
   { "nickname", "" },
   { "autoconnect", "" },
+  { "resource", "" },
 };
 
 struct t_account *account__search(const char *name)

@@ -428,6 +428,7 @@ int command__open(const void *pointer, void *data,
 
         pres = xmpp_presence_new(ptr_account->context);
         xmpp_stanza_set_to(pres, jid);
+        xmpp_stanza_set_from(pres, account_jid(ptr_account));
         xmpp_send(ptr_account->connection, pres);
         xmpp_stanza_release(pres);
 
