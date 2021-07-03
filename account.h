@@ -56,7 +56,7 @@ enum t_account_option
 
 struct t_account
 {
-    const char *name;
+    char *name;
     struct t_config_option *options[ACCOUNT_NUM_OPTIONS];
 
     int reloading_from_config;
@@ -65,8 +65,8 @@ struct t_account
     int disconnected;
 
     xmpp_log_t logger;
-    struct xmpp_ctx_t *context;
-    struct xmpp_conn_t *connection;
+    xmpp_ctx_t *context;
+    xmpp_conn_t *connection;
 
     struct t_gui_buffer *buffer;
     char *buffer_as_string;

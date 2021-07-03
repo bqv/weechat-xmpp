@@ -53,11 +53,11 @@ int version_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 
     version = xmpp_stanza_new(account->context);
     xmpp_stanza_set_name(version, "version");
-    xmpp_stanza_add_child(query, weechat_version);
+    xmpp_stanza_add_child(query, version);
     xmpp_stanza_release(version);
 
     text = xmpp_stanza_new(account->context);
-    xmpp_stanza_set_text(text, version);
+    xmpp_stanza_set_text(text, weechat_version);
     xmpp_stanza_add_child(version, text);
     xmpp_stanza_release(text);
 
@@ -74,16 +74,17 @@ int version_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 
 int presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 {
+    (void) conn;
+
     struct t_account *account = (struct t_account *)userdata;
     struct t_user *user;
     struct t_channel *channel;
-    const char *to, *from, *from_bare;
+    const char *from, *from_bare;
 
     from = xmpp_stanza_get_from(stanza);
     if (from == NULL)
         return 1;
     from_bare = xmpp_jid_bare(account->context, from);
-    to = xmpp_stanza_get_to(stanza);
 
     user = user__search(account, from);
     if (!user)
@@ -103,11 +104,13 @@ int presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 
 int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 {
+    (void) conn;
+
     struct t_account *account = (struct t_account *)userdata;
     struct t_channel *channel;
-    xmpp_stanza_t *body, *reply, *delay, *topic;
+    xmpp_stanza_t *body, *delay, *topic;
     const char *type, *from, *from_bare, *to, *timestamp = 0;
-    char *intext, *replytext;
+    char *intext;
     struct tm time = {0};
     time_t date = 0;
 
@@ -164,7 +167,7 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 
     if (strcmp(to, channel->id) == 0)
         weechat_printf_date_tags(channel->buffer, date, NULL, "%s[to %s]: %s",
-                                 user__as_prefix_raw(account->context, from),
+                                 user__as_prefix_raw(account, from),
                                  to, intext ? intext : "");
     else if (weechat_string_match(intext, "/me *", 0))
         weechat_printf_date_tags(channel->buffer, date, NULL, "%s%s %s",
@@ -172,7 +175,7 @@ int message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
                                  intext ? intext+4 : "");
     else
         weechat_printf_date_tags(channel->buffer, date, NULL, "%s%s",
-                                 user__as_prefix_raw(account->context, from),
+                                 user__as_prefix_raw(account, from),
                                  intext ? intext : "");
 
     if (intext)
@@ -207,7 +210,7 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         xmpp_stanza_set_ns(pres__c, "http://jabber.org/protocol/caps");
         xmpp_stanza_set_attribute(pres__c, "hash", "sha-1");
         xmpp_stanza_set_attribute(pres__c, "node", "http://weechat.org");
-        snprintf(cap_hash, sizeof(cap_hash), "%027d=", time(NULL));
+        snprintf(cap_hash, sizeof(cap_hash), "%027ld=", time(NULL));
         xmpp_stanza_set_attribute(pres__c, "ver", cap_hash);
         xmpp_stanza_add_child(pres, pres__c);
         xmpp_stanza_release(pres__c);
@@ -226,17 +229,18 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         xmpp_send(conn, pres);
         xmpp_stanza_release(pres);
 
-        command__enter(NULL, NULL, account->buffer, 2, argv, argv_eol);
-
-        xmpp_send(conn, pres);
-        xmpp_stanza_release(pres);
+        char **command = weechat_string_dyn_alloc(256);
+        weechat_string_dyn_concat(command, "/enter ", -1);
+        weechat_string_dyn_concat(command, account_autojoin(account), -1);
+        weechat_command(account->buffer, *command);
+        weechat_string_dyn_free(command, 1);
     } else {
       //weechat_printf(account->buffer, "DEBUG: disconnected");
       //xmpp_stop(account->context);
     }
 }
 
-char *const rand_string(int length)
+char* rand_string(int length)
 {
     char *string = malloc(length);
     srand(time(NULL));
@@ -255,7 +259,7 @@ int connection__connect(struct t_account *account, xmpp_conn_t **connection,
                         const char* jid, const char* password, int tls)
 {
     *connection = xmpp_conn_new(account->context);
-    char *resource = account_resource(account);
+    const char *resource = account_resource(account);
     if (!(resource && strlen(resource)))
     {
         char *const rand = rand_string(8);
@@ -273,7 +277,7 @@ int connection__connect(struct t_account *account, xmpp_conn_t **connection,
                                    resource));
     xmpp_conn_set_pass(*connection, password);
 
-    auto flags = xmpp_conn_get_flags(*connection);
+    int flags = xmpp_conn_get_flags(*connection);
     switch (tls)
     {
         case 0:

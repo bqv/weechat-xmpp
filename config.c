@@ -190,7 +190,7 @@ config__account_new_option (struct t_config_file *config_file,
             new_option = weechat_config_new_option (
                 config_file, section,
                 option_name, "string",
-                N_("XMPP Channel Autojoin"),
+                N_("XMPP MUC Autojoins"),
                 NULL, 0, 0,
                 default_value, value,
                 null_value_allowed,

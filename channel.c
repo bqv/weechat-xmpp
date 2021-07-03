@@ -607,23 +607,23 @@ struct t_channel_member *channel__add_member(struct t_account *account,
 void channel__send_message(struct t_account *account, struct t_channel *channel,
                            const char *to, const char *body)
 {
-    struct xmpp_stanza_t *message = xmpp_message_new(account->context,
-                                                     channel->type == CHANNEL_TYPE_MUC
-                                                     ? "groupchat" : "chat",
-                                                     to, NULL);
+    xmpp_stanza_t *message = xmpp_message_new(account->context,
+                    channel->type == CHANNEL_TYPE_MUC
+                    ? "groupchat" : "chat",
+                    to, NULL);
     xmpp_message_set_body(message, body);
 
     char *url = strstr(body, "http");
     if (url)
     {
-        struct xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
+        xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
         xmpp_stanza_set_name(message__x, "x");
         xmpp_stanza_set_ns(message__x, "jabber:x:oob");
 
-        struct xmpp_stanza_t *message__x__url = xmpp_stanza_new(account->context);
+        xmpp_stanza_t *message__x__url = xmpp_stanza_new(account->context);
         xmpp_stanza_set_name(message__x__url, "url");
 
-        struct xmpp_stanza_t *message__x__url__text = xmpp_stanza_new(account->context);
+        xmpp_stanza_t *message__x__url__text = xmpp_stanza_new(account->context);
         xmpp_stanza_set_text(message__x__url__text, url);
         xmpp_stanza_add_child(message__x__url, message__x__url__text);
         xmpp_stanza_release(message__x__url__text);

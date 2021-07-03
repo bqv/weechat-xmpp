@@ -168,8 +168,10 @@ void command__account_add(int argc, char **argv)
     {
         case 5:
             password = argv[4];
+            // fall through
         case 4:
             jid = argv[3];
+            // fall through
         case 3:
             name = argv[2];
             command__add_account(name, jid, password);
@@ -332,7 +334,7 @@ int command__enter(const void *pointer, void *data,
 {
     struct t_account *ptr_account = NULL;
     struct t_channel *ptr_channel = NULL;
-    struct xmpp_stanza_t *pres;
+    xmpp_stanza_t *pres;
     char *jid, *pres_jid, *text;
 
     (void) pointer;
@@ -354,43 +356,49 @@ int command__enter(const void *pointer, void *data,
 
     if (argc > 1)
     {
-        jid = argv[1];
-        pres_jid = argv[1];
-
-        if(!xmpp_jid_resource(ptr_account->context, pres_jid))
-            pres_jid = xmpp_jid_new(
-                ptr_account->context,
-                xmpp_jid_node(ptr_account->context, jid),
-                xmpp_jid_domain(ptr_account->context, jid),
-                account_nickname(ptr_account)
-                && strlen(account_nickname(ptr_account))
-                ? account_nickname(ptr_account)
-                : xmpp_jid_node(ptr_account->context,
-                                account_jid(ptr_account)));
-
-        ptr_channel = channel__search(ptr_account, jid);
-        if (!ptr_channel)
-            ptr_channel = channel__new(ptr_account, CHANNEL_TYPE_MUC, jid, jid);
-
-        pres = xmpp_presence_new(ptr_account->context);
-        xmpp_stanza_set_to(pres, pres_jid);
-        xmpp_stanza_set_from(pres, account_jid(ptr_account));
-
-        struct xmpp_stanza_t *pres__x = xmpp_stanza_new(ptr_account->context);
-        xmpp_stanza_set_name(pres__x, "x");
-        xmpp_stanza_set_ns(pres__x, "http://jabber.org/protocol/muc");
-        xmpp_stanza_add_child(pres, pres__x);
-        xmpp_stanza_release(pres__x);
-
-        xmpp_send(ptr_account->connection, pres);
-        xmpp_stanza_release(pres);
-
-        if (argc > 2)
+        int n_jid = 0;
+        char **jids = weechat_string_split(argv[1], ",", NULL, 0, 0, &n_jid);
+        for (int i = 0; i < n_jid; i++)
         {
-            text = argv_eol[2];
+            jid = xmpp_jid_bare(ptr_account->context, jids[i]);
+            pres_jid = jids[i];
 
-            channel__send_message(ptr_account, ptr_channel, jid, text);
+            if(!xmpp_jid_resource(ptr_account->context, pres_jid))
+                pres_jid = xmpp_jid_new(
+                    ptr_account->context,
+                    xmpp_jid_node(ptr_account->context, jid),
+                    xmpp_jid_domain(ptr_account->context, jid),
+                    account_nickname(ptr_account)
+                    && strlen(account_nickname(ptr_account))
+                    ? account_nickname(ptr_account)
+                    : xmpp_jid_node(ptr_account->context,
+                                    account_jid(ptr_account)));
+
+            ptr_channel = channel__search(ptr_account, jid);
+            if (!ptr_channel)
+                ptr_channel = channel__new(ptr_account, CHANNEL_TYPE_MUC, jid, jid);
+
+            pres = xmpp_presence_new(ptr_account->context);
+            xmpp_stanza_set_to(pres, pres_jid);
+            xmpp_stanza_set_from(pres, account_jid(ptr_account));
+
+            xmpp_stanza_t *pres__x = xmpp_stanza_new(ptr_account->context);
+            xmpp_stanza_set_name(pres__x, "x");
+            xmpp_stanza_set_ns(pres__x, "http://jabber.org/protocol/muc");
+                xmpp_stanza_add_child(pres, pres__x);
+                xmpp_stanza_release(pres__x);
+
+                xmpp_send(ptr_account->connection, pres);
+                xmpp_stanza_release(pres);
+
+                if (argc > 2)
+                {
+                    text = argv_eol[2];
+
+                    channel__send_message(ptr_account, ptr_channel, jid, text);
+                }
         }
+        weechat_string_free_split(jids);
     }
 
     return WEECHAT_RC_OK;
@@ -402,7 +410,7 @@ int command__open(const void *pointer, void *data,
 {
     struct t_account *ptr_account = NULL;
     struct t_channel *ptr_channel = NULL;
-    struct xmpp_stanza_t *pres;
+    xmpp_stanza_t *pres;
     char *jid, *text;
 
     (void) pointer;
@@ -424,7 +432,7 @@ int command__open(const void *pointer, void *data,
 
     if (argc > 1)
     {
-        jid = argv[1];
+        jid = xmpp_jid_bare(ptr_account->context, argv[1]);
 
         pres = xmpp_presence_new(ptr_account->context);
         xmpp_stanza_set_to(pres, jid);
@@ -453,7 +461,7 @@ int command__me(const void *pointer, void *data,
 {
     struct t_account *ptr_account = NULL;
     struct t_channel *ptr_channel = NULL;
-    struct xmpp_stanza_t *message;
+    xmpp_stanza_t *message;
     char *text;
 
     (void) pointer;

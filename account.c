@@ -93,9 +93,6 @@ void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t leve
 
     static const char *log_level_name[4] = {"debug", "info", "warn", "error"};
 
-    time_t date = time(NULL);
-    const char *timestamp = weechat_util_get_time_string(&date);
-
     char *xml;
     if ((level == XMPP_LEVEL_DEBUG) && ((xml = strchr(msg, '<')) != NULL))
     {
@@ -112,7 +109,7 @@ void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t leve
             return;
         }
         xmlNodePtr root = xmlDocGetRootElement(doc);
-        const char *tag = root ? root->name : "";
+        const char *tag = root ? (const char*)root->name : "";
         const char *colour = weechat_color("blue");
         if (weechat_strcasecmp(tag, "message"))
         {
@@ -143,8 +140,10 @@ void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t leve
             fclose(nullfd);
             return;
         }
-        const char **lines = weechat_string_split(buf, "\r\n", NULL,
-                                                  0, 0, &size);
+        char **lines = weechat_string_split((char*)buf, "\r\n", NULL,
+                                            0, 0, &size);
+        if (lines[size-1][0] == 0)
+            lines[--size] = 0;
         weechat_printf(
             account ? account->buffer : NULL,
             _("%s%s (%s): %s"),
@@ -155,6 +154,7 @@ void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t leve
                 account ? account->buffer : NULL,
                 _("%s%s"), colour, lines[i]);
 
+        weechat_string_free_split(lines);
         fclose(nullfd);
     }
     else
@@ -257,7 +257,7 @@ struct t_account *account__alloc(const char *name)
 
 void account__free_data(struct t_account *account)
 {
-    int i;
+  //int i;
 
     if (!account)
         return;
@@ -535,4 +535,6 @@ int account__timer_cb(const void *pointer, void *data, int remaining_calls)
                 || xmpp_conn_is_connected(ptr_account->connection)))
             connection__process(ptr_account->context, ptr_account->connection, 10);
     }
+
+    return WEECHAT_RC_OK;
 }

@@ -10,9 +10,9 @@
 
 #include "plugin.h"
 #include "config.h"
+#include "account.h"
 #include "connection.h"
 #include "command.h"
-#include "account.h"
 #include "buffer.h"
 //#include "xmpp-completion.h"
 
