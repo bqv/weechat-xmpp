@@ -5,6 +5,9 @@
 #ifndef _WEECHAT_XMPP_COMMAND_H_
 #define _WEECHAT_XMPP_COMMAND_H_
 
+int command__enter(const void *pointer, void *data,
+                   struct t_gui_buffer *buffer, int argc,
+                   char **argv, char **argv_eol);
 void command__init();
 
 #endif /*WEECHAT_XMPP_COMMAND_H*/

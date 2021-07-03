@@ -17,6 +17,7 @@ enum t_account_option
     ACCOUNT_OPTION_AUTOCONNECT,
     ACCOUNT_OPTION_RESOURCE,
     ACCOUNT_OPTION_STATUS,
+    ACCOUNT_OPTION_AUTOJOIN,
     ACCOUNT_NUM_OPTIONS,
 };
 
@@ -50,6 +51,8 @@ enum t_account_option
     weechat_config_string(account->options[ACCOUNT_OPTION_RESOURCE])
 #define account_status(account) \
     weechat_config_string(account->options[ACCOUNT_OPTION_STATUS])
+#define account_autojoin(account) \
+    weechat_config_string(account->options[ACCOUNT_OPTION_AUTOJOIN])
 
 struct t_account
 {

@@ -225,6 +225,11 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
 
         xmpp_send(conn, pres);
         xmpp_stanza_release(pres);
+
+        command__enter(NULL, NULL, account->buffer, 2, argv, argv_eol);
+
+        xmpp_send(conn, pres);
+        xmpp_stanza_release(pres);
     } else {
       //weechat_printf(account->buffer, "DEBUG: disconnected");
       //xmpp_stop(account->context);
