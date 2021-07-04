@@ -101,6 +101,9 @@ struct t_channel_typing *channel__typing_search(struct t_channel *channel,
 void channel__add_typing(struct t_channel *channel,
                          struct t_user *user);
 
+void channel__free(struct t_account *account,
+                   struct t_channel *channel);
+
 void channel__free_all(struct t_account *account);
 
 void channel__update_topic(struct t_channel *channel,

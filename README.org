@@ -89,13 +89,14 @@
 ** TODO [#A] Implement essential functionality (milestone v0.2)
    * [X] Opening PMs with initial message
    * [X] OOB media messages
-   * [ ] Buffer autoswitch on enter/open
-   * [ ] Handle open/enter jids with a resource without breaking
-   * [ ] Allow /close without crashing
+   * [X] Buffer autoswitch on enter/open
+   * [X] Handle open/enter jids with a resource without breaking
+   * [X] Allow /close without crashing
    * [ ] [#B] Handle wide errors gracefully
      * [ ] [#B] Event-driven MUC entrance
    * [ ] MUCs
      * [X] Opening (/enter)
+     * [ ] Leave on /close
      * [X] Receiving
      * [X] Sending
      * [ ] [#B] Edits

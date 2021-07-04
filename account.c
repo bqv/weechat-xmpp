@@ -352,7 +352,6 @@ void account__disconnect(struct t_account *account, int reconnect)
     (void) reconnect;
 
     struct t_channel *ptr_channel;
-        (void) ptr_channel;
 
     if (account->is_connected)
     {
@@ -415,7 +414,9 @@ void account__disconnect(struct t_account *account, int reconnect)
     account__set_lag (account);
     account->monitor = 0;
     account->monitor_time = 0;
+        */
 
+        /*
     if (reconnect
         && IRC_SERVER_OPTION_BOOLEAN(account, IRC_SERVER_OPTION_AUTORECONNECT))
         account__reconnect_schedule(account);
@@ -437,10 +438,8 @@ void account__disconnect(struct t_account *account, int reconnect)
         */
 
     /* send signal "account_disconnected" with account name */
-        /*
-    (void) weechat_hook_signal_send("account_disconnected",
+    (void) weechat_hook_signal_send("xmpp_account_disconnected",
                                     WEECHAT_HOOK_SIGNAL_STRING, account->name);
-        */
 }
 
 void account__disconnect_all()
@@ -515,6 +514,9 @@ int account__connect(struct t_account *account)
     account->is_connected =
         connection__connect(account, &account->connection, account_jid(account),
                             account_password(account), account_tls(account));
+
+    (void) weechat_hook_signal_send("xmpp_account_connected",
+                                    WEECHAT_HOOK_SIGNAL_STRING, account->name);
 
     return account->is_connected;
 }

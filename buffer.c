@@ -21,6 +21,9 @@ void buffer__get_account_and_channel(struct t_gui_buffer *buffer,
     if (!buffer)
         return;
 
+    *account = NULL;
+    *channel = NULL;
+
     /* look for a account or channel using this buffer */
     for (ptr_account = accounts; ptr_account;
          ptr_account = ptr_account->next_account)
@@ -45,8 +48,6 @@ void buffer__get_account_and_channel(struct t_gui_buffer *buffer,
             }
         }
     }
-
-    /* no account or channel found */
 }
 
 char *buffer__typing_bar_cb(const void *pointer, void *data,
@@ -73,7 +74,7 @@ char *buffer__typing_bar_cb(const void *pointer, void *data,
     buffer__get_account_and_channel(buffer, &account, &channel);
 
     if (!channel)
-        return strdup("");
+        return strndup("", 0);
 
     typecount = 0;
 
@@ -105,7 +106,7 @@ char *buffer__typing_bar_cb(const void *pointer, void *data,
     }
     else
     {
-        return strdup("");
+        return strndup("", 0);
     }
 }
 
@@ -140,24 +141,50 @@ int buffer__close_cb(const void *pointer, void *data,
     struct t_account *ptr_account = NULL;
     struct t_channel *ptr_channel = NULL;
 
-    buffer_plugin = weechat_buffer_get_pointer(buffer, "plugin");
-    if (buffer_plugin == weechat_plugin)
-        buffer__get_account_and_channel(buffer,
-                                               &ptr_account, &ptr_channel);
-
     (void) pointer;
     (void) data;
-    (void) buffer;
 
-    if (ptr_account)
+    buffer_plugin = weechat_buffer_get_pointer(buffer, "plugin");
+    if (buffer_plugin != weechat_plugin)
+        return WEECHAT_RC_OK;
+    buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);
+
+    const char* type = weechat_buffer_get_string(buffer, "localvar_type");
+
+    if (weechat_strcasecmp(type, "server") == 0)
     {
-        if (!ptr_account->disconnected)
+        if (ptr_account)
         {
-            //command_quit_account(ptr_account, NULL);
-            account__disconnect(ptr_account, 0);
-        }
+            if (!ptr_account->disconnected)
+            {
+                account__disconnect(ptr_account, 0);
+            }
 
-        ptr_account->buffer = NULL;
+            ptr_account->buffer = NULL;
+        }
+    }
+    else if (weechat_strcasecmp(type, "channel") == 0)
+    {
+        if (ptr_account && ptr_channel)
+        {
+            if (!ptr_account->disconnected)
+            {
+                channel__free(ptr_account, ptr_channel);
+            }
+        }
+    }
+    else if (weechat_strcasecmp(type, "private") == 0)
+    {
+        if (ptr_account && ptr_channel)
+        {
+            if (!ptr_account->disconnected)
+            {
+                channel__free(ptr_account, ptr_channel);
+            }
+        }
+    }
+    else
+    {
     }
 
     return WEECHAT_RC_OK;

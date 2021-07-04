@@ -4,6 +4,7 @@
 
 #include <strophe.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <weechat/weechat-plugin.h>
 
@@ -237,6 +238,66 @@ int command__account_connect(int argc, char **argv)
     return (connect_ok) ? WEECHAT_RC_OK : WEECHAT_RC_ERROR;
 }
 
+int command__disconnect_account(struct t_account *account)
+{
+    if (!account)
+        return 0;
+
+    if (!account->is_connected)
+    {
+        weechat_printf(
+            NULL,
+            _("%s%s: not connected to account \"%s\"!"),
+            weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME,
+            account->name);
+    }
+
+    account__disconnect(account, 0);
+
+    return 1;
+}
+
+int command__account_disconnect(int argc, char **argv)
+{
+    int i, nb_disconnect, disconnect_ok;
+    struct t_account *ptr_account;
+
+    (void) argc;
+    (void) argv;
+
+    disconnect_ok = 1;
+
+    nb_disconnect = 0;
+    for (i = 2; i < argc; i++)
+    {
+        nb_disconnect++;
+        ptr_account = account__search(argv[i]);
+        if (ptr_account)
+        {
+            if (!command__disconnect_account(ptr_account))
+            {
+                disconnect_ok = 0;
+            }
+        }
+        else
+        {
+            weechat_printf(
+                NULL,
+                _("%s%s: account not found \"%s\" "),
+                weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME,
+                argv[i]);
+        }
+    }
+
+    return (disconnect_ok) ? WEECHAT_RC_OK : WEECHAT_RC_ERROR;
+}
+
+int command__account_reconnect(int argc, char **argv)
+{
+    command__account_disconnect(argc, argv);
+    return command__account_connect(argc, argv);
+}
+
 void command__account_delete(int argc, char **argv)
 {
     struct t_account *account;
@@ -316,6 +377,18 @@ int command__account(const void *pointer, void *data,
             return WEECHAT_RC_OK;
         }
 
+        if (weechat_strcasecmp(argv[1], "disconnect") == 0)
+        {
+            command__account_disconnect(argc, argv);
+            return WEECHAT_RC_OK;
+        }
+
+        if (weechat_strcasecmp(argv[1], "reconnect") == 0)
+        {
+            command__account_reconnect(argc, argv);
+            return WEECHAT_RC_OK;
+        }
+
         if (weechat_strcasecmp(argv[1], "delete") == 0)
         {
             command__account_delete(argc, argv);
@@ -385,18 +458,23 @@ int command__enter(const void *pointer, void *data,
             xmpp_stanza_t *pres__x = xmpp_stanza_new(ptr_account->context);
             xmpp_stanza_set_name(pres__x, "x");
             xmpp_stanza_set_ns(pres__x, "http://jabber.org/protocol/muc");
-                xmpp_stanza_add_child(pres, pres__x);
-                xmpp_stanza_release(pres__x);
+            xmpp_stanza_add_child(pres, pres__x);
+            xmpp_stanza_release(pres__x);
 
-                xmpp_send(ptr_account->connection, pres);
-                xmpp_stanza_release(pres);
+            xmpp_send(ptr_account->connection, pres);
+            xmpp_stanza_release(pres);
 
-                if (argc > 2)
-                {
-                    text = argv_eol[2];
+            if (argc > 2)
+            {
+                text = argv_eol[2];
 
-                    channel__send_message(ptr_account, ptr_channel, jid, text);
-                }
+                channel__send_message(ptr_account, ptr_channel, jid, text);
+            }
+
+            char buf[16];
+            int num = weechat_buffer_get_integer(ptr_channel->buffer, "number");
+            snprintf(buf, sizeof(buf), "/buffer %d", num);
+            weechat_command(ptr_account->buffer, buf);
         }
         weechat_string_free_split(jids);
     }
@@ -432,24 +510,35 @@ int command__open(const void *pointer, void *data,
 
     if (argc > 1)
     {
-        jid = xmpp_jid_bare(ptr_account->context, argv[1]);
-
-        pres = xmpp_presence_new(ptr_account->context);
-        xmpp_stanza_set_to(pres, jid);
-        xmpp_stanza_set_from(pres, account_jid(ptr_account));
-        xmpp_send(ptr_account->connection, pres);
-        xmpp_stanza_release(pres);
-
-        ptr_channel = channel__search(ptr_account, jid);
-        if (!ptr_channel)
-            ptr_channel = channel__new(ptr_account, CHANNEL_TYPE_PM, jid, jid);
-
-        if (argc > 2)
+        int n_jid = 0;
+        char **jids = weechat_string_split(argv[1], ",", NULL, 0, 0, &n_jid);
+        for (int i = 0; i < n_jid; i++)
         {
-            text = argv_eol[2];
+            jid = xmpp_jid_bare(ptr_account->context, jids[i]);
 
-            channel__send_message(ptr_account, ptr_channel, jid, text);
+            pres = xmpp_presence_new(ptr_account->context);
+            xmpp_stanza_set_to(pres, jid);
+            xmpp_stanza_set_from(pres, account_jid(ptr_account));
+            xmpp_send(ptr_account->connection, pres);
+            xmpp_stanza_release(pres);
+
+            ptr_channel = channel__search(ptr_account, jid);
+            if (!ptr_channel)
+                ptr_channel = channel__new(ptr_account, CHANNEL_TYPE_PM, jid, jid);
+
+            if (argc > 2)
+            {
+                text = argv_eol[2];
+
+                channel__send_message(ptr_account, ptr_channel, jid, text);
+            }
+
+            char buf[16];
+            int num = weechat_buffer_get_integer(ptr_channel->buffer, "number");
+            snprintf(buf, sizeof(buf), "/buffer %d", num);
+            weechat_command(ptr_account->buffer, buf);
         }
+        weechat_string_free_split(jids);
     }
 
     return WEECHAT_RC_OK;
@@ -517,14 +606,20 @@ void command__init()
         N_("list"
            " || add <account>"
            " || connect <account>"
+           " || disconnect <account>"
+           " || reconnect <account>"
            " || delete <account>"),
-        N_("    list: list accounts\n"
-           "    add: add a xmpp account\n"
-           "connect: connect to a xmpp account\n"
-           " delete: delete a xmpp account\n"),
+        N_("      list: list accounts\n"
+           "       add: add a xmpp account\n"
+           "   connect: connect to a xmpp account\n"
+           "disconnect: disconnect from a xmpp account\n"
+           " reconnect: reconnect an xmpp account\n"
+           "    delete: delete a xmpp account\n"),
         "list"
         " || add %(xmpp_account)"
         " || connect %(xmpp_account)"
+        " || disconnect %(xmpp_account)"
+        " || reconnect %(xmpp_account)"
         " || delete %(xmpp_account)",
         &command__account, NULL, NULL);
     if (!hook)
