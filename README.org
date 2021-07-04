@@ -47,7 +47,7 @@
   - glib (dynamic, dependency of libomemo)
   - sqlite (dynamic, dependency of libomemo/axc)
   - libsignal-protocol-c (dynamic, dependency of axc)
-  - weechat (>= v2.5)
+  - weechat (>= v3.0)
 
   .. or just use the guix spec in .envrc
 
@@ -101,13 +101,15 @@
      * [X] Sending
      * [ ] [#B] Edits
      * [ ] [#B] Handle errors gracefully
-     * [ ] [#B] Presence/nicklist
+     * [X] [#B] Presence/nicklist
        * [X] [#B] Enters
-       * [ ] [#B] Leaves
+       * [X] [#B] Leaves
        * [X] [#B] Tracking
      * [X] [#B] Set/show topic
    * [ ] OMEMO (libsignal-protocol-c / axc)
      * [ ] Presence
+       * [X] Disco
+       * [ ] Disco response
      * [ ] Messages
    * [ ] MUC PMs
    * [ ] Send typing notifications
@@ -117,6 +119,7 @@
    * [ ] PGP (libgpgme)
 ** TODO [#C] Implement completion engine (milestone v0.3)
 ** TODO [#D] Close all issues (milestone v1.0)
+   * [ ] Absorb libomemo / axc, and drop glib
 
 * Contributing
 

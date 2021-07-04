@@ -115,6 +115,26 @@ void user__nicklist_add(struct t_account *account,
                               1);
 }
 
+void user__nicklist_remove(struct t_account *account,
+                           struct t_channel *channel,
+                           struct t_user *user)
+{
+    struct t_gui_nick_group *ptr_group;
+    struct t_gui_buffer *ptr_buffer;
+    char *name = user->profile.display_name;
+    if (channel && weechat_strcasecmp(xmpp_jid_bare(account->context, name),
+                                      channel->id) == 0)
+        name = xmpp_jid_resource(account->context, name);
+
+    ptr_buffer = channel ? channel->buffer : account->buffer;
+
+    ptr_group = weechat_nicklist_search_group(ptr_buffer, NULL,
+                                              user->is_away ?
+                                              "+" : "...");
+    weechat_nicklist_remove_nick(ptr_buffer, 
+        weechat_nicklist_search_nick(ptr_buffer, ptr_group, name));
+}
+
 struct t_user *user__new(struct t_account *account,
                          const char *id, const char *display_name)
 {

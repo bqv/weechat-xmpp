@@ -120,6 +120,10 @@ struct t_channel_member *channel__add_member(struct t_account *account,
                                              struct t_channel *channel,
                                              const char *id);
 
+struct t_channel_member *channel__remove_member(struct t_account *account,
+                                                struct t_channel *channel,
+                                                const char *id);
+
 void channel__send_message(struct t_account *account, struct t_channel *channel,
                            const char *to, const char *body);
 

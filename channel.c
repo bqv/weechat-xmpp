@@ -601,6 +601,68 @@ struct t_channel_member *channel__add_member(struct t_account *account,
     if (user)
         user__nicklist_add(account, channel, user);
 
+    char *jid_bare = xmpp_jid_bare(account->context, user->id);
+    char *jid_resource = xmpp_jid_resource(account->context, user->id);
+    if (weechat_strcasecmp(jid_bare, channel->id) == 0
+        && channel->type == CHANNEL_TYPE_MUC)
+        weechat_printf(channel->buffer, "%s%s entered",
+                       weechat_prefix("join"),
+                       jid_resource);
+    else
+        weechat_printf(channel->buffer, "%s%s (%s) entered",
+                       weechat_prefix("join"),
+                       xmpp_jid_bare(account->context, user->id),
+                       xmpp_jid_resource(account->context, user->id));
+
+    return member;
+}
+
+struct t_channel_member *channel__member_search(struct t_channel *channel,
+                                                const char *id)
+{
+    struct t_channel_member *ptr_member;
+
+    if (!channel || !id)
+        return NULL;
+
+    for (ptr_member = channel->members; ptr_member;
+         ptr_member = ptr_member->next_member)
+    {
+        if (weechat_strcasecmp(ptr_member->id, id) == 0)
+            return ptr_member;
+    }
+
+    return NULL;
+}
+
+struct t_channel_member *channel__remove_member(struct t_account *account,
+                                                struct t_channel *channel,
+                                                const char *id)
+{
+    struct t_channel_member *member;
+    struct t_user *user;
+
+    user = user__search(account, id);
+    if (user)
+        user__nicklist_remove(account, channel, user);
+
+    member = channel__member_search(channel, id);
+    if (member)
+        channel__member_free(channel, member);
+
+    char *jid_bare = xmpp_jid_bare(account->context, user->id);
+    char *jid_resource = xmpp_jid_resource(account->context, user->id);
+    if (weechat_strcasecmp(jid_bare, channel->id) == 0
+        && channel->type == CHANNEL_TYPE_MUC)
+        weechat_printf(channel->buffer, "%s%s left",
+                       weechat_prefix("quit"),
+                       jid_resource);
+    else
+        weechat_printf(channel->buffer, "%s%s (%s) left",
+                       weechat_prefix("quit"),
+                       xmpp_jid_bare(account->context, user->id),
+                       xmpp_jid_resource(account->context, user->id));
+
     return member;
 }
 
