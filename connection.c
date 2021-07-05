@@ -6,15 +6,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/utsname.h>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
+#include "xmpp/stanza.h"
 #include "config.h"
 #include "account.h"
 #include "user.h"
 #include "channel.h"
 #include "connection.h"
+#include "omemo.h"
 
 void connection__init()
 {
@@ -27,7 +30,7 @@ int connection__version_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
     const char *ns;
     struct t_account *account = (struct t_account *)userdata;
     const char *weechat_name = "weechat";
-    const char *weechat_version = weechat_info_get("version", NULL);
+    char *weechat_version = weechat_info_get("version", NULL);
 
     weechat_printf(NULL, "Received version request from %s", xmpp_stanza_get_from(stanza));
 
@@ -66,8 +69,8 @@ int connection__version_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
     xmpp_send(conn, reply);
     xmpp_stanza_release(reply);
-    if (version)
-        free (version);
+    if (weechat_version)
+        free(weechat_version);
 
     return 1;
 }
@@ -198,15 +201,17 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
     return 1;
 }
 
-#include <sys/utsname.h>
 int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 {
     (void) conn;
 
     struct t_account *account = (struct t_account *)userdata;
     xmpp_stanza_t *reply, *query, *identity, *feature, *x, *field, *value, *text;
-    char client_name[64], *node;
+    const char *node;
     static struct utsname osinfo;
+
+    char *client_name = weechat_string_eval_expression("weechat ${info:version}",
+                                                       NULL, NULL, NULL);
 
     reply = xmpp_stanza_reply(stanza);
     xmpp_stanza_set_type(reply, "result");
@@ -219,8 +224,6 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
     identity = xmpp_stanza_new(account->context);
     xmpp_stanza_set_name(identity, "identity");
     xmpp_stanza_set_attribute(identity, "category", "client");
-    snprintf(client_name, sizeof(client_name),
-             "weechat %s", weechat_info_get("version", NULL));
     xmpp_stanza_set_attribute(identity, "name", client_name);
     xmpp_stanza_set_attribute(identity, "type", "pc");
     xmpp_stanza_add_child(query, identity);
@@ -246,9 +249,10 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
     xmpp_stanza_set_ns(x, "jabber:x:data");
     xmpp_stanza_set_attribute(x, "type", "result");
 
-    if (uname(&osinfo) >= 0)
+    if (uname(&osinfo) < 0)
     {
-        osinfo.machine;
+        *osinfo.sysname = 0;
+        *osinfo.release = 0;
     }
 
     {
@@ -392,6 +396,8 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
     xmpp_send(conn, reply);
     xmpp_stanza_release(reply);
 
+    free(client_name);
+
     return 1;
 }
 
@@ -405,7 +411,7 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
     (void)stream_error;
 
     if (status == XMPP_CONN_CONNECT) {
-        xmpp_stanza_t *pres, *pres__c, *pres__status, *pres__status__text;
+        xmpp_stanza_t *pres, *pres__c, *pres__status, *pres__status__text, **children;
         char cap_hash[28+1] = {0};
 
         xmpp_handler_add(conn, connection__version_handler,
@@ -418,8 +424,7 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
                          NULL, "iq", "get", account);
 
         /* Send initial <presence/> so that we appear online to contacts */
-        pres = xmpp_presence_new(account->context);
-        xmpp_stanza_set_from(pres, account_jid(account));
+        children = malloc(sizeof(*children) * (2 + 1));
 
         pres__c = xmpp_stanza_new(account->context);
         xmpp_stanza_set_name(pres__c, "c");
@@ -428,8 +433,7 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         xmpp_stanza_set_attribute(pres__c, "node", "http://weechat.org");
         snprintf(cap_hash, sizeof(cap_hash), "%027ld=", time(NULL));
         xmpp_stanza_set_attribute(pres__c, "ver", cap_hash);
-        xmpp_stanza_add_child(pres, pres__c);
-        xmpp_stanza_release(pres__c);
+        children[0] = pres__c;
 
         pres__status = xmpp_stanza_new(account->context);
         xmpp_stanza_set_name(pres__status, "status");
@@ -439,9 +443,12 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         xmpp_stanza_add_child(pres__status, pres__status__text);
         xmpp_stanza_release(pres__status__text);
 
-        xmpp_stanza_add_child(pres, pres__status);
-        xmpp_stanza_release(pres__status);
+        children[1] = pres__status;
 
+        children[2] = NULL;
+        pres = stanza__presence(account->context, NULL,
+                                children, NULL, strdup(account_jid(account)),
+                                NULL, NULL);
         xmpp_send(conn, pres);
         xmpp_stanza_release(pres);
 
@@ -450,8 +457,9 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         weechat_string_dyn_concat(command, account_autojoin(account), -1);
         weechat_command(account->buffer, *command);
         weechat_string_dyn_free(command, 1);
+
+        omemo__init(account);
     } else {
-      //weechat_printf(account->buffer, "DEBUG: disconnected");
       //xmpp_stop(account->context);
     }
 }

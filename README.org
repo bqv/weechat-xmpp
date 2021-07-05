@@ -74,7 +74,7 @@
   since part of weechat and it's default plugins use SIGPIPE as control.
 
   I have no real requests for style of pull requests besides a wish that
-  you keep vaguely to the style I have adopted for this project.
+  you keep vaguely to the indentation style I use for this project.
 
   Happy coding!
 

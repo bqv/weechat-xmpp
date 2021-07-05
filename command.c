@@ -596,6 +596,42 @@ int command__me(const void *pointer, void *data,
     return WEECHAT_RC_OK;
 }
 
+int command__xml(const void *pointer, void *data,
+                 struct t_gui_buffer *buffer, int argc,
+                 char **argv, char **argv_eol)
+{
+    struct t_account *ptr_account = NULL;
+    struct t_channel *ptr_channel = NULL;
+    xmpp_stanza_t *stanza;
+
+    (void) pointer;
+    (void) data;
+    (void) argv;
+
+    buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);
+
+    if (!ptr_account->is_connected)
+    {
+        weechat_printf(buffer,
+                        _("%s%s: you are not connected to server"),
+                        weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME);
+        return WEECHAT_RC_OK;
+    }
+
+    if (argc > 1)
+    {
+        stanza = xmpp_stanza_new_from_string(ptr_account->context,
+                                             argv_eol[0]);
+        if (!stanza)
+            return WEECHAT_RC_ERROR;
+
+        xmpp_send(ptr_account->connection, stanza);
+        xmpp_stanza_release(stanza);
+    }
+
+    return WEECHAT_RC_OK;
+}
+
 void command__init()
 {
     struct t_hook *hook;
@@ -641,7 +677,7 @@ void command__init()
         N_("jid: jid to target"),
         NULL, &command__open, NULL, NULL);
     if (!hook)
-        weechat_printf(NULL, "Failed to setup command /chat");
+        weechat_printf(NULL, "Failed to setup command /open");
 
     hook = weechat_hook_command(
         "me",
@@ -651,4 +687,13 @@ void command__init()
         NULL, &command__me, NULL, NULL);
     if (!hook)
         weechat_printf(NULL, "Failed to setup command /me");
+
+    hook = weechat_hook_command(
+        "xml",
+        N_("send a raw xml stanza"),
+        N_("<stanza>"),
+        N_("stanza: xml to send"),
+        NULL, &command__xml, NULL, NULL);
+    if (!hook)
+        weechat_printf(NULL, "Failed to setup command /xml");
 }

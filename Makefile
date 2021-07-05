@@ -13,16 +13,18 @@ PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
 
 SRCS=plugin.c \
-     account.c \
-     buffer.c \
-     channel.c \
-     command.c \
-     config.c \
-     connection.c \
-     input.c \
-     message.c \
-     omemo.c \
-     user.c \
+	 account.c \
+	 buffer.c \
+	 channel.c \
+	 command.c \
+	 completion.c \
+	 config.c \
+	 connection.c \
+	 input.c \
+	 message.c \
+	 omemo.c \
+	 user.c \
+	 xmpp/presence.c \
 
 DEPS=axc/build/libaxc.a
 OBJS=$(subst .c,.o,$(SRCS))

@@ -14,7 +14,7 @@
 #include "connection.h"
 #include "command.h"
 #include "buffer.h"
-//#include "xmpp-completion.h"
+#include "completion.h"
 
 
 WEECHAT_PLUGIN_NAME(WEECHAT_XMPP_PLUGIN_NAME);
@@ -46,7 +46,7 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 
     command__init();
 
-  //completion__init();
+    completion__init();
 
     weechat_xmpp_process_timer = weechat_hook_timer(TIMER_INTERVAL_SEC * 1000, 0, 0,
                                                     &account__timer_cb,
