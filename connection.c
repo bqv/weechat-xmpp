@@ -113,7 +113,8 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     {
         if (weechat_strcasecmp(role, "none") == 0)
             channel__remove_member(account, channel, from);
-        channel__add_member(account, channel, from);
+        else
+            channel__add_member(account, channel, from);
     }
 
     return 1;
