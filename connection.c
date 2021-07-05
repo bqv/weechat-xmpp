@@ -460,7 +460,8 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
 
         omemo__init(account);
     } else {
-      //xmpp_stop(account->context);
+        account__disconnect(account, 1);
+      //xmpp_stop(account->context); //keep context?
     }
 }
 
@@ -482,7 +483,13 @@ char* connection__rand_string(int length)
 int connection__connect(struct t_account *account, xmpp_conn_t **connection,
                         const char* jid, const char* password, int tls)
 {
+    static const unsigned ka_timeout_sec = 60;
+    static const unsigned ka_timeout_ivl = 1;
+
     *connection = xmpp_conn_new(account->context);
+
+    xmpp_conn_set_keepalive(*connection, ka_timeout_sec, ka_timeout_ivl);
+
     const char *resource = account_resource(account);
     if (!(resource && strlen(resource)))
     {

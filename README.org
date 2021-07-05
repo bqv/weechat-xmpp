@@ -94,6 +94,7 @@
    * [X] Allow /close without crashing
    * [ ] [#B] Handle wide errors gracefully
      * [ ] [#B] Event-driven MUC entrance
+   * [ ] Pings
    * [ ] MUCs
      * [X] Opening (/enter)
      * [ ] Leave on /close
@@ -126,6 +127,10 @@
   *Your contributions are always welcome!*
   Please submit a pull request or create an issue
   to add a new or missing feature.
+
+* Testemonials
+
+  "Weechat-Strophe - for the discerning dual IRCer XMPPer" -- [[github.com/janicez][Ellenor et al Bjornsdottir]]
 
 * License
 

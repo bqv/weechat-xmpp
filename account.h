@@ -31,14 +31,18 @@ enum t_account_option
     weechat_config_option_set(account->options[option], value, 1)
 
 #define account_jid(account) \
-    weechat_config_string(account->options[ACCOUNT_OPTION_JID])
+    account->connection && xmpp_conn_is_connected(account->connection) ? \
+        xmpp_jid_bare(account->context, xmpp_conn_get_bound_jid(account->connection)) : \
+        weechat_config_string(account->options[ACCOUNT_OPTION_JID])
 #define account_jid_device(account) \
-    xmpp_jid_new(account->context, \
-        xmpp_jid_node(account->context, \
-                      weechat_config_string(account->options[ACCOUNT_OPTION_JID])), \
-        xmpp_jid_domain(account->context, \
-                        weechat_config_string(account->options[ACCOUNT_OPTION_JID])), \
-        "weechat")
+    account->connection && xmpp_conn_is_connected(account->connection) ? \
+        xmpp_conn_get_bound_jid(account->connection) : \
+        xmpp_jid_new(account->context, \
+                     xmpp_jid_node(account->context, \
+                                   weechat_config_string(account->options[ACCOUNT_OPTION_JID])), \
+                     xmpp_jid_domain(account->context, \
+                                     weechat_config_string(account->options[ACCOUNT_OPTION_JID])), \
+                     "weechat")
 #define account_password(account) \
     weechat_config_string(account->options[ACCOUNT_OPTION_PASSWORD])
 #define account_tls(account) \
