@@ -74,6 +74,8 @@ struct t_account
 
     struct t_gui_buffer *buffer;
     char *buffer_as_string;
+  //struct t_device *devices;
+  //struct t_device *last_device;
     struct t_user *users;
     struct t_user *last_user;
     struct t_channel *channels;

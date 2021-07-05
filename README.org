@@ -94,13 +94,18 @@
    * [X] Allow /close without crashing
    * [ ] [#B] Handle wide errors gracefully
      * [ ] [#B] Event-driven MUC entrance
-   * [ ] Pings
+   * [ ] [#C] XMPP Ping (xep-199)
+   * [X] [#A] Highlight
    * [ ] MUCs
      * [X] Opening (/enter)
-     * [ ] Leave on /close
+     * [ ] [#B] Leave on /close
      * [X] Receiving
      * [X] Sending
+       * [X] With /msg
      * [ ] [#B] Edits
+       * [X] [#B] Displaying
+       * [X] [#B] Tagging
+       * [ ] [#B] Making
      * [ ] [#B] Handle errors gracefully
      * [X] [#B] Presence/nicklist
        * [X] [#B] Enters
@@ -111,11 +116,14 @@
      * [ ] Presence
        * [X] Disco
        * [ ] Disco response
+       * [ ] Key Generation / storage (secured_data?)
      * [ ] Messages
-   * [ ] MUC PMs
-   * [ ] Send typing notifications
-   * [ ] Recv typing notifications
-   * [ ] Read receipts
+   * [ ] [#C] MUC PMs
+   * [ ] [#A] Send typing notifications
+   * [ ] [#A] Recv typing notifications
+   * [ ] [#C] Read receipts
+   * [ ] Service Disco
+   * [ ] Bookmarks / Roster
    * [ ] OTR (libotr)
    * [ ] PGP (libgpgme)
 ** TODO [#C] Implement completion engine (milestone v0.3)

@@ -7,6 +7,15 @@
 
 xmpp_stanza_t *stanza__presence(xmpp_ctx_t *context, xmpp_stanza_t *base,
                                 xmpp_stanza_t **children, const char *ns,
-                                const char *from, const char *to, const char *type);
+                                char *from, char *to, const char *type);
+
+xmpp_stanza_t *stanza__iq(xmpp_ctx_t *context, xmpp_stanza_t *base,
+                          xmpp_stanza_t **children, char *ns, char *id,
+                          char *from, char *to, char *type);
+
+xmpp_stanza_t *stanza__iq_pubsub(xmpp_ctx_t *context, xmpp_stanza_t *base,
+                                 xmpp_stanza_t **children, char *ns);
+
+xmpp_stanza_t *stanza__iq_pubsub_items(xmpp_ctx_t *context, xmpp_stanza_t *base, char *node);
 
 #endif /*WEECHAT_XMPP_STANZA_H*/

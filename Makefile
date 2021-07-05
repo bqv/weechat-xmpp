@@ -25,6 +25,7 @@ SRCS=plugin.c \
 	 omemo.c \
 	 user.c \
 	 xmpp/presence.c \
+	 xmpp/iq.c \
 
 DEPS=axc/build/libaxc.a
 OBJS=$(subst .c,.o,$(SRCS))

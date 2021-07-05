@@ -125,8 +125,8 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
     struct t_account *account = (struct t_account *)userdata;
     struct t_channel *channel;
-    xmpp_stanza_t *body, *delay, *topic;
-    const char *type, *from, *from_bare, *to, *timestamp = 0;
+    xmpp_stanza_t *body, *delay, *topic, *replace;
+    const char *type, *from, *from_bare, *to, *id, *replace_id, *timestamp;
     char *intext;
     struct tm time = {0};
     time_t date = 0;
@@ -159,6 +159,9 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
         return 1;
     from_bare = xmpp_jid_bare(account->context, from);
     to = xmpp_stanza_get_to(stanza);
+    id = xmpp_stanza_get_id(stanza);
+    replace = xmpp_stanza_get_child_by_name_and_ns(stanza, "replace", "urn:xmpp:message-correct:0");
+    replace_id = replace ? xmpp_stanza_get_id(replace) : NULL;
 
     intext = xmpp_stanza_get_text(body);
 
@@ -182,18 +185,45 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
         date = mktime(&time);
     }
 
+    char **dyn_tags = weechat_string_dyn_alloc(1);
+    weechat_string_dyn_concat(dyn_tags, "xmpp_message,message", -1);
+    if (id)
+    {
+        weechat_string_dyn_concat(dyn_tags, ",id_", -1);
+        weechat_string_dyn_concat(dyn_tags, id, -1);
+    }
+
     if (strcmp(to, channel->id) == 0)
-        weechat_printf_date_tags(channel->buffer, date, NULL, "%s[to %s]: %s",
-                                 user__as_prefix_raw(account, from),
+        weechat_string_dyn_concat(dyn_tags, ",private", -1);
+    if (weechat_string_match(intext, "/me *", 0))
+        weechat_string_dyn_concat(dyn_tags, ",action", -1);
+    if (replace)
+    {
+        weechat_string_dyn_concat(dyn_tags, ",edit", -1);
+        weechat_string_dyn_concat(dyn_tags, ",replace_", -1);
+        weechat_string_dyn_concat(dyn_tags, replace_id, -1);
+    }
+
+    if (date != 0)
+        weechat_string_dyn_concat(dyn_tags, ",notify_none", -1);
+    else
+        weechat_string_dyn_concat(dyn_tags, ",log1", -1);
+
+    const char *edit = replace ? "* " : ""; // Losing which message was edited, sadly
+    if (strcmp(to, channel->id) == 0)
+        weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s[to %s]: %s",
+                                 edit, user__as_prefix_raw(account, from),
                                  to, intext ? intext : "");
     else if (weechat_string_match(intext, "/me *", 0))
-        weechat_printf_date_tags(channel->buffer, date, NULL, "%s%s %s",
-                                 weechat_prefix("action"), from,
+        weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s%s %s",
+                                 edit, weechat_prefix("action"), from,
                                  intext ? intext+4 : "");
     else
-        weechat_printf_date_tags(channel->buffer, date, NULL, "%s%s",
-                                 user__as_prefix_raw(account, from),
+        weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s%s",
+                                 edit, user__as_prefix_raw(account, from),
                                  intext ? intext : "");
+
+    weechat_string_dyn_free(dyn_tags, 1);
 
     if (intext)
         xmpp_free(account->context, intext);
@@ -457,6 +487,21 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         weechat_string_dyn_concat(command, account_autojoin(account), -1);
         weechat_command(account->buffer, *command);
         weechat_string_dyn_free(command, 1);
+
+        children[1] = NULL;
+        children[0] =
+        stanza__iq_pubsub_items(account->context, NULL,
+                                strdup("eu.siacs.conversations.axolotl.devicelist"));
+        children[0] =
+        stanza__iq_pubsub(account->context, NULL, children,
+                          strdup("http://jabber.org/protocol/pubsub"));
+        children[0] =
+        stanza__iq(account->context, NULL, children, NULL, strdup("fetch1"),
+                   strdup(account_jid(account)), strdup(account_jid(account)),
+                   strdup("get"));
+
+        xmpp_send(conn, children[0]);
+        xmpp_stanza_release(children[0]);
 
         omemo__init(account);
     } else {

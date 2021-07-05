@@ -544,9 +544,64 @@ int command__open(const void *pointer, void *data,
     return WEECHAT_RC_OK;
 }
 
+int command__msg(const void *pointer, void *data,
+                 struct t_gui_buffer *buffer, int argc,
+                 char **argv, char **argv_eol)
+{
+    struct t_account *ptr_account = NULL;
+    struct t_channel *ptr_channel = NULL;
+    xmpp_stanza_t *message;
+    char *text;
+
+    (void) pointer;
+    (void) data;
+    (void) argv;
+
+    buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);
+
+    if (!ptr_account)
+        return WEECHAT_RC_ERROR;
+
+    if (!ptr_channel)
+    {
+        weechat_printf (
+            ptr_account->buffer,
+            _("%s%s: \"%s\" command can not be executed on a account buffer"),
+            weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME, "msg");
+        return WEECHAT_RC_OK;
+    }
+
+    if (!ptr_account->is_connected)
+    {
+        weechat_printf(buffer,
+                        _("%s%s: you are not connected to server"),
+                        weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME);
+        return WEECHAT_RC_OK;
+    }
+
+    if (argc > 1)
+    {
+        text = argv_eol[1];
+
+        message = xmpp_message_new(ptr_account->context,
+                                   ptr_channel->type == CHANNEL_TYPE_MUC ? "groupchat" : "chat",
+                                   ptr_channel->name, NULL);
+        xmpp_message_set_body(message, text);
+        xmpp_send(ptr_account->connection, message);
+        xmpp_stanza_release(message);
+        if (ptr_channel->type != CHANNEL_TYPE_MUC)
+            weechat_printf_date_tags(ptr_channel->buffer, 0,
+                                     "xmpp_message,message,private,notify_none,self_msg,log1",
+                                     "%s%s",
+                                     user__as_prefix_raw(ptr_account, account_jid(ptr_account)), text);
+    }
+
+    return WEECHAT_RC_OK;
+}
+
 int command__me(const void *pointer, void *data,
-               struct t_gui_buffer *buffer, int argc,
-               char **argv, char **argv_eol)
+                struct t_gui_buffer *buffer, int argc,
+                char **argv, char **argv_eol)
 {
     struct t_account *ptr_account = NULL;
     struct t_channel *ptr_channel = NULL;
@@ -583,14 +638,18 @@ int command__me(const void *pointer, void *data,
     {
         text = argv_eol[0];
 
-        message = xmpp_message_new(ptr_account->context, "chat", ptr_channel->name, NULL);
+        message = xmpp_message_new(ptr_account->context,
+                                   ptr_channel->type == CHANNEL_TYPE_MUC ? "groupchat" : "chat",
+                                   ptr_channel->name, NULL);
         xmpp_message_set_body(message, text);
         xmpp_send(ptr_account->connection, message);
         xmpp_stanza_release(message);
         if (ptr_channel->type != CHANNEL_TYPE_MUC)
-            weechat_printf(ptr_channel->buffer, "%s%s %s",
-                           weechat_prefix("action"), account_jid(ptr_account),
-                           text);
+            weechat_printf_date_tags(ptr_channel->buffer, 0,
+                                     "xmpp_message,message,action,private,notify_none,self_msg,log1",
+                                     "%s%s %s",
+                                     weechat_prefix("action"), account_jid(ptr_account),
+                                     text);
     }
 
     return WEECHAT_RC_OK;
@@ -680,8 +739,17 @@ void command__init()
         weechat_printf(NULL, "Failed to setup command /open");
 
     hook = weechat_hook_command(
+        "msg",
+        N_("send a xmpp message to the current buffer"),
+        N_("<message>"),
+        N_("message: message to send"),
+        NULL, &command__msg, NULL, NULL);
+    if (!hook)
+        weechat_printf(NULL, "Failed to setup command /msg");
+
+    hook = weechat_hook_command(
         "me",
-        N_("send a xmpp action to the current channel"),
+        N_("send a xmpp action to the current buffer"),
         N_("<message>"),
         N_("message: message to send"),
         NULL, &command__me, NULL, NULL);
