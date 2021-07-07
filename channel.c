@@ -613,15 +613,17 @@ struct t_channel_member *channel__add_member(struct t_account *account,
     char *jid_resource = xmpp_jid_resource(account->context, user->id);
     if (weechat_strcasecmp(jid_bare, channel->id) == 0
         && channel->type == CHANNEL_TYPE_MUC)
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s entered",
+        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s entered %s",
                                  weechat_prefix("join"),
-                                 user__as_prefix_raw(account, jid_resource));
+                                 user__as_prefix_raw(account, jid_resource),
+                                 channel->id);
     else
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s (%s) entered",
+        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s (%s) entered %s",
                                  weechat_prefix("join"),
                                  xmpp_jid_bare(account->context, user->id),
                                  user__as_prefix_raw(account,
-                                                     xmpp_jid_resource(account->context, user->id)));
+                                                     xmpp_jid_resource(account->context, user->id)),
+                                 channel->id);
 
     return member;
 }
@@ -703,14 +705,16 @@ struct t_channel_member *channel__remove_member(struct t_account *account,
     char *jid_resource = xmpp_jid_resource(account->context, user->id);
     if (weechat_strcasecmp(jid_bare, channel->id) == 0
         && channel->type == CHANNEL_TYPE_MUC)
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,leave,log4", "%s%s left",
+        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,leave,log4", "%s%s left %s",
                                  weechat_prefix("quit"),
-                                 jid_resource);
+                                 jid_resource,
+                                 channel->id);
     else
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,leave,log4", "%s%s (%s) left",
+        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,leave,log4", "%s%s (%s) left %s",
                                  weechat_prefix("quit"),
                                  xmpp_jid_bare(account->context, user->id),
-                                 xmpp_jid_resource(account->context, user->id));
+                                 xmpp_jid_resource(account->context, user->id),
+                                 channel->id);
 
     return member;
 }
@@ -749,7 +753,7 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
     xmpp_send(account->connection, message);
     xmpp_stanza_release(message);
     if (channel->type != CHANNEL_TYPE_MUC)
-        weechat_printf(channel->buffer, "%s%s",
+        weechat_printf(channel->buffer, "%s\t%s",
                        user__as_prefix_raw(account, account_jid(account)),
                        body);
 }
