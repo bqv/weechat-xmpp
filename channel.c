@@ -10,6 +10,7 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
+#include "omemo.h"
 #include "account.h"
 #include "user.h"
 #include "channel.h"
@@ -489,6 +490,10 @@ void channel__member_free(struct t_channel *channel,
     /* free member data */
     if (member->id)
         free(member->id);
+    if (member->role)
+        free(member->role);
+    if (member->affiliation)
+        free(member->affiliation);
 
     free(member);
 
@@ -589,6 +594,9 @@ struct t_channel_member *channel__add_member(struct t_account *account,
     member = malloc(sizeof(struct t_channel_member));
     member->id = strdup(id);
 
+    member->role = NULL;
+    member->affiliation = NULL;
+
     member->prev_member = channel->last_member;
     member->next_member = NULL;
     if (channel->last_member)
@@ -607,12 +615,13 @@ struct t_channel_member *channel__add_member(struct t_account *account,
         && channel->type == CHANNEL_TYPE_MUC)
         weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s entered",
                                  weechat_prefix("join"),
-                                 jid_resource);
+                                 user__as_prefix_raw(account, jid_resource));
     else
         weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s (%s) entered",
                                  weechat_prefix("join"),
                                  xmpp_jid_bare(account->context, user->id),
-                                 xmpp_jid_resource(account->context, user->id));
+                                 user__as_prefix_raw(account,
+                                                     xmpp_jid_resource(account->context, user->id)));
 
     return member;
 }
@@ -635,6 +644,46 @@ struct t_channel_member *channel__member_search(struct t_channel *channel,
     return NULL;
 }
 
+int channel__set_member_role(struct t_account *account,
+                             struct t_channel *channel,
+                             const char *id, const char *role)
+{
+    struct t_channel_member *member;
+    struct t_user *user;
+
+    user = user__search(account, id);
+    if (!user)
+        return 0;
+
+    member = channel__member_search(channel, id);
+    if (!member)
+        return 0;
+
+    member->role = strdup(role);
+
+    return 1;
+}
+
+int channel__set_member_affiliation(struct t_account *account,
+                                    struct t_channel *channel,
+                                    const char *id, const char *affiliation)
+{
+    struct t_channel_member *member;
+    struct t_user *user;
+
+    user = user__search(account, id);
+    if (!user)
+        return 0;
+
+    member = channel__member_search(channel, id);
+    if (!member)
+        return 0;
+
+    member->affiliation = strdup(affiliation);
+
+    return 1;
+}
+
 struct t_channel_member *channel__remove_member(struct t_account *account,
                                                 struct t_channel *channel,
                                                 const char *id)
@@ -643,8 +692,8 @@ struct t_channel_member *channel__remove_member(struct t_account *account,
     struct t_user *user;
 
     user = user__search(account, id);
-    if (user)
-        user__nicklist_remove(account, channel, user);
+  //if (user)
+  //    user__nicklist_remove(account, channel, user);
 
     member = channel__member_search(channel, id);
     if (member)

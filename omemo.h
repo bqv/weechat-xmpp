@@ -5,6 +5,32 @@
 #ifndef _WEECHAT_XMPP_OMEMO_H_
 #define _WEECHAT_XMPP_OMEMO_H_
 
-void omemo__init();
+#include "axc/src/axc.h"
+#include "omemo/src/libomemo.h"
+#include "omemo/src/libomemo_crypto.h"
+
+struct t_identity
+{
+    uint8_t *key;
+    size_t length;
+};
+
+struct t_omemo
+{
+    omemo_crypto_provider provider;
+
+    omemo_devicelist *devicelist;
+
+    omemo_bundle *bundle;
+
+    struct t_identity identity;
+
+    uint32_t device_id;
+};
+
+void omemo__init(struct t_omemo **omemo, uint32_t device,
+                 struct t_identity *identity);
+
+void omemo__free(struct t_omemo *omemo);
 
 #endif /*WEECHAT_XMPP_OMEMO_H*/

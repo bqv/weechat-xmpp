@@ -27,6 +27,9 @@ struct t_channel_member
 {
     char *id;
 
+    char *role;
+    char *affiliation;
+
     struct t_channel_member *prev_member;
     struct t_channel_member *next_member;
 };
@@ -119,6 +122,14 @@ void channel__update_purpose(struct t_channel *channel,
 struct t_channel_member *channel__add_member(struct t_account *account,
                                              struct t_channel *channel,
                                              const char *id);
+
+int channel__set_member_role(struct t_account *account,
+                             struct t_channel *channel,
+                             const char *id, const char *role);
+
+int channel__set_member_affiliation(struct t_account *account,
+                                    struct t_channel *channel,
+                                    const char *id, const char *affiliation);
 
 struct t_channel_member *channel__remove_member(struct t_account *account,
                                                 struct t_channel *channel,

@@ -58,6 +58,15 @@ enum t_account_option
 #define account_autojoin(account) \
     weechat_config_string(account->options[ACCOUNT_OPTION_AUTOJOIN])
 
+struct t_device
+{
+    int id;
+    char *name;
+
+    struct t_device *prev_device;
+    struct t_device *next_device;
+};
+
 struct t_account
 {
     char *name;
@@ -68,18 +77,26 @@ struct t_account
     int is_connected;
     int disconnected;
 
+    int current_retry;
+    int reconnect_delay;
+    int reconnect_start;
+
     xmpp_log_t logger;
     xmpp_ctx_t *context;
     xmpp_conn_t *connection;
 
     struct t_gui_buffer *buffer;
     char *buffer_as_string;
-  //struct t_device *devices;
-  //struct t_device *last_device;
+
+    struct t_omemo *omemo;
+
+    struct t_device *devices;
+    struct t_device *last_device;
     struct t_user *users;
     struct t_user *last_user;
     struct t_channel *channels;
     struct t_channel *last_channel;
+
     struct t_account *prev_account;
     struct t_account *next_account;
 };
@@ -89,6 +106,10 @@ extern char *account_options[][2];
 struct t_account *account__search(const char *account_name);
 struct t_account *account__casesearch (const char *account_name);
 int account__search_option(const char *option_name);
+struct t_device *account__search_device(struct t_account *account, int id);
+void account__add_device(struct t_account *account, struct t_device *device);
+void account__free_device(struct t_account *account, struct t_device *device);
+void account__free_device_all(struct t_account *account);
 struct t_account *account__alloc(const char *name);
 void account__free_data(struct t_account *account);
 void account__free(struct t_account *account);

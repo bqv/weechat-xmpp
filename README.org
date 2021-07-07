@@ -122,10 +122,12 @@
    * [ ] [#A] Send typing notifications
    * [ ] [#A] Recv typing notifications
    * [ ] [#C] Read receipts
+   * [ ] Message Carbons
    * [ ] Service Disco
    * [ ] Bookmarks / Roster
    * [ ] OTR (libotr)
    * [ ] PGP (libgpgme)
+   * [ ] Room Explorer (https://search.jabber.network/docs/api)
 ** TODO [#C] Implement completion engine (milestone v0.3)
 ** TODO [#D] Close all issues (milestone v1.0)
    * [ ] Absorb libomemo / axc, and drop glib

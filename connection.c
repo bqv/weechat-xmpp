@@ -111,6 +111,8 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     }
     else if (channel)
     {
+        channel__set_member_role(account, channel, from, role);
+        channel__set_member_affiliation(account, channel, from, affiliation);
         if (weechat_strcasecmp(role, "none") == 0)
             channel__remove_member(account, channel, from);
         else
@@ -127,7 +129,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
     struct t_account *account = (struct t_account *)userdata;
     struct t_channel *channel;
     xmpp_stanza_t *body, *delay, *topic, *replace;
-    const char *type, *from, *from_bare, *to, *id, *replace_id, *timestamp;
+    const char *type, *from, *nick, *from_bare, *to, *id, *replace_id, *timestamp;
     char *intext;
     struct tm time = {0};
     time_t date = 0;
@@ -170,9 +172,10 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
     if (!channel)
         channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
 
+    nick = NULL;
     if (weechat_strcasecmp(type, "groupchat") == 0)
     {
-        from = weechat_strcasecmp(channel->name,
+        nick = weechat_strcasecmp(channel->name,
                                   xmpp_jid_bare(account->context,
                                                 from)) == 0
             ? xmpp_jid_resource(account->context, from)
@@ -188,6 +191,14 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
     char **dyn_tags = weechat_string_dyn_alloc(1);
     weechat_string_dyn_concat(dyn_tags, "xmpp_message,message", -1);
+    {
+        weechat_string_dyn_concat(dyn_tags, ",nick_", -1);
+        weechat_string_dyn_concat(dyn_tags, nick, -1);
+    }
+    {
+        weechat_string_dyn_concat(dyn_tags, ",host_", -1);
+        weechat_string_dyn_concat(dyn_tags, from, -1);
+    }
     if (id)
     {
         weechat_string_dyn_concat(dyn_tags, ",id_", -1);
@@ -213,15 +224,15 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
     const char *edit = replace ? "* " : ""; // Losing which message was edited, sadly
     if (strcmp(to, channel->id) == 0)
         weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s[to %s]: %s",
-                                 edit, user__as_prefix_raw(account, from),
+                                 edit, user__as_prefix_raw(account, nick),
                                  to, intext ? intext : "");
     else if (weechat_string_match(intext, "/me *", 0))
         weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s%s %s",
-                                 edit, weechat_prefix("action"), from,
+                                 edit, weechat_prefix("action"), nick,
                                  intext ? intext+4 : "");
     else
         weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s%s",
-                                 edit, user__as_prefix_raw(account, from),
+                                 edit, user__as_prefix_raw(account, nick),
                                  intext ? intext : "");
 
     weechat_string_dyn_free(dyn_tags, 1);
@@ -238,196 +249,276 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
 
     struct t_account *account = (struct t_account *)userdata;
     xmpp_stanza_t *reply, *query, *identity, *feature, *x, *field, *value, *text;
-    const char *node;
+    xmpp_stanza_t         *pubsub, *items, *item, *list, *device, *children[2];
     static struct utsname osinfo;
-
-    char *client_name = weechat_string_eval_expression("weechat ${info:version}",
-                                                       NULL, NULL, NULL);
-
-    reply = xmpp_stanza_reply(stanza);
-    xmpp_stanza_set_type(reply, "result");
 
     query = xmpp_stanza_get_child_by_name_and_ns(
         stanza, "query", "http://jabber.org/protocol/disco#info");
-    node = xmpp_stanza_get_attribute(query, "node");
-    xmpp_stanza_set_attribute(reply, "id", node);
+    if (query)
+    {
+        char *client_name;
 
-    identity = xmpp_stanza_new(account->context);
-    xmpp_stanza_set_name(identity, "identity");
-    xmpp_stanza_set_attribute(identity, "category", "client");
-    xmpp_stanza_set_attribute(identity, "name", client_name);
-    xmpp_stanza_set_attribute(identity, "type", "pc");
-    xmpp_stanza_add_child(query, identity);
-    xmpp_stanza_release(identity);
+        reply = xmpp_stanza_reply(stanza);
+        xmpp_stanza_set_type(reply, "result");
 
-#define FEATURE(ns) \
-    feature = xmpp_stanza_new(account->context); \
-    xmpp_stanza_set_name(feature, "feature"); \
-    xmpp_stanza_set_attribute(feature, "var", ns); \
-    xmpp_stanza_add_child(query, feature); \
-    xmpp_stanza_release(feature);
+        client_name = weechat_string_eval_expression("weechat ${info:version}",
+                                                     NULL, NULL, NULL);
 
-    FEATURE("http://jabber.org/protocol/caps");
-    FEATURE("http://jabber.org/protocol/disco#info");
-    FEATURE("http://jabber.org/protocol/disco#items");
-    FEATURE("http://jabber.org/protocol/muc");
-    FEATURE("eu.siacs.conversations.axolotl.devicelist");
-    FEATURE("eu.siacs.conversations.axolotl.devicelist+notify");
+        identity = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(identity, "identity");
+        xmpp_stanza_set_attribute(identity, "category", "client");
+        xmpp_stanza_set_attribute(identity, "name", client_name);
+        xmpp_stanza_set_attribute(identity, "type", "pc");
+        xmpp_stanza_add_child(query, identity);
+        xmpp_stanza_release(identity);
+
+#define FEATURE(ns)                                     \
+        feature = xmpp_stanza_new(account->context);    \
+        xmpp_stanza_set_name(feature, "feature");       \
+        xmpp_stanza_set_attribute(feature, "var", ns);  \
+        xmpp_stanza_add_child(query, feature);          \
+        xmpp_stanza_release(feature);
+
+        FEATURE("http://jabber.org/protocol/caps");
+        FEATURE("http://jabber.org/protocol/disco#info");
+        FEATURE("http://jabber.org/protocol/disco#items");
+        FEATURE("http://jabber.org/protocol/muc");
+        FEATURE("eu.siacs.conversations.axolotl.devicelist");
+        FEATURE("eu.siacs.conversations.axolotl.devicelist+notify");
+        FEATURE("storage:bookmarks+notify");
 #undef FEATURE
 
-    x = xmpp_stanza_new(account->context);
-    xmpp_stanza_set_name(x, "x");
-    xmpp_stanza_set_ns(x, "jabber:x:data");
-    xmpp_stanza_set_attribute(x, "type", "result");
+        x = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(x, "x");
+        xmpp_stanza_set_ns(x, "jabber:x:data");
+        xmpp_stanza_set_attribute(x, "type", "result");
 
-    if (uname(&osinfo) < 0)
-    {
-        *osinfo.sysname = 0;
-        *osinfo.release = 0;
+        if (uname(&osinfo) < 0)
+        {
+            *osinfo.sysname = 0;
+            *osinfo.release = 0;
+        }
+
+        // This is utter bullshit, TODO: not this.
+        {
+            field = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(field, "field");
+            xmpp_stanza_set_attribute(field, "var", "FORM_TYPE");
+            xmpp_stanza_set_attribute(field, "type", "hidden");
+
+            value = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(value, "value");
+
+            text = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_text(text, "urn:xmpp:dataforms:softwareinfo");
+            xmpp_stanza_add_child(value, text);
+            xmpp_stanza_release(text);
+
+            xmpp_stanza_add_child(field, value);
+            xmpp_stanza_release(value);
+
+            xmpp_stanza_add_child(x, field);
+            xmpp_stanza_release(field);
+        }
+
+        {
+            field = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(field, "field");
+            xmpp_stanza_set_attribute(field, "var", "ip_version");
+            xmpp_stanza_set_attribute(field, "type", "text-multi");
+
+            value = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(value, "value");
+
+            text = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_text(text, "ipv4");
+            xmpp_stanza_add_child(value, text);
+            xmpp_stanza_release(text);
+
+            xmpp_stanza_add_child(field, value);
+            xmpp_stanza_release(value);
+
+            value = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(value, "value");
+
+            text = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_text(text, "ipv6");
+            xmpp_stanza_add_child(value, text);
+            xmpp_stanza_release(text);
+
+            xmpp_stanza_add_child(field, value);
+            xmpp_stanza_release(value);
+
+            xmpp_stanza_add_child(x, field);
+            xmpp_stanza_release(field);
+        }
+
+        {
+            field = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(field, "field");
+            xmpp_stanza_set_attribute(field, "var", "os");
+
+            value = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(value, "value");
+
+            text = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_text(text, osinfo.sysname);
+            xmpp_stanza_add_child(value, text);
+            xmpp_stanza_release(text);
+
+            xmpp_stanza_add_child(field, value);
+            xmpp_stanza_release(value);
+
+            xmpp_stanza_add_child(x, field);
+            xmpp_stanza_release(field);
+        }
+
+        {
+            field = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(field, "field");
+            xmpp_stanza_set_attribute(field, "var", "os_version");
+
+            value = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(value, "value");
+
+            text = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_text(text, osinfo.release);
+            xmpp_stanza_add_child(value, text);
+            xmpp_stanza_release(text);
+
+            xmpp_stanza_add_child(field, value);
+            xmpp_stanza_release(value);
+
+            xmpp_stanza_add_child(x, field);
+            xmpp_stanza_release(field);
+        }
+
+        {
+            field = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(field, "field");
+            xmpp_stanza_set_attribute(field, "var", "software");
+
+            value = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(value, "value");
+
+            text = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_text(text, "weechat");
+            xmpp_stanza_add_child(value, text);
+            xmpp_stanza_release(text);
+
+            xmpp_stanza_add_child(field, value);
+            xmpp_stanza_release(value);
+
+            xmpp_stanza_add_child(x, field);
+            xmpp_stanza_release(field);
+        }
+
+        {
+            field = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(field, "field");
+            xmpp_stanza_set_attribute(field, "var", "software_version");
+
+            value = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(value, "value");
+
+            text = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_text(text, weechat_info_get("version", NULL));
+            xmpp_stanza_add_child(value, text);
+            xmpp_stanza_release(text);
+
+            xmpp_stanza_add_child(field, value);
+            xmpp_stanza_release(value);
+
+            xmpp_stanza_add_child(x, field);
+            xmpp_stanza_release(field);
+        }
+
+        xmpp_stanza_add_child(query, x);
+        xmpp_stanza_release(x);
+
+        xmpp_stanza_add_child(reply, query);
+
+        xmpp_send(conn, reply);
+        xmpp_stanza_release(reply);
+
+        free(client_name);
     }
 
+    pubsub = xmpp_stanza_get_child_by_name_and_ns(
+        stanza, "pubsub", "http://jabber.org/protocol/pubsub");
+    if (pubsub)
     {
-        field = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(field, "field");
-        xmpp_stanza_set_attribute(field, "var", "FORM_TYPE");
-        xmpp_stanza_set_attribute(field, "type", "hidden");
+        const char *items_node, *item_id, *device_id, *ns, *node;
 
-        value = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(value, "value");
+        items = xmpp_stanza_get_child_by_name(pubsub, "items");
+        if (items)
+            items_node = xmpp_stanza_get_attribute(items, "node");
+        if (items && items_node
+            && weechat_strcasecmp(items_node,
+                                  "eu.siacs.conversations.axolotl.devicelist") == 0)
+        {
+            item = xmpp_stanza_get_child_by_name(items, "item");
+            if (item)
+                item_id = xmpp_stanza_get_id(item);
+            if (item && item_id && weechat_strcasecmp(item_id, "current") == 0)
+            {
+                list = xmpp_stanza_get_child_by_name_and_ns(
+                    item, "list", "eu.siacs.conversations.axolotl");
+                if (list)
+                {
+                    account__free_device_all(account);
 
-        text = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_text(text, "urn:xmpp:dataforms:softwareinfo");
-        xmpp_stanza_add_child(value, text);
-        xmpp_stanza_release(text);
+                    struct t_device *dev = malloc(sizeof(dev));
+                    char id[64] = {0};
 
-        xmpp_stanza_add_child(field, value);
-        xmpp_stanza_release(value);
+                    dev->id = account->omemo->device_id;
+                    snprintf(id, sizeof(id), "%d", dev->id);
+                    dev->name = strdup(id);
+                    account__add_device(account, dev);
 
-        xmpp_stanza_add_child(x, field);
-        xmpp_stanza_release(field);
+                    free(dev->name);
+                    free(dev);
+
+                    for (device = xmpp_stanza_get_children(list);
+                         device; device = xmpp_stanza_get_next(device))
+                    {
+                        device_id = xmpp_stanza_get_id(device);
+
+                        dev = malloc(sizeof(dev));
+                        dev->id = atoi(device_id);
+                        dev->name = strdup(device_id);
+                        account__add_device(account, dev);
+
+                        free(dev->name);
+                        free(dev);
+                    }
+
+                    reply = xmpp_stanza_reply(stanza);
+                    xmpp_stanza_set_type(reply, "result");
+
+                    children[1] = NULL;
+                    children[0] = stanza__iq_pubsub_publish_item_list_device(
+                        account->context, NULL, with_noop(id));
+                    ns = "http://jabber.org/protocol/pubsub";
+                    children[0] = stanza__iq_pubsub_publish_item_list(
+                        account->context, NULL, children, with_noop(ns));
+                    node = "eu.siacs.conversations.axolotl.devicelist";
+                    children[0] = stanza__iq_pubsub_publish_item(
+                        account->context, NULL, children, with_noop(node));
+                    children[0] = stanza__iq_pubsub_publish(account->context,
+                                                            NULL, children,
+                                                            with_noop(ns));
+                    children[0] = stanza__iq_pubsub(account->context, NULL,
+                                                    children, with_noop(""));
+                    reply = stanza__iq(account->context, reply, children, NULL,
+                                       NULL, NULL, NULL, NULL);
+
+                    xmpp_send(conn, reply);
+                    xmpp_stanza_release(reply);
+                }
+            }
+        }
     }
-
-    {
-        field = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(field, "field");
-        xmpp_stanza_set_attribute(field, "var", "ip_version");
-        xmpp_stanza_set_attribute(field, "type", "text-multi");
-
-        value = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(value, "value");
-
-        text = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_text(text, "ipv4");
-        xmpp_stanza_add_child(value, text);
-        xmpp_stanza_release(text);
-
-        xmpp_stanza_add_child(field, value);
-        xmpp_stanza_release(value);
-
-        value = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(value, "value");
-
-        text = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_text(text, "ipv6");
-        xmpp_stanza_add_child(value, text);
-        xmpp_stanza_release(text);
-
-        xmpp_stanza_add_child(field, value);
-        xmpp_stanza_release(value);
-
-        xmpp_stanza_add_child(x, field);
-        xmpp_stanza_release(field);
-    }
-
-    {
-        field = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(field, "field");
-        xmpp_stanza_set_attribute(field, "var", "os");
-
-        value = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(value, "value");
-
-        text = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_text(text, osinfo.sysname);
-        xmpp_stanza_add_child(value, text);
-        xmpp_stanza_release(text);
-
-        xmpp_stanza_add_child(field, value);
-        xmpp_stanza_release(value);
-
-        xmpp_stanza_add_child(x, field);
-        xmpp_stanza_release(field);
-    }
-
-    {
-        field = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(field, "field");
-        xmpp_stanza_set_attribute(field, "var", "os_version");
-
-        value = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(value, "value");
-
-        text = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_text(text, osinfo.release);
-        xmpp_stanza_add_child(value, text);
-        xmpp_stanza_release(text);
-
-        xmpp_stanza_add_child(field, value);
-        xmpp_stanza_release(value);
-
-        xmpp_stanza_add_child(x, field);
-        xmpp_stanza_release(field);
-    }
-
-    {
-        field = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(field, "field");
-        xmpp_stanza_set_attribute(field, "var", "software");
-
-        value = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(value, "value");
-
-        text = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_text(text, "weechat");
-        xmpp_stanza_add_child(value, text);
-        xmpp_stanza_release(text);
-
-        xmpp_stanza_add_child(field, value);
-        xmpp_stanza_release(value);
-
-        xmpp_stanza_add_child(x, field);
-        xmpp_stanza_release(field);
-    }
-
-    {
-        field = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(field, "field");
-        xmpp_stanza_set_attribute(field, "var", "software_version");
-
-        value = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(value, "value");
-
-        text = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_text(text, weechat_info_get("version", NULL));
-        xmpp_stanza_add_child(value, text);
-        xmpp_stanza_release(text);
-
-        xmpp_stanza_add_child(field, value);
-        xmpp_stanza_release(value);
-
-        xmpp_stanza_add_child(x, field);
-        xmpp_stanza_release(field);
-    }
-
-    xmpp_stanza_add_child(query, x);
-    xmpp_stanza_release(x);
-
-    xmpp_stanza_add_child(reply, query);
-
-    xmpp_send(conn, reply);
-    xmpp_stanza_release(reply);
-
-    free(client_name);
 
     return 1;
 }
@@ -441,18 +532,21 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
     (void)error;
     (void)stream_error;
 
-    if (status == XMPP_CONN_CONNECT) {
+    if (status == XMPP_CONN_CONNECT)
+    {
         xmpp_stanza_t *pres, *pres__c, *pres__status, *pres__status__text, **children;
         char cap_hash[28+1] = {0};
 
-        xmpp_handler_add(conn, connection__version_handler,
+        xmpp_handler_add(conn, &connection__version_handler,
                          "jabber:iq:version", "iq", NULL, account);
-        xmpp_handler_add(conn, connection__presence_handler,
+        xmpp_handler_add(conn, &connection__presence_handler,
                          NULL, "presence", NULL, account);
-        xmpp_handler_add(conn, connection__message_handler,
+        xmpp_handler_add(conn, &connection__message_handler,
                          NULL, "message", /*type*/ NULL, account);
-        xmpp_handler_add(conn, connection__iq_handler,
-                         NULL, "iq", "get", account);
+      //xmpp_handler_add(conn, &connection__iq_handler,
+      //                 NULL, "iq", "get", account);
+        xmpp_handler_add(conn, &connection__iq_handler,
+                         NULL, "iq", NULL, account);
 
         /* Send initial <presence/> so that we appear online to contacts */
         children = malloc(sizeof(*children) * (2 + 1));
@@ -495,7 +589,7 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
                                 strdup("eu.siacs.conversations.axolotl.devicelist"));
         children[0] =
         stanza__iq_pubsub(account->context, NULL, children,
-                          strdup("http://jabber.org/protocol/pubsub"));
+                          with_noop("http://jabber.org/protocol/pubsub"));
         children[0] =
         stanza__iq(account->context, NULL, children, NULL, strdup("fetch1"),
                    strdup(account_jid(account)), strdup(account_jid(account)),
@@ -504,8 +598,10 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         xmpp_send(conn, children[0]);
         xmpp_stanza_release(children[0]);
 
-        omemo__init(account);
-    } else {
+        omemo__init(&account->omemo, 0, NULL);
+    }
+    else
+    {
         account__disconnect(account, 1);
       //xmpp_stop(account->context); //keep context?
     }

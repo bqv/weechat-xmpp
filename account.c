@@ -13,6 +13,7 @@
 #include "plugin.h"
 #include "config.h"
 #include "input.h"
+#include "omemo.h"
 #include "account.h"
 #include "connection.h"
 #include "user.h"
@@ -84,6 +85,81 @@ int account__search_option(const char *option_name)
 
     /* account option not found */
     return -1;
+}
+
+struct t_device *account__search_device(struct t_account *account, int id)
+{
+    struct t_device *ptr_device;
+
+    if (!account)
+        return NULL;
+
+    for (ptr_device = account->devices; ptr_device;
+         ptr_device = ptr_device->next_device)
+    {
+        if (ptr_device->id == id)
+            return ptr_device;
+    }
+
+    return NULL;
+}
+
+void account__add_device(struct t_account *account,
+                         struct t_device *device)
+{
+    struct t_device *new_device;
+
+    new_device = account__search_device(account, device->id);
+    if (!new_device)
+    {
+        new_device = malloc(sizeof(*new_device));
+        new_device->id = device->id;
+        new_device->name = strdup(device->name);
+
+        new_device->prev_device = account->last_device;
+        new_device->next_device = NULL;
+        if (account->last_device)
+            (account->last_device)->next_device = new_device;
+        else
+            account->devices = new_device;
+        account->last_device = new_device;
+    }
+}
+
+void account__free_device(struct t_account *account, struct t_device *device)
+{
+    struct t_device *new_devices;
+
+    if (!account || !device)
+        return;
+
+    /* remove device from devices list */
+    if (account->last_device == device)
+        account->last_device = device->prev_device;
+    if (device->prev_device)
+    {
+        (device->prev_device)->next_device = device->next_device;
+        new_devices = account->devices;
+    }
+    else
+        new_devices = device->next_device;
+
+    if (device->next_device)
+        (device->next_device)->prev_device = device->prev_device;
+
+    /* free device data */
+    if (device->name)
+        free(device->name);
+
+    free(device);
+
+    account->devices = new_devices;
+}
+
+void account__free_device_all(struct t_account *account)
+{
+    while (account->devices)
+        account__free_device(account, account->devices);
 }
 
 void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t level,
@@ -204,6 +280,10 @@ struct t_account *account__alloc(const char *name)
     new_account->is_connected = 0;
     new_account->disconnected = 0;
 
+    new_account->current_retry = 0;
+    new_account->reconnect_delay = 0;
+    new_account->reconnect_start = 0;
+
     new_account->logger.handler = &account__log_emit_weechat;
     new_account->logger.userdata = new_account;
     new_account->context = xmpp_ctx_new(NULL, &new_account->logger);
@@ -211,6 +291,11 @@ struct t_account *account__alloc(const char *name)
 
     new_account->buffer = NULL;
     new_account->buffer_as_string = NULL;
+
+    new_account->omemo = NULL;
+
+    new_account->devices = NULL;
+    new_account->last_device = NULL;
     new_account->users = NULL;
     new_account->last_user = NULL;
     new_account->channels = NULL;
@@ -300,6 +385,9 @@ void account__free_data(struct t_account *account)
     if (account->buffer_as_string)
         free(account->buffer_as_string);
 
+    if (account->omemo)
+        omemo__free(account->omemo);
+
   //channel__free_all(account);
   //user__free_all(account);
 }
@@ -384,58 +472,34 @@ void account__disconnect(struct t_account *account, int reconnect)
             weechat_prefix ("network"), WEECHAT_XMPP_PLUGIN_NAME);
     }
 
-    /*
-    account->current_retry = 0;
-
-    if (switch_address)
-        account__switch_address(account, 0);
-    else
-        account__set_index_current_address(account, 0);
-
-    if (account->nick_modes)
+    if (reconnect)
     {
-        free (account->nick_modes);
-        account->nick_modes = NULL;
-        weechat_bar_item_update ("input_prompt");
-        weechat_bar_item_update ("xmpp_nick_modes");
+        if (account->current_retry++ == 0)
+        {
+            account->reconnect_delay = 5;
+            account->reconnect_start = time(NULL) + account->reconnect_delay;
+        }
+        account->current_retry %= 5;
     }
-    account->cap_away_notify = 0;
-    account->cap_account_notify = 0;
-    account->cap_extended_join = 0;
-    account->is_away = 0;
-    account->away_time = 0;
+    else
+    {
+        account->current_retry = 0;
+        account->reconnect_delay = 0;
+        account->reconnect_start = 0;
+    }
+
+    /*
     account->lag = 0;
     account->lag_displayed = -1;
     account->lag_check_time.tv_sec = 0;
     account->lag_check_time.tv_usec = 0;
-    account->lag_next_check = time (NULL) +
-        weechat_config_integer (xmpp_config_network_lag_check);
+    account->lag_next_check = time(NULL) +
+        weechat_config_integer(xmpp_config_network_lag_check);
     account->lag_last_refresh = 0;
-    account__set_lag (account);
-    account->monitor = 0;
-    account->monitor_time = 0;
-        */
-
-        /*
-    if (reconnect
-        && IRC_SERVER_OPTION_BOOLEAN(account, IRC_SERVER_OPTION_AUTORECONNECT))
-        account__reconnect_schedule(account);
-    else
-    {
-        account->reconnect_delay = 0;
-        account->reconnect_start = 0;
-    }
-        */
-
-    /* discard current nick if no reconnection asked */
-        /*
-    if (!reconnect && account->nick)
-        account__set_nick(account, NULL);
-
-    account__set_buffer_title(account);
+    account__set_lag(account);
+    */ // lag based on xmpp ping
 
     account->disconnected = 1;
-        */
 
     /* send signal "account_disconnected" with account name */
     (void) weechat_hook_signal_send("xmpp_account_disconnected",
@@ -536,6 +600,11 @@ int account__timer_cb(const void *pointer, void *data, int remaining_calls)
             && (xmpp_conn_is_connecting(ptr_account->connection)
                 || xmpp_conn_is_connected(ptr_account->connection)))
             connection__process(ptr_account->context, ptr_account->connection, 10);
+        else if (ptr_account->reconnect_start > 0
+                 && ptr_account->reconnect_start < time(NULL))
+        {
+            account__connect(ptr_account);
+        }
     }
 
     return WEECHAT_RC_OK;
