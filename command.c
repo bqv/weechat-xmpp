@@ -592,7 +592,7 @@ int command__msg(const void *pointer, void *data,
         if (ptr_channel->type != CHANNEL_TYPE_MUC)
             weechat_printf_date_tags(ptr_channel->buffer, 0,
                                      "xmpp_message,message,private,notify_none,self_msg,log1",
-                                     "%s%s",
+                                     "%s\t%s",
                                      user__as_prefix_raw(ptr_account, account_jid(ptr_account)), text);
     }
 

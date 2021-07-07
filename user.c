@@ -30,9 +30,9 @@ const char *user__as_prefix_raw(struct t_account *account,
 
     (void) account;
 
-    snprintf(result, sizeof(result), "%s%s\t",
+    snprintf(result, sizeof(result), "%s%s%s",
              weechat_info_get("nick_color", name),
-             name);
+             name, weechat_color("reset"));
 
     return result;
 }
@@ -131,7 +131,7 @@ void user__nicklist_remove(struct t_account *account,
     ptr_group = weechat_nicklist_search_group(ptr_buffer, NULL,
                                               user->is_away ?
                                               "+" : "...");
-    weechat_nicklist_remove_nick(ptr_buffer, 
+    weechat_nicklist_remove_nick(ptr_buffer,
         weechat_nicklist_search_nick(ptr_buffer, ptr_group, name));
 }
 

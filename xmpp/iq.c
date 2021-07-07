@@ -186,9 +186,7 @@ xmpp_stanza_t *stanza__iq_pubsub_publish_item_list(xmpp_ctx_t *context, xmpp_sta
     while (*child)
     {
         xmpp_stanza_add_child(parent, *child);
-        xmpp_stanza_release(*child);
-
-        ++child;
+        xmpp_stanza_release(*child++);
     }
 
     return parent;
