@@ -9,8 +9,6 @@
 void omemo__init(struct t_omemo **omemo, uint32_t device,
                  struct t_identity *identity)
 {
-    const char* ns_devicelist = "eu.siacs.conversations.axolotl.devicelist";
-    const char* ft_devicelist = "eu.siacs.conversations.axolotl.devicelist+notify";
     int rc;
 
     srandom(time(NULL));

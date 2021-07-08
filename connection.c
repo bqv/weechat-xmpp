@@ -697,7 +697,57 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         xmpp_send(conn, children[0]);
         xmpp_stanza_release(children[0]);
 
-        omemo__init(&account->omemo, 0, NULL);
+        struct t_hashtable *variables = weechat_hashtable_new (8,
+                                                              WEECHAT_HASHTABLE_STRING,
+                                                              WEECHAT_HASHTABLE_STRING,
+                                                              NULL, NULL);
+        weechat_hashtable_set(variables, "account", account->name);
+        char *dev_str = weechat_string_eval_expression(
+            "${sec.data.xmpp_device_${account}}",
+            NULL, variables, NULL);
+        char *b64_id = weechat_string_eval_expression(
+            "${sec.data.xmpp_identity_${account}}",
+            NULL, variables, NULL);
+        weechat_hashtable_free(variables);
+        uint32_t dev_id = dev_str[0] ? atoi(dev_str) : 0;
+        uint8_t identity[128];
+        if (b64_id)
+            weechat_string_base_decode(64, b64_id, (char*)identity);
+        struct t_identity id_key = {
+            .key = b64_id ? identity : NULL,
+            .length = 4,
+        };
+
+        omemo__init(&account->omemo, dev_id, &id_key);
+
+        char account_id[64] = {0};
+        snprintf(account_id, sizeof(account_id), "%d", account->omemo->device_id);
+        if (weechat_strcasecmp(dev_str, account_id) != 0)
+        {
+            char **command = weechat_string_dyn_alloc(256);
+            weechat_string_dyn_concat(command, "/secure set ", -1);
+            weechat_string_dyn_concat(command, "xmpp_device_", -1);
+            weechat_string_dyn_concat(command, account->name, -1);
+            weechat_string_dyn_concat(command, " ", -1);
+            weechat_string_dyn_concat(command, account_id, -1);
+            weechat_command(account->buffer, *command);
+            weechat_string_dyn_free(command, 1);
+        }
+        char account_key[64] = {0};
+        weechat_string_base_encode(64, (char*)account->omemo->identity.key,
+                            account->omemo->identity.length, account_key);
+        if (memcmp(identity, account->omemo->identity.key,
+                   account->omemo->identity.length) != 0)
+        {
+            char **command = weechat_string_dyn_alloc(256);
+            weechat_string_dyn_concat(command, "/secure set ", -1);
+            weechat_string_dyn_concat(command, "xmpp_identity_", -1);
+            weechat_string_dyn_concat(command, account->name, -1);
+            weechat_string_dyn_concat(command, " ", -1);
+            weechat_string_dyn_concat(command, account_id, -1);
+            weechat_command(account->buffer, *command);
+            weechat_string_dyn_free(command, 1);
+        }
     }
     else
     {

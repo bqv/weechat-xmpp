@@ -16,7 +16,7 @@
 [[https://github.com/bqv/weechat-xmpp/issues?q=is:issue+is:closed][file:https://img.shields.io/github/issues-closed/bqv/weechat-xmpp.svg]]
 [[https://github.com/bqv/weechat-xmpp/blob/master/LICENSE][file:https://img.shields.io/github/license/bqv/weechat-xmpp.svg]]
 [[https://github.com/bqv/weechat-extras/][file:https://img.shields.io/badge/weechat--extras-xmpp-blue.svg]]
-[[https://github.com/bqv/weechat-extras/][file:https://inverse.chat/badge.svg?room=weechat@conference.hmm.st]]
+[[https://github.com/bqv/weechat-extras/][file:https://inverse.chat/badge.svg?room=weechat@muc.xa0.uk]]
 
  | Status:     | XMPP for power users and digital masochists |
  | Location:   | [[http://github.com/bqv/weechat-xmpp]]          |
@@ -115,8 +115,10 @@
    * [ ] OMEMO (libsignal-protocol-c / axc)
      * [ ] Presence
        * [X] Disco
-       * [ ] Disco response
+       * [X] Disco response
        * [ ] Key Generation / storage (secured_data?)
+         * [X] Generation
+         * [ ] Storage
      * [ ] Messages
    * [ ] [#C] MUC PMs
    * [ ] [#A] Send typing notifications
