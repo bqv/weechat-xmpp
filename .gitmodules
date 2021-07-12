@@ -4,3 +4,6 @@
 [submodule "omemo"]
 	path = omemo
 	url = https://github.com/gkdr/libomemo
+[submodule "diff"]
+	path = diff
+	url = https://github.com/kristapsdz/libdiff

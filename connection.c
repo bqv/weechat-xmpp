@@ -11,6 +11,7 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
+#include "diff/diff.h"
 #include "xmpp/stanza.h"
 #include "config.h"
 #include "account.h"
@@ -82,8 +83,10 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     struct t_account *account = (struct t_account *)userdata;
     struct t_user *user;
     struct t_channel *channel;
-    xmpp_stanza_t *iq__x, *iq__x__item;
-    const char *from, *from_bare, *role = NULL, *affiliation = NULL;
+    xmpp_stanza_t *iq__x, *iq__x__item, *iq__c, *iq__status;
+    const char *from, *from_bare, *role = NULL, *affiliation = NULL, *jid = NULL;
+    const char *node = NULL, *ver = NULL;
+    char *clientid = NULL, *status;
 
     from = xmpp_stanza_get_from(stanza);
     if (from == NULL)
@@ -96,7 +99,25 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
         iq__x__item = xmpp_stanza_get_child_by_name(iq__x, "item");
         role = xmpp_stanza_get_attribute(iq__x__item, "role");
         affiliation = xmpp_stanza_get_attribute(iq__x__item, "affiliation");
+        jid = xmpp_stanza_get_attribute(iq__x__item, "jid");
     }
+    iq__c = xmpp_stanza_get_child_by_name_and_ns(
+        stanza, "c", "http://jabber.org/protocol/caps");
+    if (iq__c)
+    {
+        node = xmpp_stanza_get_attribute(iq__c, "node");
+        ver = xmpp_stanza_get_attribute(iq__c, "ver");
+        if (jid)
+            clientid = strdup(jid);
+        else if (node && ver)
+        {
+            int len = strlen(node)+1+strlen(ver);
+            clientid = malloc(sizeof(char)*len);
+            snprintf(clientid, len, "%s#%s", node, ver);
+        }
+    }
+    iq__status = xmpp_stanza_get_child_by_name(stanza, "status");
+    status = iq__status ? xmpp_stanza_get_text(iq__status) : NULL;
 
     user = user__search(account, from);
     if (!user)
@@ -107,17 +128,20 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     {
         if (!channel)
             channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
-        channel__add_member(account, channel, from);
+        channel__add_member(account, channel, from, clientid, status);
     }
     else if (channel)
     {
         channel__set_member_role(account, channel, from, role);
         channel__set_member_affiliation(account, channel, from, affiliation);
         if (weechat_strcasecmp(role, "none") == 0)
-            channel__remove_member(account, channel, from);
+            channel__remove_member(account, channel, from, status);
         else
-            channel__add_member(account, channel, from);
+            channel__add_member(account, channel, from, clientid, status);
     }
+
+    if (clientid)
+        free(clientid);
 
     return 1;
 }
@@ -130,7 +154,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
     struct t_channel *channel;
     xmpp_stanza_t *body, *delay, *topic, *replace;
     const char *type, *from, *nick, *from_bare, *to, *id, *replace_id, *timestamp;
-    char *intext;
+    char *intext, *difftext = NULL;
     struct tm time = {0};
     time_t date = 0;
 
@@ -171,6 +195,80 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
     channel = channel__search(account, from_bare);
     if (!channel)
         channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
+    if (replace)
+    {
+        const char *orig = NULL;
+        void *lines = weechat_hdata_pointer(weechat_hdata_get("buffer"),
+                                            channel->buffer, "lines");
+        if (lines)
+        {
+            void *last_line = weechat_hdata_pointer(weechat_hdata_get("lines"),
+                                                    lines, "last_line");
+            while (last_line && !orig)
+            {
+                void *line_data = weechat_hdata_pointer(weechat_hdata_get("line"),
+                                                        last_line, "data");
+                if (line_data)
+                {
+                    int tags_count = weechat_hdata_integer(weechat_hdata_get("line_data"),
+                                                           line_data, "tags_count");
+                    char str_tag[20] = {0};
+                    for (int n_tag = 0; n_tag < tags_count; n_tag++)
+                    {
+                        snprintf(str_tag, sizeof(str_tag), "%d|tags_array", n_tag);
+                        const char *tag = weechat_hdata_string(weechat_hdata_get("line_data"),
+                                                               line_data, str_tag);
+                        if (strlen(tag) > strlen("id_") &&
+                            weechat_strcasecmp(tag+strlen("id_"), replace_id) == 0)
+                        {
+                            orig = weechat_hdata_string(weechat_hdata_get("line_data"),
+                                                        line_data, "message");
+                            break;
+                        }
+                    }
+                }
+
+                last_line = weechat_hdata_pointer(weechat_hdata_get("line"),
+                                                  last_line, "prev_line");
+            }
+        }
+
+        if (orig)
+        {
+            struct diff result;
+            if (diff(&result, char_cmp, 1, orig, strlen(orig), intext, strlen(intext)) > 0)
+            {
+                char **visual = weechat_string_dyn_alloc(256);
+                char ch[2] = {0};
+
+                for (size_t i = 0; i < result.sessz; i++)
+                    switch (result.ses[i].type)
+                    {
+                        case DIFF_ADD:
+                            weechat_string_dyn_concat(visual, weechat_color("green"), -1);
+                            *ch = *(const char *)result.ses[i].e;
+                            weechat_string_dyn_concat(visual, ch, -1);
+                            break;
+                        case DIFF_DELETE:
+                            weechat_string_dyn_concat(visual, weechat_color("red"), -1);
+                            *ch = *(const char *)result.ses[i].e;
+                            weechat_string_dyn_concat(visual, ch, -1);
+                            break;
+                        case DIFF_COMMON:
+                        default:
+                            weechat_string_dyn_concat(visual, weechat_color("resetcolor"), -1);
+                            *ch = *(const char *)result.ses[i].e;
+                            weechat_string_dyn_concat(visual, ch, -1);
+                            break;
+                    }
+                free(result.ses);
+                free(result.lcs);
+
+                difftext = strdup(*visual);
+                weechat_string_dyn_free(visual, 1);
+            }
+        }
+    }
 
     nick = NULL;
     if (weechat_strcasecmp(type, "groupchat") == 0)
@@ -225,20 +323,22 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
     if (strcmp(to, channel->id) == 0)
         weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s\t[to %s]: %s",
                                  edit, user__as_prefix_raw(account, nick),
-                                 to, intext ? intext : "");
+                                 to, difftext ? difftext : intext ? intext : "");
     else if (weechat_string_match(intext, "/me *", 0))
         weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s\t%s %s",
                                  edit, weechat_prefix("action"), nick,
-                                 intext ? intext+4 : "");
+                                 difftext ? difftext+4 : intext ? intext+4 : "");
     else
         weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s\t%s",
                                  edit, user__as_prefix_raw(account, nick),
-                                 intext ? intext : "");
+                                 difftext ? difftext : intext ? intext : "");
 
     weechat_string_dyn_free(dyn_tags, 1);
 
     if (intext)
         xmpp_free(account->context, intext);
+    if (difftext)
+        free(difftext);
 
     return 1;
 }
@@ -248,7 +348,7 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
     (void) conn;
 
     struct t_account *account = (struct t_account *)userdata;
-    xmpp_stanza_t *reply, *query, *identity, *feature, *x, *field, *value, *text;
+    xmpp_stanza_t *reply, *query, *identity, *feature, *enable, *x, *field, *value, *text;
     xmpp_stanza_t         *pubsub, *items, *item, *list, *device, **children;
     xmpp_stanza_t         *storage, *conference, *nick;
     static struct utsname osinfo;
@@ -314,6 +414,12 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
         FEATURE("urn:xmpp:receipts");
         FEATURE("urn:xmpp:time");
 #undef FEATURE
+
+        enable = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(enable, "enable");
+        xmpp_stanza_set_ns(enable, "urn:xmpp:carbons:2");
+        xmpp_stanza_add_child(query, enable);
+        xmpp_stanza_release(enable);
 
         x = xmpp_stanza_new(account->context);
         xmpp_stanza_set_name(x, "x");
@@ -710,15 +816,15 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
             NULL, variables, NULL);
         weechat_hashtable_free(variables);
         uint32_t dev_id = dev_str[0] ? atoi(dev_str) : 0;
-        uint8_t identity[128];
-        if (b64_id)
+        uint8_t identity[128] = {0};
+        if (b64_id && *b64_id)
             weechat_string_base_decode(64, b64_id, (char*)identity);
         struct t_identity id_key = {
-            .key = b64_id ? identity : NULL,
+            .key = identity,
             .length = 4,
         };
 
-        omemo__init(&account->omemo, dev_id, &id_key);
+        omemo__init(&account->omemo, dev_id, b64_id && *b64_id ? &id_key : NULL);
 
         char account_id[64] = {0};
         snprintf(account_id, sizeof(account_id), "%d", account->omemo->device_id);
@@ -735,16 +841,15 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         }
         char account_key[64] = {0};
         weechat_string_base_encode(64, (char*)account->omemo->identity.key,
-                            account->omemo->identity.length, account_key);
-        if (memcmp(identity, account->omemo->identity.key,
-                   account->omemo->identity.length) != 0)
+                                   account->omemo->identity.length, account_key);
+        if (weechat_strcasecmp(b64_id, account_key) != 0)
         {
             char **command = weechat_string_dyn_alloc(256);
             weechat_string_dyn_concat(command, "/secure set ", -1);
             weechat_string_dyn_concat(command, "xmpp_identity_", -1);
             weechat_string_dyn_concat(command, account->name, -1);
             weechat_string_dyn_concat(command, " ", -1);
-            weechat_string_dyn_concat(command, account_id, -1);
+            weechat_string_dyn_concat(command, account_key, -1);
             weechat_command(account->buffer, *command);
             weechat_string_dyn_free(command, 1);
         }

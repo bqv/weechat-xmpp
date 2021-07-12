@@ -27,7 +27,7 @@ SRCS=plugin.c \
 	 xmpp/presence.c \
 	 xmpp/iq.c \
 
-DEPS=omemo/build/libomemo-conversations.a axc/build/libaxc.a
+DEPS=omemo/build/libomemo-conversations.a axc/build/libaxc.a diff/libdiff.a
 OBJS=$(subst .c,.o,$(SRCS))
 
 all: weechat-xmpp
@@ -46,6 +46,11 @@ omemo: omemo/build/libomemo-conversations.a
 axc/build/libaxc.a:
 	$(MAKE) -C axc
 axc: axc/build/libaxc.a
+
+diff/libdiff.a:
+	cd diff && ./configure
+	$(MAKE) -C diff CFLAGS=-fPIC
+diff: diff/libdiff.a
 
 test: xmpp.so
 	env LD_PRELOAD=$(DEBUG) \
@@ -68,6 +73,7 @@ clean:
 	$(RM) -f $(OBJS)
 	$(MAKE) -C omemo clean || true
 	$(MAKE) -C axc clean || true
+	$(MAKE) -C diff clean || true
 	git submodule foreach --recursive git clean -xfd || true
 	git submodule foreach --recursive git reset --hard || true
 	git submodule update --init --recursive || true

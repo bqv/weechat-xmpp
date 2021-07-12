@@ -86,7 +86,7 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
     buffer_created = 0;
 
     snprintf(buffer_name, sizeof(buffer_name),
-             "%s.%s", account->name, name);
+             "xmpp.%s.%s", account->name, name);
 
     ptr_buffer = channel__search_buffer(account, type, name);
     if (ptr_buffer)
@@ -586,7 +586,8 @@ void channel__update_topic(struct t_channel *channel,
 
 struct t_channel_member *channel__add_member(struct t_account *account,
                                              struct t_channel *channel,
-                                             const char *id)
+                                             const char *id, const char *client,
+                                             const char *status)
 {
     struct t_channel_member *member;
     struct t_user *user;
@@ -611,23 +612,35 @@ struct t_channel_member *channel__add_member(struct t_account *account,
 
     char *jid_bare = xmpp_jid_bare(account->context, user->id);
     char *jid_resource = xmpp_jid_resource(account->context, user->id);
-    if (weechat_strcasecmp(jid_bare, channel->id) == 0
+    if (weechat_strcasecmp(user->id, channel->id) == 0
         && channel->type == CHANNEL_TYPE_MUC)
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s %sentered%s %s",
+        weechat_printf_date_tags(channel->buffer, 0, "log2", "%sMUC: %s",
+                                 weechat_prefix("network"),
+                                 user->id);
+    else if (weechat_strcasecmp(jid_bare, channel->id) == 0
+             && channel->type == CHANNEL_TYPE_MUC)
+        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s %s%s%s %sentered%s %s %s%s%s",
                                  weechat_prefix("join"),
                                  user__as_prefix_raw(account, jid_resource),
+                                 client ? "(" : "", client, client ? ")" : "",
                                  weechat_color("irc.color.message_join"),
                                  weechat_color("reset"),
-                                 channel->id);
+                                 channel->id,
+                                 status ? "[" : "",
+                                 status ? status : "",
+                                 status ? "]" : "");
     else
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s (%s) %sentered%s %s",
+        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s (%s) %sentered%s %s %s%s%s",
                                  weechat_prefix("join"),
                                  user__as_prefix_raw(account,
                                                      xmpp_jid_bare(account->context, user->id)),
                                  xmpp_jid_resource(account->context, user->id),
                                  weechat_color("irc.color.message_join"),
                                  weechat_color("reset"),
-                                 channel->id);
+                                 channel->id,
+                                 status ? "[" : "",
+                                 status ? status : "",
+                                 status ? "]" : "");
 
     return member;
 }
@@ -692,7 +705,7 @@ int channel__set_member_affiliation(struct t_account *account,
 
 struct t_channel_member *channel__remove_member(struct t_account *account,
                                                 struct t_channel *channel,
-                                                const char *id)
+                                                const char *id, const char *status)
 {
     struct t_channel_member *member;
     struct t_user *user;
@@ -709,20 +722,26 @@ struct t_channel_member *channel__remove_member(struct t_account *account,
     char *jid_resource = xmpp_jid_resource(account->context, user->id);
     if (weechat_strcasecmp(jid_bare, channel->id) == 0
         && channel->type == CHANNEL_TYPE_MUC)
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,leave,log4", "%s%s %sleft%s %s",
+        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,leave,log4", "%s%s %sleft%s %s %s%s%s",
                                  weechat_prefix("quit"),
                                  jid_resource,
                                  weechat_color("irc.color.message_quit"),
                                  weechat_color("reset"),
-                                 channel->id);
+                                 channel->id,
+                                 status ? "[" : "",
+                                 status ? status : "",
+                                 status ? "]" : "");
     else
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,leave,log4", "%s%s (%s) %sleft%s %s",
+        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,leave,log4", "%s%s (%s) %sleft%s %s %s%s%s",
                                  weechat_prefix("quit"),
                                  xmpp_jid_bare(account->context, user->id),
                                  xmpp_jid_resource(account->context, user->id),
                                  weechat_color("irc.color.message_quit"),
                                  weechat_color("reset"),
-                                 channel->id);
+                                 channel->id,
+                                 status ? "[" : "",
+                                 status ? status : "",
+                                 status ? "]" : "");
 
     return member;
 }
@@ -761,7 +780,9 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
     xmpp_send(account->connection, message);
     xmpp_stanza_release(message);
     if (channel->type != CHANNEL_TYPE_MUC)
-        weechat_printf(channel->buffer, "%s\t%s",
-                       user__as_prefix_raw(account, account_jid(account)),
-                       body);
+        weechat_printf_date_tags(channel->buffer, 0,
+                                 "xmpp_message,message,notify_none,self_msg,log1",
+                                 "%s\t%s",
+                                 user__as_prefix_raw(account, account_jid(account)),
+                                 body);
 }

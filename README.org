@@ -106,6 +106,7 @@
        * [X] [#B] Displaying
        * [X] [#B] Tagging
        * [ ] [#B] Making
+       * [X] [#C] Diff highlighting
      * [ ] [#B] Handle errors gracefully
      * [X] [#B] Presence/nicklist
        * [X] [#B] Enters

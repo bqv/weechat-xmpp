@@ -121,7 +121,8 @@ void channel__update_purpose(struct t_channel *channel,
 
 struct t_channel_member *channel__add_member(struct t_account *account,
                                              struct t_channel *channel,
-                                             const char *id);
+                                             const char *id, const char *client,
+                                             const char *status);
 
 int channel__set_member_role(struct t_account *account,
                              struct t_channel *channel,
@@ -133,7 +134,7 @@ int channel__set_member_affiliation(struct t_account *account,
 
 struct t_channel_member *channel__remove_member(struct t_account *account,
                                                 struct t_channel *channel,
-                                                const char *id);
+                                                const char *id, const char *status);
 
 void channel__send_message(struct t_account *account, struct t_channel *channel,
                            const char *to, const char *body);

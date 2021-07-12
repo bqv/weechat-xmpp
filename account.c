@@ -168,6 +168,8 @@ void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t leve
 
     static const char *log_level_name[4] = {"debug", "info", "warn", "error"};
 
+    const char *tags = level > XMPP_LEVEL_DEBUG ? "no_log" : NULL;
+
     char *xml;
     if ((level == XMPP_LEVEL_DEBUG) && ((xml = strchr(msg, '<')) != NULL))
     {
@@ -219,14 +221,16 @@ void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t leve
                                             0, 0, &size);
         if (lines[size-1][0] == 0)
             lines[--size] = 0;
-        weechat_printf(
+        weechat_printf_date_tags(
             account ? account->buffer : NULL,
+            0, tags,
             _("%s%s (%s): %s"),
             weechat_prefix("network"), area,
             log_level_name[level], header);
         for (int i = 1; i < size; i++)
-            weechat_printf(
+            weechat_printf_date_tags(
                 account ? account->buffer : NULL,
+                0, tags,
                 _("%s%s"), colour, lines[i]);
 
         weechat_string_free_split(lines);
@@ -234,8 +238,9 @@ void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t leve
     }
     else
     {
-        weechat_printf(
+        weechat_printf_date_tags(
             account ? account->buffer : NULL,
+            0, tags,
             _("%s%s (%s): %s"),
             weechat_prefix("network"), area,
             log_level_name[level], msg);
