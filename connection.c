@@ -19,6 +19,7 @@
 #include "channel.h"
 #include "connection.h"
 #include "omemo.h"
+#include "util.h"
 
 void connection__init()
 {
@@ -221,8 +222,53 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                         if (strlen(tag) > strlen("id_") &&
                             weechat_strcasecmp(tag+strlen("id_"), replace_id) == 0)
                         {
-                            orig = weechat_hdata_string(weechat_hdata_get("line_data"),
-                                                        line_data, "message");
+                            struct t_arraylist *orig_lines = weechat_arraylist_new(
+                                0, 0, 0, NULL, NULL, NULL, NULL);
+                            char *msg = (char*)weechat_hdata_string(weechat_hdata_get("line_data"),
+                                                                    line_data, "message");
+                            weechat_arraylist_insert(orig_lines, 0, msg);
+
+                            while (msg)
+                            {
+                                last_line = weechat_hdata_pointer(weechat_hdata_get("line"),
+                                                                  last_line, "prev_line");
+                                if (last_line)
+                                    line_data = weechat_hdata_pointer(weechat_hdata_get("line"),
+                                                                      last_line, "data");
+                                else
+                                    line_data = NULL;
+
+                                msg = NULL;
+                                if (line_data)
+                                {
+                                    tags_count = weechat_hdata_integer(weechat_hdata_get("line_data"),
+                                                                       line_data, "tags_count");
+                                    for (n_tag = 0; n_tag < tags_count; n_tag++)
+                                    {
+                                        snprintf(str_tag, sizeof(str_tag), "%d|tags_array", n_tag);
+                                        tag = weechat_hdata_string(weechat_hdata_get("line_data"),
+                                                                   line_data, str_tag);
+                                        if (strlen(tag) > strlen("id_") &&
+                                            weechat_strcasecmp(tag+strlen("id_"), replace_id) == 0)
+                                        {
+                                            msg = (char*)weechat_hdata_string(weechat_hdata_get("line_data"),
+                                                                              line_data, "message");
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (msg)
+                                    weechat_arraylist_insert(orig_lines, 0, msg);
+                            }
+
+                            char **orig_message = weechat_string_dyn_alloc(256);
+                            for (int i = 0; i < weechat_arraylist_size(orig_lines); i++)
+                                weechat_string_dyn_concat(orig_message,
+                                                          weechat_arraylist_get(orig_lines, i),
+                                                          -1);
+                            orig = *orig_message;
+                            weechat_string_dyn_free(orig_message, 0);
                             break;
                         }
                     }
@@ -640,26 +686,53 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
                         }
 
                         children[i] = NULL;
-                        ns = "eu.siacs.conversations.axolotl";
+                        node = "eu.siacs.conversations.axolotl";
                         children[0] = stanza__iq_pubsub_publish_item_list(
-                            account->context, NULL, children, with_noop(ns));
+                            account->context, NULL, children, with_noop(node));
                         children[1] = NULL;
                         children[0] = stanza__iq_pubsub_publish_item(
                             account->context, NULL, children, with_noop("current"));
-                        node = "http://jabber.org/protocol/pubsub";
+                        ns = "http://jabber.org/protocol/pubsub";
                         children[0] = stanza__iq_pubsub_publish(account->context,
                                                                 NULL, children,
-                                                                with_noop(node));
+                                                                with_noop(ns));
                         children[0] = stanza__iq_pubsub(account->context, NULL,
                                                         children, with_noop(""));
                         reply = stanza__iq(account->context, xmpp_stanza_reply(stanza),
                                            children, NULL, strdup("announce1"),
                                            NULL, NULL, strdup("set"));
 
-                        free(children);
-
                         xmpp_send(conn, reply);
                         xmpp_stanza_release(reply);
+
+                        char bundle_node[128] = {0};
+                        snprintf(bundle_node, sizeof(bundle_node),
+                                 "eu.siacs.conversations.axolotl.bundles:%d",
+                                 account->omemo->device_id);
+
+                        children[1] = NULL;
+                        children[0] = NULL;
+                        ns = "eu.siacs.conversations.axolotl";
+                        children[0] = stanza__iq_pubsub_publish_item_bundle(
+                            account->context, NULL, NULL, with_noop(ns));
+                        children[1] = NULL;
+                        children[0] = stanza__iq_pubsub_publish_item(
+                            account->context, NULL, children, with_noop("current"));
+                        children[0] = stanza__iq_pubsub_publish(account->context,
+                                                                NULL, children,
+                                                                with_noop(bundle_node));
+                        children[0] =
+                            stanza__iq_pubsub(account->context, NULL, children,
+                                              with_noop("http://jabber.org/protocol/pubsub"));
+                        children[0] =
+                            stanza__iq(account->context, NULL, children, NULL, strdup("announce2"),
+                                       strdup(account_jid(account)), strdup(account_jid(account)),
+                                       strdup("set"));
+
+                        xmpp_send(conn, children[0]);
+                        xmpp_stanza_release(children[0]);
+
+                        free(children);
                     }
                 }
             }

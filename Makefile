@@ -24,6 +24,7 @@ SRCS=plugin.c \
 	 message.c \
 	 omemo.c \
 	 user.c \
+	 util.c \
 	 xmpp/presence.c \
 	 xmpp/iq.c \
 

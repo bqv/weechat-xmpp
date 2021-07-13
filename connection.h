@@ -13,10 +13,4 @@ int connection__connect(struct t_account *account, xmpp_conn_t **connection,
 void connection__process(xmpp_ctx_t *context, xmpp_conn_t *connection,
                          const unsigned long timeout);
 
-static inline int
-char_cmp(const void *p1, const void *p2)
-{
-    return *(const char *)p1 == *(const char *)p2;
-}
-
 #endif /*WEECHAT_XMPP_CONNECTION_H*/
