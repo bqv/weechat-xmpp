@@ -4,6 +4,7 @@
 
 #include <time.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/utsname.h>
@@ -153,8 +154,8 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
     struct t_account *account = (struct t_account *)userdata;
     struct t_channel *channel;
-    xmpp_stanza_t *body, *delay, *topic, *replace;
-    const char *type, *from, *nick, *from_bare, *to, *id, *replace_id, *timestamp;
+    xmpp_stanza_t *body, *delay, *topic, *replace, *composing, *sent, *received, *forwarded;
+    const char *type, *from, *nick, *from_bare, *to, *to_bare, *id, *replace_id, *timestamp;
     char *intext, *difftext = NULL;
     struct tm time = {0};
     time_t date = 0;
@@ -163,20 +164,66 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
     if (body == NULL)
     {
         topic = xmpp_stanza_get_child_by_name(stanza, "subject");
-        if (topic == NULL)
-            return 1;
-        intext = xmpp_stanza_get_text(topic);
-        from = xmpp_stanza_get_from(stanza);
-        if (from == NULL)
-            return 1;
-        from_bare = xmpp_jid_bare(account->context, from);
-        from = xmpp_jid_resource(account->context, from);
-        channel = channel__search(account, from_bare);
-        if (!channel)
-            channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
-        channel__update_topic(channel, intext ? intext : "", from, 0);
-        if (intext != NULL)
-            xmpp_free(account->context, intext);
+        if (topic != NULL)
+        {
+            intext = xmpp_stanza_get_text(topic);
+            from = xmpp_stanza_get_from(stanza);
+            if (from == NULL)
+                return 1;
+            from_bare = xmpp_jid_bare(account->context, from);
+            from = xmpp_jid_resource(account->context, from);
+            channel = channel__search(account, from_bare);
+            if (!channel)
+                channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
+            channel__update_topic(channel, intext ? intext : "", from, 0);
+            if (intext != NULL)
+                xmpp_free(account->context, intext);
+        }
+
+        composing = xmpp_stanza_get_child_by_name_and_ns(
+            stanza, "composing", "http://jabber.org/protocol/chatstates");
+        if (composing != NULL)
+        {
+            from = xmpp_stanza_get_from(stanza);
+            if (from == NULL)
+                return 1;
+            from_bare = xmpp_jid_bare(account->context, from);
+            from = xmpp_jid_resource(account->context, from);
+            channel = channel__search(account, from_bare);
+            if (!channel)
+                return 1;
+            struct t_user *user = user__search(account, from);
+            if (!user)
+                user = user__new(account, from, from);
+            channel__add_typing(channel, user);
+            weechat_printf(channel->buffer, "%s typing...", from);
+        }
+
+        sent = xmpp_stanza_get_child_by_name_and_ns(
+            stanza, "sent", "urn:xmpp:carbons:2");
+        if (sent)
+            forwarded = xmpp_stanza_get_child_by_name_and_ns(
+                sent, "forwarded", "urn:xmpp:forward:0");
+        received = xmpp_stanza_get_child_by_name_and_ns(
+            stanza, "received", "urn:xmpp:carbons:2");
+        if (sent && forwarded != NULL)
+        {
+            xmpp_stanza_t *message = xmpp_stanza_get_children(forwarded);
+          //from = xmpp_stanza_get_from(stanza);
+          //to = xmpp_stanza_get_to(stanza);
+          //xmpp_stanza_set_from(stanza, to);
+          //xmpp_stanza_set_to(stanza, from);
+            return connection__message_handler(conn, message, userdata);
+        }
+        if (received)
+            forwarded = xmpp_stanza_get_child_by_name_and_ns(
+                received, "forwarded", "urn:xmpp:forward:0");
+        if (received && forwarded != NULL)
+        {
+            xmpp_stanza_t *message = xmpp_stanza_get_children(forwarded);
+            return connection__message_handler(conn, message, userdata);
+        }
+
         return 1;
     }
     type = xmpp_stanza_get_type(stanza);
@@ -187,15 +234,19 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
         return 1;
     from_bare = xmpp_jid_bare(account->context, from);
     to = xmpp_stanza_get_to(stanza);
+    to_bare = to ? xmpp_jid_bare(account->context, to) : NULL;
     id = xmpp_stanza_get_id(stanza);
-    replace = xmpp_stanza_get_child_by_name_and_ns(stanza, "replace", "urn:xmpp:message-correct:0");
+    replace = xmpp_stanza_get_child_by_name_and_ns(stanza, "replace",
+                                                   "urn:xmpp:message-correct:0");
     replace_id = replace ? xmpp_stanza_get_id(replace) : NULL;
 
     intext = xmpp_stanza_get_text(body);
 
-    channel = channel__search(account, from_bare);
+    const char *channel_id = weechat_strcasecmp(account_jid(account), from_bare)
+        == 0 ? to_bare : from_bare;
+    channel = channel__search(account, channel_id);
     if (!channel)
-        channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
+        channel = channel__new(account, CHANNEL_TYPE_PM, channel_id, channel_id);
     if (replace)
     {
         const char *orig = NULL;
@@ -304,6 +355,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                         default:
                             weechat_string_dyn_concat(visual, weechat_color("resetcolor"), -1);
                             *ch = *(const char *)result.ses[i].e;
+
                             weechat_string_dyn_concat(visual, ch, -1);
                             break;
                     }
@@ -316,7 +368,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
         }
     }
 
-    nick = NULL;
+    nick = from;
     if (weechat_strcasecmp(type, "groupchat") == 0)
     {
         nick = weechat_strcasecmp(channel->name,
@@ -366,7 +418,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
         weechat_string_dyn_concat(dyn_tags, ",log1", -1);
 
     const char *edit = replace ? "* " : ""; // Losing which message was edited, sadly
-    if (strcmp(to, channel->id) == 0)
+    if (channel_id == from_bare && strcmp(to, channel->id) == 0)
         weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s\t[to %s]: %s",
                                  edit, user__as_prefix_raw(account, nick),
                                  to, difftext ? difftext : intext ? intext : "");
@@ -394,7 +446,7 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
     (void) conn;
 
     struct t_account *account = (struct t_account *)userdata;
-    xmpp_stanza_t *reply, *query, *identity, *feature, *enable, *x, *field, *value, *text;
+    xmpp_stanza_t *reply, *query, *identity, *feature, *x, *field, *value, *text;
     xmpp_stanza_t         *pubsub, *items, *item, *list, *device, **children;
     xmpp_stanza_t         *storage, *conference, *nick;
     static struct utsname osinfo;
@@ -460,12 +512,6 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
         FEATURE("urn:xmpp:receipts");
         FEATURE("urn:xmpp:time");
 #undef FEATURE
-
-        enable = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(enable, "enable");
-        xmpp_stanza_set_ns(enable, "urn:xmpp:carbons:2");
-        xmpp_stanza_add_child(query, enable);
-        xmpp_stanza_release(enable);
 
         x = xmpp_stanza_new(account->context);
         xmpp_stanza_set_name(x, "x");
@@ -710,11 +756,38 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
                                  "eu.siacs.conversations.axolotl.bundles:%d",
                                  account->omemo->device_id);
 
-                        children[1] = NULL;
-                        children[0] = NULL;
+                        xmpp_stanza_t *textchild[2] = {NULL};
+                        textchild[0] = xmpp_stanza_new(account->context);
+                        xmpp_stanza_set_text(textchild[0], "b64enc1");
+                        children[0] = stanza__iq_pubsub_publish_item_bundle_signedPreKeyPublic(
+                            account->context, NULL, textchild, with_noop("1"));
+                        textchild[0] = xmpp_stanza_new(account->context);
+                        xmpp_stanza_set_text(textchild[0], "b64enc2");
+                        children[1] = stanza__iq_pubsub_publish_item_bundle_signedPreKeySignature(
+                            account->context, NULL, textchild);
+                        textchild[0] = xmpp_stanza_new(account->context);
+                        xmpp_stanza_set_text(textchild[0], "b64enc3");
+                        children[2] = stanza__iq_pubsub_publish_item_bundle_identityKey(
+                            account->context, NULL, textchild);
+                        textchild[0] = xmpp_stanza_new(account->context);
+                        xmpp_stanza_set_text(textchild[0], "b64enc4");
+                        children[3] = stanza__iq_pubsub_publish_item_bundle_prekeys_preKeyPublic(
+                            account->context, NULL, textchild, with_noop("1"));
+                        textchild[0] = xmpp_stanza_new(account->context);
+                        xmpp_stanza_set_text(textchild[0], "b64enc5");
+                        children[4] = stanza__iq_pubsub_publish_item_bundle_prekeys_preKeyPublic(
+                            account->context, NULL, textchild, with_noop("2"));
+                        textchild[0] = xmpp_stanza_new(account->context);
+                        xmpp_stanza_set_text(textchild[0], "b64enc6");
+                        children[5] = stanza__iq_pubsub_publish_item_bundle_prekeys_preKeyPublic(
+                            account->context, NULL, textchild, with_noop("3"));
+                        children[6] = NULL;
+                        children[3] = stanza__iq_pubsub_publish_item_bundle_prekeys(
+                            account->context, NULL, &children[3]);
+                        children[4] = NULL;
                         ns = "eu.siacs.conversations.axolotl";
                         children[0] = stanza__iq_pubsub_publish_item_bundle(
-                            account->context, NULL, NULL, with_noop(ns));
+                            account->context, NULL, children, with_noop(ns));
                         children[1] = NULL;
                         children[0] = stanza__iq_pubsub_publish_item(
                             account->context, NULL, children, with_noop("current"));
@@ -848,6 +921,17 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
 
         children[1] = NULL;
         children[0] =
+            stanza__iq_enable(account->context, NULL, with_noop("urn:xmpp:carbons:2"));
+        children[0] =
+            stanza__iq(account->context, NULL, children,
+                       strdup("jabber:client"), strdup("enable1"),
+                       strdup(account_jid(account)), NULL, strdup("set"));
+
+        xmpp_send(conn, children[0]);
+        xmpp_stanza_release(children[0]);
+
+        children[1] = NULL;
+        children[0] =
         stanza__iq_pubsub_items(account->context, NULL,
                                 strdup("storage:bookmarks"));
         children[0] =
@@ -913,8 +997,8 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
             weechat_string_dyn_free(command, 1);
         }
         char account_key[64] = {0};
-        weechat_string_base_encode(64, (char*)account->omemo->identity.key,
-                                   account->omemo->identity.length, account_key);
+        weechat_string_base_encode(64, (char*)account->omemo->identity->key,
+                                   account->omemo->identity->length, account_key);
         if (weechat_strcasecmp(b64_id, account_key) != 0)
         {
             char **command = weechat_string_dyn_alloc(256);

@@ -78,19 +78,22 @@ xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle(xmpp_ctx_t *context, xmpp_s
                                                      xmpp_stanza_t **children, struct t_string *ns);
 
 xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_signedPreKeyPublic(
-    xmpp_ctx_t *context, xmpp_stanza_t *base, struct t_string *signedPreKeyId);
+    xmpp_ctx_t *context, xmpp_stanza_t *base, xmpp_stanza_t **children, struct t_string *signedPreKeyId);
 
 xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_signedPreKeySignature(
-    xmpp_ctx_t *context, xmpp_stanza_t *base, struct t_string *signedPreKeySignature);
+    xmpp_ctx_t *context, xmpp_stanza_t *base, xmpp_stanza_t **children);
 
 xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_identityKey(
-    xmpp_ctx_t *context, xmpp_stanza_t *base, struct t_string *identityKey);
+    xmpp_ctx_t *context, xmpp_stanza_t *base, xmpp_stanza_t **children);
 
-xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_preKeys(
-    xmpp_ctx_t *context, xmpp_stanza_t *base, struct t_string *preKeys);
+xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_prekeys(
+    xmpp_ctx_t *context, xmpp_stanza_t *base, xmpp_stanza_t **children);
 
-xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_preKeys_preKeyPublic(
-    xmpp_ctx_t *context, xmpp_stanza_t *base, struct t_string *preKeyPublic);
+xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_prekeys_preKeyPublic(
+    xmpp_ctx_t *context, xmpp_stanza_t *base, xmpp_stanza_t **children, struct t_string *preKeyId);
+
+xmpp_stanza_t *stanza__iq_enable(xmpp_ctx_t *context, xmpp_stanza_t *base,
+                                 struct t_string *ns);
 
 xmpp_stanza_t *stanza__iq_ping(xmpp_ctx_t *context, xmpp_stanza_t *base,
                                struct t_string *ns);

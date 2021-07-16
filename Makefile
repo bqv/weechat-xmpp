@@ -4,10 +4,10 @@ ifdef DEBUG
 endif
 RM=rm -f
 FIND=find
-INCLUDES=-Ilibstrophe $(shell xml2-config --cflags) $(shell pkg-config --cflags glib-2.0) $(shell pkg-config --cflags libsignal-protocol-c)
+INCLUDES=-Ilibstrophe $(shell xml2-config --cflags) $(shell pkg-config --cflags libsignal-protocol-c)
 CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -D_XOPEN_SOURCE=700 $(INCLUDES)
 LDFLAGS+=$(DBGLDFLAGS) -shared -g $(DBGCFLAGS)
-LDLIBS=-lstrophe -lpthread $(shell xml2-config --libs) $(shell pkg-config --libs glib-2.0) $(shell pkg-config --libs libsignal-protocol-c) -lmxml
+LDLIBS=-lstrophe -lpthread $(shell xml2-config --libs) $(shell pkg-config --libs libsignal-protocol-c) -lgcrypt
 
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
@@ -28,7 +28,7 @@ SRCS=plugin.c \
 	 xmpp/presence.c \
 	 xmpp/iq.c \
 
-DEPS=omemo/build/libomemo-conversations.a axc/build/libaxc.a diff/libdiff.a
+DEPS=diff/libdiff.a
 OBJS=$(subst .c,.o,$(SRCS))
 
 all: weechat-xmpp
@@ -39,14 +39,6 @@ xmpp.so: $(OBJS) $(DEPS)
 	which patchelf >/dev/null && \
 		patchelf --set-rpath $(LIBRARY_PATH):$(shell realpath $(shell dirname $(shell gcc --print-libgcc-file-name))/../../../) xmpp.so && \
 		patchelf --shrink-rpath xmpp.so || true
-
-omemo/build/libomemo-conversations.a:
-	$(MAKE) -C omemo
-omemo: omemo/build/libomemo-conversations.a
-
-axc/build/libaxc.a:
-	$(MAKE) -C axc
-axc: axc/build/libaxc.a
 
 diff/libdiff.a:
 	cd diff && ./configure
@@ -72,8 +64,6 @@ tidy:
 
 clean:
 	$(RM) -f $(OBJS)
-	$(MAKE) -C omemo clean || true
-	$(MAKE) -C axc clean || true
 	$(MAKE) -C diff clean || true
 	git submodule foreach --recursive git clean -xfd || true
 	git submodule foreach --recursive git reset --hard || true

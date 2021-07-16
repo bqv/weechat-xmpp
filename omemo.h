@@ -5,10 +5,6 @@
 #ifndef _WEECHAT_XMPP_OMEMO_H_
 #define _WEECHAT_XMPP_OMEMO_H_
 
-#include "axc/src/axc.h"
-#include "omemo/src/libomemo.h"
-#include "omemo/src/libomemo_crypto.h"
-
 struct t_identity
 {
     uint8_t *key;
@@ -17,13 +13,12 @@ struct t_identity
 
 struct t_omemo
 {
-    omemo_crypto_provider provider;
+  //omemo_crypto_provider provider;
+  //axc_context *context;
+  //axc_bundle *a_bundle;
+  //omemo_bundle *o_bundle;
 
-    omemo_devicelist *devicelist;
-
-    omemo_bundle *bundle;
-
-    struct t_identity identity;
+    struct t_identity *identity;
 
     uint32_t device_id;
 };

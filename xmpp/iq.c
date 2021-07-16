@@ -242,9 +242,10 @@ xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle(xmpp_ctx_t *context, xmpp_s
 }
 
 xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_signedPreKeyPublic(
-    xmpp_ctx_t *context, xmpp_stanza_t *base, struct t_string *id)
+    xmpp_ctx_t *context, xmpp_stanza_t *base, xmpp_stanza_t **children, struct t_string *signedPreKeyId)
 {
     xmpp_stanza_t *parent = base;
+    xmpp_stanza_t **child = children;
 
     if (!parent)
     {
@@ -252,34 +253,132 @@ xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_signedPreKeyPublic(
         xmpp_stanza_set_name(parent, "signedPreKeyPublic");
     }
 
-    if (id)
+    if (signedPreKeyId)
     {
-        xmpp_stanza_set_id(parent, id->value);
-        id->finalize(id);
-        free(id);
+        xmpp_stanza_set_attribute(parent, "signedPreKeyId", signedPreKeyId->value);
+        signedPreKeyId->finalize(signedPreKeyId);
+        free(signedPreKeyId);
+    }
+
+    while (child && *child)
+    {
+        xmpp_stanza_add_child(parent, *child);
+        xmpp_stanza_release(*child++);
     }
 
     return parent;
 }
 
 xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_signedPreKeySignature(
-    xmpp_ctx_t *context, xmpp_stanza_t *base, struct t_string *signedPreKeySignature)
+    xmpp_ctx_t *context, xmpp_stanza_t *base, xmpp_stanza_t **children)
 {
+    xmpp_stanza_t *parent = base;
+    xmpp_stanza_t **child = children;
+
+    if (!parent)
+    {
+        parent = xmpp_stanza_new(context);
+        xmpp_stanza_set_name(parent, "signedPreKeySignature");
+    }
+
+    while (child && *child)
+    {
+        xmpp_stanza_add_child(parent, *child);
+        xmpp_stanza_release(*child++);
+    }
+
+    return parent;
 }
 
 xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_identityKey(
-    xmpp_ctx_t *context, xmpp_stanza_t *base, struct t_string *identityKey)
+    xmpp_ctx_t *context, xmpp_stanza_t *base, xmpp_stanza_t **children)
 {
+    xmpp_stanza_t *parent = base;
+    xmpp_stanza_t **child = children;
+
+    if (!parent)
+    {
+        parent = xmpp_stanza_new(context);
+        xmpp_stanza_set_name(parent, "identityKey");
+    }
+
+    while (child && *child)
+    {
+        xmpp_stanza_add_child(parent, *child);
+        xmpp_stanza_release(*child++);
+    }
+
+    return parent;
 }
 
-xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_preKeys(
-    xmpp_ctx_t *context, xmpp_stanza_t *base, struct t_string *preKeys)
+xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_prekeys(
+    xmpp_ctx_t *context, xmpp_stanza_t *base, xmpp_stanza_t **children)
 {
+    xmpp_stanza_t *parent = base;
+    xmpp_stanza_t **child = children;
+
+    if (!parent)
+    {
+        parent = xmpp_stanza_new(context);
+        xmpp_stanza_set_name(parent, "prekeys");
+    }
+
+    while (child && *child)
+    {
+        xmpp_stanza_add_child(parent, *child);
+        xmpp_stanza_release(*child++);
+    }
+
+    return parent;
 }
 
-xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_preKeys_preKeyPublic(
-    xmpp_ctx_t *context, xmpp_stanza_t *base, struct t_string *preKeyPublic)
+xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle_prekeys_preKeyPublic(
+    xmpp_ctx_t *context, xmpp_stanza_t *base, xmpp_stanza_t **children, struct t_string *preKeyId)
 {
+    xmpp_stanza_t *parent = base;
+    xmpp_stanza_t **child = children;
+
+    if (!parent)
+    {
+        parent = xmpp_stanza_new(context);
+        xmpp_stanza_set_name(parent, "preKeyPublic");
+    }
+
+    if (preKeyId)
+    {
+        xmpp_stanza_set_attribute(parent, "preKeyId", preKeyId->value);
+        preKeyId->finalize(preKeyId);
+        free(preKeyId);
+    }
+
+    while (child && *child)
+    {
+        xmpp_stanza_add_child(parent, *child);
+        xmpp_stanza_release(*child++);
+    }
+
+    return parent;
+}
+
+xmpp_stanza_t *stanza__iq_enable(xmpp_ctx_t *context, xmpp_stanza_t *base,
+                                 struct t_string *ns)
+{
+    xmpp_stanza_t *parent = base;
+
+    if (!parent)
+    {
+        parent = xmpp_stanza_new(context);
+        xmpp_stanza_set_name(parent, "enable");
+    }
+
+    if (ns)
+    {
+        xmpp_stanza_set_ns(parent, ns->value);
+        ns->finalize(ns);
+        free(ns);
+    }
+
+    return parent;
 }
 
 xmpp_stanza_t *stanza__iq_ping(xmpp_ctx_t *context, xmpp_stanza_t *base,

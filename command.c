@@ -649,7 +649,7 @@ int command__me(const void *pointer, void *data,
                                      "xmpp_message,message,action,private,notify_none,self_msg,log1",
                                      "%s%s %s",
                                      weechat_prefix("action"), account_jid(ptr_account),
-                                     text);
+                                     strlen(text) > strlen("/me ") ? text+4 : "");
     }
 
     return WEECHAT_RC_OK;
