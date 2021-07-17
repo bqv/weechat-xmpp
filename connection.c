@@ -188,7 +188,6 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
             if (from == NULL)
                 return 1;
             from_bare = xmpp_jid_bare(account->context, from);
-            from = xmpp_jid_resource(account->context, from);
             channel = channel__search(account, from_bare);
             if (!channel)
                 return 1;
@@ -206,19 +205,10 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                 sent, "forwarded", "urn:xmpp:forward:0");
         received = xmpp_stanza_get_child_by_name_and_ns(
             stanza, "received", "urn:xmpp:carbons:2");
-        if (sent && forwarded != NULL)
-        {
-            xmpp_stanza_t *message = xmpp_stanza_get_children(forwarded);
-          //from = xmpp_stanza_get_from(stanza);
-          //to = xmpp_stanza_get_to(stanza);
-          //xmpp_stanza_set_from(stanza, to);
-          //xmpp_stanza_set_to(stanza, from);
-            return connection__message_handler(conn, message, userdata);
-        }
         if (received)
             forwarded = xmpp_stanza_get_child_by_name_and_ns(
                 received, "forwarded", "urn:xmpp:forward:0");
-        if (received && forwarded != NULL)
+        if ((sent || received) && forwarded != NULL)
         {
             xmpp_stanza_t *message = xmpp_stanza_get_children(forwarded);
             return connection__message_handler(conn, message, userdata);
@@ -401,10 +391,10 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
         weechat_string_dyn_concat(dyn_tags, id, -1);
     }
 
-    if (strcmp(to, channel->id) == 0)
+    if (channel->type == CHANNEL_TYPE_PM)
         weechat_string_dyn_concat(dyn_tags, ",private", -1);
     if (weechat_string_match(intext, "/me *", 0))
-        weechat_string_dyn_concat(dyn_tags, ",action", -1);
+        weechat_string_dyn_concat(dyn_tags, ",xmpp_action", -1);
     if (replace)
     {
         weechat_string_dyn_concat(dyn_tags, ",edit", -1);
@@ -414,6 +404,8 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
     if (date != 0)
         weechat_string_dyn_concat(dyn_tags, ",notify_none", -1);
+    else if (channel->type == CHANNEL_TYPE_PM)
+        weechat_string_dyn_concat(dyn_tags, ",notify_private", -1);
     else
         weechat_string_dyn_concat(dyn_tags, ",log1", -1);
 

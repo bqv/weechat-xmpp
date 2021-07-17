@@ -46,8 +46,8 @@ int input__data(struct t_gui_buffer *buffer, const char *text)
 }
 
 int input__data_cb(const void *pointer, void *data,
-                        struct t_gui_buffer *buffer,
-                        const char *text)
+                   struct t_gui_buffer *buffer,
+                   const char *text)
 {
     (void) pointer;
     (void) data;

@@ -782,7 +782,7 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
     xmpp_stanza_release(message);
     if (channel->type != CHANNEL_TYPE_MUC)
         weechat_printf_date_tags(channel->buffer, 0,
-                                 "xmpp_message,message,notify_none,self_msg,log1",
+                                 "xmpp_message,message,private,notify_none,self_msg,log1",
                                  "%s\t%s",
                                  user__as_prefix_raw(account, account_jid(account)),
                                  body);
