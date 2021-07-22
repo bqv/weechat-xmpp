@@ -284,3 +284,81 @@ verify_finish:
     rnp_input_destroy(signature);
     return result;
 }
+
+char *pgp__sign(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *source, const char *message)
+{
+    rnp_input_t      keyfile = NULL;
+    rnp_input_t      input = NULL;
+    rnp_output_t     output = NULL;
+    rnp_op_sign_t    sign = NULL;
+    rnp_key_handle_t key = NULL;
+    uint8_t *        buf = NULL;
+    size_t           buf_len = 0;
+    char *           result = NULL;
+
+    /* create file input and memory output objects for the encrypted message and decrypted
+     * message */
+    if (rnp_input_from_memory(&input, (uint8_t *)message, strlen(message), false) !=
+        RNP_SUCCESS) {
+        weechat_printf(buffer, "[PGP]\tfailed to create input object\n");
+        goto sign_finish;
+    }
+
+    if (rnp_output_to_memory(&output, 0) != RNP_SUCCESS) {
+        weechat_printf(buffer, "[PGP]\tfailed to create output object\n");
+        goto sign_finish;
+    }
+
+    /* initialize and configure sign operation */
+    if (rnp_op_sign_detached_create(&sign, pgp->context, input, output) != RNP_SUCCESS) {
+        weechat_printf(buffer, "[PGP]\tfailed to create sign operation\n");
+        goto sign_finish;
+    }
+
+    /* armor, file name, compression */
+    rnp_op_sign_set_armor(sign, true);
+    rnp_op_sign_set_file_name(sign, "message.txt");
+    rnp_op_sign_set_file_mtime(sign, time(NULL));
+    rnp_op_sign_set_compression(sign, "ZIP", 6);
+    /* signatures creation time - by default will be set to the current time as well */
+    rnp_op_sign_set_creation_time(sign, time(NULL));
+    /* signatures expiration time - by default will be 0, i.e. never expire */
+    rnp_op_sign_set_expiration_time(sign, 365 * 24 * 60 * 60);
+    /* set hash algorithm - should be compatible for all signatures */
+    rnp_op_sign_set_hash(sign, RNP_ALGNAME_SHA256);
+
+    /* now add signatures. First locate the signing key, then add and setup signature */
+    if (rnp_locate_key(pgp->context, "keyid", source, &key) != RNP_SUCCESS) {
+        weechat_printf(buffer, "[PGP]\tfailed to locate signing key: %s\n", source);
+        goto sign_finish;
+    }
+
+    if (rnp_op_sign_add_signature(sign, key, NULL) != RNP_SUCCESS) {
+        weechat_printf(buffer, "[PGP]\tfailed to add signature for key: %s\n", source);
+        goto sign_finish;
+    }
+
+    rnp_key_handle_destroy(key);
+    key = NULL;
+
+    /* finally do signing */
+    if (rnp_op_sign_execute(sign) != RNP_SUCCESS) {
+        weechat_printf(buffer, "[PGP]\tfailed to sign with key: %s\n", source);
+        goto sign_finish;
+    }
+
+    /* get the signature from the output structure */
+    if (rnp_output_memory_get_buf(output, &buf, &buf_len, false) != RNP_SUCCESS) {
+        goto sign_finish;
+    }
+
+    result = strndup((char *)buf + strlen(PGP_SIGNATURE_HEADER),
+                     buf_len - strlen(PGP_SIGNATURE_HEADER) - strlen(PGP_SIGNATURE_FOOTER));
+sign_finish:
+    rnp_input_destroy(keyfile);
+    rnp_key_handle_destroy(key);
+    rnp_op_sign_destroy(sign);
+    rnp_input_destroy(input);
+    rnp_output_destroy(output);
+    return result;
+}

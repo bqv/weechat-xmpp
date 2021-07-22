@@ -23,4 +23,6 @@ char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *t
 
 char *pgp__verify(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *certificate);
 
+char *pgp__sign(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *source, const char *message);
+
 #endif /*WEECHAT_XMPP_PGP_H*/

@@ -136,7 +136,12 @@
      * [ ] Delete bookmarks
      * [ ] Roster
    * [ ] OTR (libotr)
-   * [ ] PGP (libgpgme)
+   * [X] PGP (rnpgp)
+     * [X] Use keyrings (e.g. exported from gnupg)
+     * [X] Presence
+     * [X] Decryption
+     * [X] Encryption
+     * [X] Custom set/clear key (/pgp)
    * [ ] Room Explorer (https://search.jabber.network/docs/api)
 ** TODO [#C] Implement completion engine (milestone v0.3)
 ** TODO [#D] Close all issues (milestone v1.0)

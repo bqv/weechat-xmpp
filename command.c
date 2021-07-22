@@ -662,7 +662,6 @@ int command__pgp(const void *pointer, void *data,
 {
     struct t_account *ptr_account = NULL;
     struct t_channel *ptr_channel = NULL;
-    xmpp_stanza_t *message;
     char *keyid;
 
     (void) pointer;

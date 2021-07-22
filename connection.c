@@ -908,7 +908,8 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
 
     if (status == XMPP_CONN_CONNECT)
     {
-        xmpp_stanza_t *pres, *pres__c, *pres__status, *pres__status__text, **children;
+        xmpp_stanza_t *pres, *pres__c, *pres__status, *pres__status__text,
+            *pres__x, *pres__x__text, **children;
         char cap_hash[28+1] = {0};
 
         xmpp_handler_add(conn, &connection__version_handler,
@@ -922,8 +923,14 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         xmpp_handler_add(conn, &connection__iq_handler,
                          NULL, "iq", NULL, account);
 
+        pgp__init(&account->pgp,
+                  weechat_string_eval_expression(account_pgp_pubring_path(account),
+                                                 NULL, NULL, NULL),
+                  weechat_string_eval_expression(account_pgp_secring_path(account),
+                                                 NULL, NULL, NULL));
+
         /* Send initial <presence/> so that we appear online to contacts */
-        children = malloc(sizeof(*children) * (2 + 1));
+        children = malloc(sizeof(*children) * (3 + 1));
 
         pres__c = xmpp_stanza_new(account->context);
         xmpp_stanza_set_name(pres__c, "c");
@@ -943,8 +950,25 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         xmpp_stanza_release(pres__status__text);
 
         children[1] = pres__status;
-
         children[2] = NULL;
+
+        if (account->pgp)
+        {
+            pres__x = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(pres__x, "x");
+            xmpp_stanza_set_ns(pres__x, "jabber:x:signed");
+
+            pres__x__text = xmpp_stanza_new(account->context);
+            char *signature = pgp__sign(account->buffer, account->pgp, account_pgp_keyid(account), account_status(account));
+            xmpp_stanza_set_text(pres__x__text, signature ? signature : "");
+            free(signature);
+            xmpp_stanza_add_child(pres__x, pres__x__text);
+            xmpp_stanza_release(pres__x__text);
+
+            children[2] = pres__x;
+            children[3] = NULL;
+        }
+
         pres = stanza__presence(account->context, NULL,
                                 children, NULL, strdup(account_jid(account)),
                                 NULL, NULL);
@@ -1042,13 +1066,6 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
             weechat_command(account->buffer, *command);
             weechat_string_dyn_free(command, 1);
         }
-
-
-        pgp__init(&account->pgp,
-                  weechat_string_eval_expression(account_pgp_pubring_path(account),
-                                                 NULL, NULL, NULL),
-                  weechat_string_eval_expression(account_pgp_secring_path(account),
-                                                 NULL, NULL, NULL));
     }
     else
     {
