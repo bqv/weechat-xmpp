@@ -86,9 +86,9 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     struct t_account *account = (struct t_account *)userdata;
     struct t_user *user;
     struct t_channel *channel;
-    xmpp_stanza_t *iq__x, *iq__x__item, *iq__c, *iq__status;
+    xmpp_stanza_t *iq__x_signed, *iq__x_muc_user, *iq__x__item, *iq__c, *iq__status;
     const char *from, *from_bare, *from_res, *role = NULL, *affiliation = NULL, *jid = NULL;
-    const char *node = NULL, *ver = NULL;
+    const char *certificate = NULL, *node = NULL, *ver = NULL;
     char *clientid = NULL, *status;
 
     from = xmpp_stanza_get_from(stanza);
@@ -96,11 +96,17 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
         return 1;
     from_bare = xmpp_jid_bare(account->context, from);
     from_res = xmpp_jid_resource(account->context, from);
-    iq__x = xmpp_stanza_get_child_by_name_and_ns(
-        stanza, "x", "http://jabber.org/protocol/muc#user");
-    if (iq__x)
+    iq__x_signed = xmpp_stanza_get_child_by_name_and_ns(
+        stanza, "x", "jabber:x:signed");
+    if (iq__x_signed)
     {
-        iq__x__item = xmpp_stanza_get_child_by_name(iq__x, "item");
+        certificate = xmpp_stanza_get_text(iq__x_signed);
+    }
+    iq__x_muc_user = xmpp_stanza_get_child_by_name_and_ns(
+        stanza, "x", "http://jabber.org/protocol/muc#user");
+    if (iq__x_muc_user)
+    {
+        iq__x__item = xmpp_stanza_get_child_by_name(iq__x_muc_user, "item");
         role = xmpp_stanza_get_attribute(iq__x__item, "role");
         affiliation = xmpp_stanza_get_attribute(iq__x__item, "affiliation");
         jid = xmpp_stanza_get_attribute(iq__x__item, "jid");
@@ -124,8 +130,14 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     status = iq__status ? xmpp_stanza_get_text(iq__status) : NULL;
 
     channel = channel__search(account, from_bare);
-    if (!iq__x && !channel)
+    if (!iq__x_muc_user && !channel)
         channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
+    if (certificate)
+    {
+        channel->pgp_id = pgp__verify(account->pgp, certificate);
+        weechat_printf(channel->buffer, "[PGP]\t%sKey %s from %s",
+                       weechat_color("gray"), channel->pgp_id, from);
+    }
 
     user = user__search(account, from);
     if (!user)
@@ -133,7 +145,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
                          channel && weechat_strcasecmp(from_bare, channel->id) == 0
                          ? from_res : from);
 
-    if (!iq__x)
+    if (!iq__x_muc_user)
     {
         channel__add_member(account, channel, from, clientid, status);
     }

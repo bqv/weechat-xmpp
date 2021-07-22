@@ -16,6 +16,8 @@
 
 #define PGP_MESSAGE_HEADER "-----BEGIN PGP MESSAGE-----\r\n\r\n"
 #define PGP_MESSAGE_FOOTER "\r\n-----END PGP MESSAGE-----\r\n"
+#define PGP_SIGNATURE_HEADER "-----BEGIN PGP SIGNATURE-----\r\n\r\n"
+#define PGP_SIGNATURE_FOOTER "\r\n-----END PGP SIGNATURE-----\r\n"
 
 const char *PGP_ADVICE = "[PGP encrypted message (XEP-0027)]";
 
@@ -56,90 +58,6 @@ void pgp__free(struct t_pgp *pgp)
             free(pgp->context);
         free(pgp);
     }
-}
-
-/* this simple helper function just prints armored key, searched by userid, to stdout */
-static bool pgp__print_key(rnp_ffi_t rnp, const char *uid, bool secret)
-{
-    rnp_output_t     keydata = NULL;
-    rnp_key_handle_t key = NULL;
-    uint32_t         flags = RNP_KEY_EXPORT_ARMORED | RNP_KEY_EXPORT_SUBKEYS;
-    uint8_t *        buf = NULL;
-    size_t           buf_len = 0;
-    bool             result = false;
-
-    /* you may search for the key via userid, keyid, fingerprint, grip */
-    if (rnp_locate_key(rnp, "userid", uid, &key) != RNP_SUCCESS) {
-        return false;
-    }
-
-    if (!key) {
-        return false;
-    }
-
-    /* create in-memory output structure to later use buffer */
-    if (rnp_output_to_memory(&keydata, 0) != RNP_SUCCESS) {
-        goto finish;
-    }
-
-    flags = flags | (secret ? RNP_KEY_EXPORT_SECRET : RNP_KEY_EXPORT_PUBLIC);
-    if (rnp_key_export(key, keydata, flags) != RNP_SUCCESS) {
-        goto finish;
-    }
-
-    /* get key's contents from the output structure */
-    if (rnp_output_memory_get_buf(keydata, &buf, &buf_len, false) != RNP_SUCCESS) {
-        goto finish;
-    }
-    weechat_printf(NULL, "pgp: %.*s", (int) buf_len, buf);
-
-    result = true;
-finish:
-    rnp_key_handle_destroy(key);
-    rnp_output_destroy(keydata);
-    return result;
-}
-
-static bool pgp__export_key(rnp_ffi_t rnp, const char *uid, bool secret)
-{
-    rnp_output_t     keyfile = NULL;
-    rnp_key_handle_t key = NULL;
-    uint32_t         flags = RNP_KEY_EXPORT_ARMORED | RNP_KEY_EXPORT_SUBKEYS;
-    char             filename[32] = {0};
-    char *           keyid = NULL;
-    bool             result = false;
-
-    /* you may search for the key via userid, keyid, fingerprint, grip */
-    if (rnp_locate_key(rnp, "userid", uid, &key) != RNP_SUCCESS) {
-        return false;
-    }
-
-    if (!key) {
-        return false;
-    }
-
-    /* get key's id and build filename */
-    if (rnp_key_get_keyid(key, &keyid) != RNP_SUCCESS) {
-        goto finish;
-    }
-    snprintf(filename, sizeof(filename), "key-%s-%s.asc", keyid, secret ? "sec" : "pub");
-    rnp_buffer_destroy(keyid);
-
-    /* create file output structure */
-    if (rnp_output_to_path(&keyfile, filename) != RNP_SUCCESS) {
-        goto finish;
-    }
-
-    flags = flags | (secret ? RNP_KEY_EXPORT_SECRET : RNP_KEY_EXPORT_PUBLIC);
-    if (rnp_key_export(key, keyfile, flags) != RNP_SUCCESS) {
-        goto finish;
-    }
-
-    result = true;
-finish:
-    rnp_key_handle_destroy(key);
-    rnp_output_destroy(keyfile);
-    return result;
 }
 
 char *pgp__encrypt(struct t_pgp *pgp, const char *target, const char *message)
@@ -267,11 +185,11 @@ decrypt_finish:
     return result;
 }
 
-char *pgp__verify(struct t_pgp *pgp)
+char *pgp__verify(struct t_pgp *pgp, const char *certificate)
 {
     rnp_op_verify_t verify = NULL;
     rnp_input_t     input = NULL;
-    rnp_output_t    output = NULL;
+    rnp_input_t     signature = NULL;
     uint8_t *       buf = NULL;
     size_t          buf_len = 0;
     size_t          sigcount = 0;
@@ -279,31 +197,38 @@ char *pgp__verify(struct t_pgp *pgp)
 
     rnp_result_t ret;
 
-    /* create file input and memory output objects for the signed message and verified
-     * message */
-    if ((ret = rnp_input_from_path(&input, "signed.asc")) != RNP_SUCCESS) {
+    buf_len = strlen(PGP_SIGNATURE_HEADER) + strlen(certificate) + strlen(PGP_SIGNATURE_FOOTER) + 1;
+    buf = malloc(sizeof(char) * buf_len);
+    buf_len = snprintf((char *)buf, buf_len, PGP_SIGNATURE_HEADER "%s" PGP_SIGNATURE_FOOTER, certificate);
+
+    /* create file input memory objects for the signed message and verified message */
+    if ((ret = rnp_input_from_memory(&input, buf, buf_len, false)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(NULL, "pgp: failed to open file 'signed.asc'. Did you run the sign example?: %s\n", reason);
+        weechat_printf(NULL, "pgp: failed to create input object: %s\n", reason);
         goto verify_finish;
     }
 
-    if ((ret = rnp_output_to_memory(&output, 0)) != RNP_SUCCESS) {
+    if ((ret = rnp_input_from_memory(&signature, buf, buf_len, false)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(NULL, "pgp: failed to create output object: %s\n", reason);
+        weechat_printf(NULL, "pgp: failed to create input object: %s\n", reason);
         goto verify_finish;
     }
 
-    if ((ret = rnp_op_verify_create(&verify, pgp->context, input, output)) != RNP_SUCCESS) {
+    if ((ret = rnp_op_verify_detached_create(&verify, pgp->context, input, signature)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
         weechat_printf(NULL, "pgp: failed to create verification context: %s\n", reason);
         goto verify_finish;
     }
 
-    if ((ret = rnp_op_verify_execute(verify)) != RNP_SUCCESS) {
-        const char *reason = rnp_result_to_string(ret);
-        weechat_printf(NULL, "pgp: failed to execute verification operation: %s\n", reason);
-        goto verify_finish;
-    }
+  //if ((
+            ret = rnp_op_verify_execute(verify)
+                ;
+  //        ) != RNP_ERROR_SIGNATURE_INVALID)
+  //    if (ret != RNP_ERROR_SIGNATURE_INVALID) {
+  //        const char *reason = rnp_result_to_string(ret);
+  //        weechat_printf(NULL, "pgp: failed to execute verification operation: %s\n", reason);
+  //        goto verify_finish;
+  //    }
 
     /* now check signatures and get some info about them */
     if ((ret = rnp_op_verify_get_signature_count(verify, &sigcount)) != RNP_SUCCESS) {
@@ -314,7 +239,6 @@ char *pgp__verify(struct t_pgp *pgp)
 
     for (size_t i = 0; i < sigcount; i++) {
         rnp_op_verify_signature_t sig = NULL;
-        rnp_result_t              sigstatus = RNP_SUCCESS;
         rnp_key_handle_t          key = NULL;
         char *                    keyid = NULL;
 
@@ -337,24 +261,16 @@ char *pgp__verify(struct t_pgp *pgp)
             goto verify_finish;
         }
 
-        sigstatus = rnp_op_verify_signature_get_status(sig);
-        weechat_printf(NULL, "pgp: Status for signature from key %s : %d\n", keyid, (int)sigstatus);
+
         result = strdup(keyid);
         rnp_buffer_destroy(keyid);
         rnp_key_handle_destroy(key);
+        break;
     }
-
-    /* get the verified message from the output structure */
-    if ((ret = rnp_output_memory_get_buf(output, &buf, &buf_len, false)) != RNP_SUCCESS) {
-        const char *reason = rnp_result_to_string(ret);
-        (void) reason;
-        goto verify_finish;
-    }
-    weechat_printf(NULL, "pgp: Verified message:\n%.*s\n", (int)buf_len, buf);
 
 verify_finish:
     rnp_op_verify_destroy(verify);
     rnp_input_destroy(input);
-    rnp_output_destroy(output);
+    rnp_input_destroy(signature);
     return result;
 }

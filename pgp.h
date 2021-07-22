@@ -19,4 +19,6 @@ char *pgp__decrypt(struct t_pgp *pgp, const char *ciphertext);
 
 char *pgp__encrypt(struct t_pgp *pgp, const char *target, const char *message);
 
+char *pgp__verify(struct t_pgp *pgp, const char *certificate);
+
 #endif /*WEECHAT_XMPP_PGP_H*/

@@ -19,4 +19,4 @@
   (flycheck-clang-warnings . ("all" "extra" "error-implicit-function-declaration" "no-missing-field-initializers"))
   (flycheck-clang-language-standard . "gnu99")
   (flycheck-checker . c/c++-clang)
-  (projectile-project-compilation-cmd . "scan-build-3.8 make -j8")))
+  (projectile-project-compilation-cmd . "bear -- make -j8")))
