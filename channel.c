@@ -937,7 +937,7 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
         xmpp_stanza_set_ns(message__x, "jabber:x:encrypted");
 
         xmpp_stanza_t *message__x__text = xmpp_stanza_new(account->context);
-        char *ciphertext = pgp__encrypt(account->pgp, channel->pgp_id, body);
+        char *ciphertext = pgp__encrypt(channel->buffer, account->pgp, channel->pgp_id, body);
         if (ciphertext)
             xmpp_stanza_set_text(message__x__text, ciphertext);
         free(ciphertext);

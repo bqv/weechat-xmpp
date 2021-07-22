@@ -134,7 +134,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
         channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
     if (certificate)
     {
-        channel->pgp_id = pgp__verify(account->pgp, certificate);
+        channel->pgp_id = pgp__verify(channel->buffer, account->pgp, certificate);
         weechat_printf(channel->buffer, "[PGP]\t%sKey %s from %s",
                        weechat_color("gray"), channel->pgp_id, from);
     }
@@ -253,16 +253,6 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                                                    "urn:xmpp:message-correct:0");
     replace_id = replace ? xmpp_stanza_get_id(replace) : NULL;
 
-    x = xmpp_stanza_get_child_by_name_and_ns(stanza, "x", "jabber:x:encrypted");
-    intext = xmpp_stanza_get_text(body);
-    if (x)
-    {
-        char *ciphertext = xmpp_stanza_get_text(x);
-        cleartext = pgp__decrypt(account->pgp, ciphertext);
-        xmpp_free(account->context, ciphertext);
-    }
-    text = cleartext ? cleartext : intext;
-
     const char *channel_id = weechat_strcasecmp(account_jid(account), from_bare)
         == 0 ? to_bare : from_bare;
     channel = channel__search(account, channel_id);
@@ -271,6 +261,17 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                                weechat_strcasecmp(type, "groupchat") == 0
                                ? CHANNEL_TYPE_MUC : CHANNEL_TYPE_PM,
                                channel_id, channel_id);
+
+    x = xmpp_stanza_get_child_by_name_and_ns(stanza, "x", "jabber:x:encrypted");
+    intext = xmpp_stanza_get_text(body);
+    if (x)
+    {
+        char *ciphertext = xmpp_stanza_get_text(x);
+        cleartext = pgp__decrypt(channel->buffer, account->pgp, ciphertext);
+        xmpp_free(account->context, ciphertext);
+    }
+    text = cleartext ? cleartext : intext;
+
     if (replace)
     {
         const char *orig = NULL;
