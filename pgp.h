@@ -5,6 +5,8 @@
 #ifndef _WEECHAT_XMPP_PGP_H_
 #define _WEECHAT_XMPP_PGP_H_
 
+extern const char *PGP_ADVICE;
+
 struct t_pgp
 {
     struct rnp_ffi_st *context;

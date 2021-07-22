@@ -5,6 +5,8 @@
 #ifndef _WEECHAT_XMPP_OMEMO_H_
 #define _WEECHAT_XMPP_OMEMO_H_
 
+extern const char *OMEMO_ADVICE;
+
 struct t_identity
 {
     uint8_t *key;

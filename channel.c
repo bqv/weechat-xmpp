@@ -948,6 +948,8 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
         xmpp_stanza_add_child(message, message__x);
         xmpp_stanza_release(message__x);
 
+        xmpp_message_set_body(message, PGP_ADVICE);
+
         weechat_printf(channel->buffer, "[~]\t%s%s: PGP", weechat_color("gray"), account_jid(account));
     }
     if (url)
