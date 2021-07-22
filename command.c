@@ -648,8 +648,50 @@ int command__me(const void *pointer, void *data,
             weechat_printf_date_tags(ptr_channel->buffer, 0,
                                      "xmpp_message,message,action,private,notify_none,self_msg,log1",
                                      "%s%s %s",
-                                     weechat_prefix("action"), account_jid(ptr_account),
+                                     weechat_prefix("action"),
+                                     user__as_prefix_raw(ptr_account, account_jid(ptr_account)),
                                      strlen(text) > strlen("/me ") ? text+4 : "");
+    }
+
+    return WEECHAT_RC_OK;
+}
+
+int command__pgp(const void *pointer, void *data,
+                 struct t_gui_buffer *buffer, int argc,
+                 char **argv, char **argv_eol)
+{
+    struct t_account *ptr_account = NULL;
+    struct t_channel *ptr_channel = NULL;
+    xmpp_stanza_t *message;
+    char *keyid;
+
+    (void) pointer;
+    (void) data;
+    (void) argv;
+
+    buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);
+
+    if (!ptr_account)
+        return WEECHAT_RC_ERROR;
+
+    if (!ptr_channel)
+    {
+        weechat_printf (
+            ptr_account->buffer,
+            _("%s%s: \"%s\" command can not be executed on a account buffer"),
+            weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME, "me");
+        return WEECHAT_RC_OK;
+    }
+
+    if (argc > 1)
+    {
+        keyid = argv_eol[1];
+
+        ptr_channel->pgp_id = strdup(keyid);
+    }
+    else
+    {
+        ptr_channel->pgp_id = NULL;
     }
 
     return WEECHAT_RC_OK;
@@ -755,6 +797,15 @@ void command__init()
         NULL, &command__me, NULL, NULL);
     if (!hook)
         weechat_printf(NULL, "Failed to setup command /me");
+
+    hook = weechat_hook_command(
+        "pgp",
+        N_("set the target pgp key for the current channel"),
+        N_("<keyid>"),
+        N_("keyid: recipient keyid"),
+        NULL, &command__pgp, NULL, NULL);
+    if (!hook)
+        weechat_printf(NULL, "Failed to setup command /pgp");
 
     hook = weechat_hook_command(
         "xml",

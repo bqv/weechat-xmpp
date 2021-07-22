@@ -54,3 +54,30 @@ int input__data_cb(const void *pointer, void *data,
 
     return input__data(buffer, text);
 }
+
+int input__typing(struct t_gui_buffer *buffer)
+{
+    struct t_account *account = NULL;
+    struct t_channel *channel = NULL;
+
+    buffer__get_account_and_channel(buffer, &account, &channel);
+
+    if (account && account->is_connected && channel)
+    {
+        channel__send_typing(account, channel, NULL);
+    }
+
+    return WEECHAT_RC_OK;
+}
+
+int input__text_changed_cb(const void *pointer, void *data,
+                           const char *signal, const char *type_data,
+                           void *signal_data)
+{
+    (void) pointer;
+    (void) data;
+    (void) signal;
+    (void) type_data;
+
+    return input__typing(signal_data);
+}

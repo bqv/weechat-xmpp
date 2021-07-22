@@ -13,6 +13,7 @@
 #include "account.h"
 #include "connection.h"
 #include "command.h"
+#include "input.h"
 #include "buffer.h"
 #include "completion.h"
 
@@ -63,6 +64,8 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
     weechat_xmpp_typing_bar_item = weechat_bar_item_new("xmpp_typing",
                                                         &buffer__typing_bar_cb,
                                                         NULL, NULL);
+
+    weechat_hook_signal("input_text_changed", &input__text_changed_cb, NULL, NULL);
 
     return WEECHAT_RC_OK;
 }

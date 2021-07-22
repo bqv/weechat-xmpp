@@ -1,6 +1,7 @@
 .direnv
 *~
 compile_commands.json
+.cache
 cscope*
 .depend
 *.d

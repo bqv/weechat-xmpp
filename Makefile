@@ -4,10 +4,10 @@ ifdef DEBUG
 endif
 RM=rm -f
 FIND=find
-INCLUDES=-Ilibstrophe $(shell xml2-config --cflags) $(shell pkg-config --cflags libsignal-protocol-c)
+INCLUDES=-Ilibstrophe $(shell xml2-config --cflags) $(shell pkg-config --cflags librnp-0) $(shell pkg-config --cflags libsignal-protocol-c)
 CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -D_XOPEN_SOURCE=700 $(INCLUDES)
 LDFLAGS+=$(DBGLDFLAGS) -shared -g $(DBGCFLAGS)
-LDLIBS=-lstrophe -lpthread $(shell xml2-config --libs) $(shell pkg-config --libs libsignal-protocol-c) -lgcrypt
+LDLIBS=-lstrophe -lpthread $(shell xml2-config --libs) $(shell pkg-config --libs librnp-0) $(shell pkg-config --libs libsignal-protocol-c) -lgcrypt
 
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
@@ -23,6 +23,7 @@ SRCS=plugin.c \
 	 input.c \
 	 message.c \
 	 omemo.c \
+	 pgp.c \
 	 user.c \
 	 util.c \
 	 xmpp/presence.c \
@@ -41,6 +42,7 @@ xmpp.so: $(OBJS) $(DEPS)
 		patchelf --shrink-rpath xmpp.so || true
 
 diff/libdiff.a:
+	git submodule update --init --recursive
 	cd diff && ./configure
 	$(MAKE) -C diff CFLAGS=-fPIC
 diff: diff/libdiff.a
@@ -67,7 +69,6 @@ clean:
 	$(MAKE) -C diff clean || true
 	git submodule foreach --recursive git clean -xfd || true
 	git submodule foreach --recursive git reset --hard || true
-	git submodule update --init --recursive || true
 
 distclean: clean
 	$(RM) *~ .depend
@@ -86,7 +87,7 @@ endif
 .PHONY: tags cs
 
 tags:
-	$(CC) $(CFLAGS) -M $(SRCS) | sed -e "s/[\\ ]/\n/g" | sed -e "/^$$/d" -e "/\.o:[ \t]*$$/d" | sort | uniq | ctags -e -L - -f .git/tags -R --c-kinds=+px --c++-kinds=+px --fields=+iaS --extra=+fq
+	$(CC) $(CFLAGS) -M $(SRCS) | sed -e "s/[\\ ]/\n/g" | sed -e "/^$$/d" -e "/\.o:[ \t]*$$/d" | sort | uniq | ctags -e -L - -f .git/tags -R --c-kinds=+px --c++-kinds=+px --fields=+iaS --extras=+fq
 
 cs:
 	cscope -RUbq

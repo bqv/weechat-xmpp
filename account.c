@@ -32,6 +32,8 @@ char *account_options[ACCOUNT_NUM_OPTIONS][2] =
   { "autoconnect", "" },
   { "resource", "" },
   { "status", "probably about to segfault" },
+  { "pgp_pubring_path", "${weechat_data_dir}/pubring.gpg" },
+  { "pgp_secring_path", "${weechat_data_dir}/secring.gpg" },
 };
 
 struct t_account *account__search(const char *name)

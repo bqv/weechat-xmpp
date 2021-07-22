@@ -20,6 +20,7 @@
 #include "channel.h"
 #include "connection.h"
 #include "omemo.h"
+#include "pgp.h"
 #include "util.h"
 
 void connection__init()
@@ -86,7 +87,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     struct t_user *user;
     struct t_channel *channel;
     xmpp_stanza_t *iq__x, *iq__x__item, *iq__c, *iq__status;
-    const char *from, *from_bare, *role = NULL, *affiliation = NULL, *jid = NULL;
+    const char *from, *from_bare, *from_res, *role = NULL, *affiliation = NULL, *jid = NULL;
     const char *node = NULL, *ver = NULL;
     char *clientid = NULL, *status;
 
@@ -94,6 +95,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     if (from == NULL)
         return 1;
     from_bare = xmpp_jid_bare(account->context, from);
+    from_res = xmpp_jid_resource(account->context, from);
     iq__x = xmpp_stanza_get_child_by_name_and_ns(
         stanza, "x", "http://jabber.org/protocol/muc#user");
     if (iq__x)
@@ -121,15 +123,18 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     iq__status = xmpp_stanza_get_child_by_name(stanza, "status");
     status = iq__status ? xmpp_stanza_get_text(iq__status) : NULL;
 
+    channel = channel__search(account, from_bare);
+    if (!iq__x && !channel)
+        channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
+
     user = user__search(account, from);
     if (!user)
-        user = user__new(account, from, from);
+        user = user__new(account, from,
+                         channel && weechat_strcasecmp(from_bare, channel->id) == 0
+                         ? from_res : from);
 
-    channel = channel__search(account, from_bare);
     if (!iq__x)
     {
-        if (!channel)
-            channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
         channel__add_member(account, channel, from, clientid, status);
     }
     else if (channel)
@@ -154,9 +159,9 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
     struct t_account *account = (struct t_account *)userdata;
     struct t_channel *channel;
-    xmpp_stanza_t *body, *delay, *topic, *replace, *composing, *sent, *received, *forwarded;
+    xmpp_stanza_t *x, *body, *delay, *topic, *replace, *composing, *sent, *received, *forwarded;
     const char *type, *from, *nick, *from_bare, *to, *to_bare, *id, *replace_id, *timestamp;
-    char *intext, *difftext = NULL;
+    char *text, *intext, *difftext = NULL, *cleartext = NULL;
     struct tm time = {0};
     time_t date = 0;
 
@@ -188,14 +193,20 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
             if (from == NULL)
                 return 1;
             from_bare = xmpp_jid_bare(account->context, from);
+            nick = xmpp_jid_resource(account->context, from);
             channel = channel__search(account, from_bare);
             if (!channel)
                 return 1;
             struct t_user *user = user__search(account, from);
             if (!user)
-                user = user__new(account, from, from);
+                user = user__new(account, from,
+                                 weechat_strcasecmp(from_bare, channel->id) == 0
+                                 ? nick : from);
             channel__add_typing(channel, user);
-            weechat_printf(channel->buffer, "%s typing...", from);
+            weechat_printf(channel->buffer, "...\t%s%s typing",
+                           weechat_color("gray"),
+                           weechat_strcasecmp(from_bare, channel->id) == 0
+                           ? nick : from);
         }
 
         sent = xmpp_stanza_get_child_by_name_and_ns(
@@ -230,13 +241,24 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                                                    "urn:xmpp:message-correct:0");
     replace_id = replace ? xmpp_stanza_get_id(replace) : NULL;
 
+    x = xmpp_stanza_get_child_by_name_and_ns(stanza, "x", "jabber:x:encrypted");
     intext = xmpp_stanza_get_text(body);
+    if (x)
+    {
+        char *ciphertext = xmpp_stanza_get_text(x);
+        cleartext = pgp__decrypt(account->pgp, ciphertext);
+        xmpp_free(account->context, ciphertext);
+    }
+    text = cleartext ? cleartext : intext;
 
     const char *channel_id = weechat_strcasecmp(account_jid(account), from_bare)
         == 0 ? to_bare : from_bare;
     channel = channel__search(account, channel_id);
     if (!channel)
-        channel = channel__new(account, CHANNEL_TYPE_PM, channel_id, channel_id);
+        channel = channel__new(account,
+                               weechat_strcasecmp(type, "groupchat") == 0
+                               ? CHANNEL_TYPE_MUC : CHANNEL_TYPE_PM,
+                               channel_id, channel_id);
     if (replace)
     {
         const char *orig = NULL;
@@ -323,7 +345,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
         if (orig)
         {
             struct diff result;
-            if (diff(&result, char_cmp, 1, orig, strlen(orig), intext, strlen(intext)) > 0)
+            if (diff(&result, char_cmp, 1, orig, strlen(orig), text, strlen(text)) > 0)
             {
                 char **visual = weechat_string_dyn_alloc(256);
                 char ch[2] = {0};
@@ -393,7 +415,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
     if (channel->type == CHANNEL_TYPE_PM)
         weechat_string_dyn_concat(dyn_tags, ",private", -1);
-    if (weechat_string_match(intext, "/me *", 0))
+    if (weechat_string_match(text, "/me *", 0))
         weechat_string_dyn_concat(dyn_tags, ",xmpp_action", -1);
     if (replace)
     {
@@ -404,24 +426,27 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
     if (date != 0)
         weechat_string_dyn_concat(dyn_tags, ",notify_none", -1);
-    else if (channel->type == CHANNEL_TYPE_PM)
+    else if (channel->type == CHANNEL_TYPE_PM
+             && weechat_strcasecmp(from_bare, account_jid(account)) != 0)
         weechat_string_dyn_concat(dyn_tags, ",notify_private", -1);
     else
         weechat_string_dyn_concat(dyn_tags, ",log1", -1);
 
     const char *edit = replace ? "* " : ""; // Losing which message was edited, sadly
+    if (x && text == cleartext)
+        weechat_printf(channel->buffer, "[~]\t%s%s: PGP", weechat_color("gray"), nick);
     if (channel_id == from_bare && strcmp(to, channel->id) == 0)
         weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s\t[to %s]: %s",
                                  edit, user__as_prefix_raw(account, nick),
-                                 to, difftext ? difftext : intext ? intext : "");
-    else if (weechat_string_match(intext, "/me *", 0))
+                                 to, difftext ? difftext : text ? text : "");
+    else if (weechat_string_match(text, "/me *", 0))
         weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s\t%s %s",
-                                 edit, weechat_prefix("action"), nick,
-                                 difftext ? difftext+4 : intext ? intext+4 : "");
+                                 edit, weechat_prefix("action"), user__as_prefix_raw(account, nick),
+                                 difftext ? difftext+4 : text ? text+4 : "");
     else
         weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s\t%s",
                                  edit, user__as_prefix_raw(account, nick),
-                                 difftext ? difftext : intext ? intext : "");
+                                 difftext ? difftext : text ? text : "");
 
     weechat_string_dyn_free(dyn_tags, 1);
 
@@ -429,6 +454,8 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
         xmpp_free(account->context, intext);
     if (difftext)
         free(difftext);
+    if (cleartext)
+        free(cleartext);
 
     return 1;
 }
@@ -1002,6 +1029,13 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
             weechat_command(account->buffer, *command);
             weechat_string_dyn_free(command, 1);
         }
+
+
+        pgp__init(&account->pgp,
+                  weechat_string_eval_expression(account_pgp_pubring_path(account),
+                                                 NULL, NULL, NULL),
+                  weechat_string_eval_expression(account_pgp_secring_path(account),
+                                                 NULL, NULL, NULL));
     }
     else
     {

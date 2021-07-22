@@ -22,29 +22,10 @@ struct t_user
 {
     char *id;
     char *name;
-    char *team_id;
-    char *real_name;
-    char *colour;
-
-    int deleted;
-    char *tz;
-    char *tz_label;
-    int tz_offset;
-    char *locale;
 
     struct t_user_profile profile;
     int updated;
     int is_away;
-
-    int is_admin;
-    int is_owner;
-    int is_primary_owner;
-    int is_restricted;
-    int is_ultra_restricted;
-    int is_bot;
-    int is_stranger;
-    int is_app_user;
-    int has_2fa;
 
     struct t_user *prev_user;
     struct t_user *next_user;

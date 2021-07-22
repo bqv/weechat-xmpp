@@ -140,13 +140,10 @@ struct t_user *user__new(struct t_account *account,
 {
     struct t_user *new_user, *ptr_user;
 
-    if (!account || !id || !display_name)
+    if (!account || !id)
     {
         return NULL;
     }
-
-    if (!display_name[0] && strcmp("USLACKBOT", id) == 0)
-        return NULL;
 
     if (!account->users)
         channel__add_nicklist_groups(account, NULL);
@@ -173,39 +170,19 @@ struct t_user *user__new(struct t_account *account,
 
     new_user->id = strdup(id);
     new_user->name = NULL;
-    new_user->team_id = NULL;
-    new_user->real_name = NULL;
-    new_user->colour = NULL;
-    new_user->deleted = 0;
-
-    new_user->tz = NULL;
-    new_user->tz_label = NULL;
-    new_user->tz_offset = 0;
-    new_user->locale = NULL;
 
     new_user->profile.avatar_hash = NULL;
     new_user->profile.status_text = NULL;
     new_user->profile.status_emoji = NULL;
     new_user->profile.real_name = NULL;
-    new_user->profile.display_name = display_name[0] ?
-        strdup(display_name) :
-        strdup("???");
+    new_user->profile.display_name = display_name ?
+        strdup(display_name) : strdup("");
     new_user->profile.real_name_normalized = NULL;
     new_user->profile.email = NULL;
     new_user->profile.team = NULL;
     new_user->profile.bot_id = NULL;
     new_user->updated = 0;
     new_user->is_away = 0;
-
-    new_user->is_admin = 0;
-    new_user->is_owner = 0;
-    new_user->is_primary_owner = 0;
-    new_user->is_restricted = 0;
-    new_user->is_ultra_restricted = 0;
-    new_user->is_bot = 0;
-    new_user->is_stranger = 0;
-    new_user->is_app_user = 0;
-    new_user->has_2fa = 0;
 
     user__nicklist_add(account, NULL, new_user);
 
@@ -239,18 +216,6 @@ void user__free(struct t_account *account,
         free(user->id);
     if (user->name)
         free(user->name);
-    if (user->team_id)
-        free(user->team_id);
-    if (user->real_name)
-        free(user->real_name);
-    if (user->colour)
-        free(user->colour);
-    if (user->tz)
-        free(user->tz);
-    if (user->tz_label)
-        free(user->tz_label);
-    if (user->locale)
-        free(user->locale);
     if (user->profile.avatar_hash)
         free(user->profile.avatar_hash);
     if (user->profile.status_text)

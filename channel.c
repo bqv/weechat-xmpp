@@ -17,6 +17,30 @@
 #include "channel.h"
 #include "input.h"
 #include "buffer.h"
+#include "pgp.h"
+
+struct t_account *channel__account(struct t_channel *channel)
+{
+    struct t_account *ptr_account;
+    struct t_channel *ptr_channel;
+
+    if (!channel)
+        return NULL;
+
+    for (ptr_account = accounts; ptr_account;
+         ptr_account = ptr_account->next_account)
+    {
+        for (ptr_channel = ptr_account->channels; ptr_channel;
+             ptr_channel = ptr_channel->next_channel)
+        {
+            if (ptr_channel == channel)
+                return ptr_account;
+        }
+    }
+
+    /* account not found */
+    return NULL;
+}
 
 struct t_channel *channel__search(struct t_account *account,
                                   const char *id)
@@ -187,7 +211,7 @@ struct t_channel *channel__new(struct t_account *account,
 {
     struct t_channel *new_channel, *ptr_channel;
     struct t_gui_buffer *ptr_buffer;
-    struct t_hook *typing_timer;
+    struct t_hook *typing_timer, *self_typing_timer;
 
     if (!account || !id || !name || !name[0])
         return NULL;
@@ -209,9 +233,14 @@ struct t_channel *channel__new(struct t_account *account,
                                       &channel__typing_cb,
                                       new_channel, NULL);
 
+    self_typing_timer = weechat_hook_timer(1 * 1000, 0, 0,
+                                           &channel__self_typing_cb,
+                                           new_channel, NULL);
+
     new_channel->type = type;
     new_channel->id = strdup(id);
     new_channel->name = strdup(name);
+    new_channel->pgp_id = NULL;
 
     new_channel->topic.value = NULL;
     new_channel->topic.creator = NULL;
@@ -223,8 +252,11 @@ struct t_channel *channel__new(struct t_account *account,
     new_channel->unread_count_display = 0;
 
     new_channel->typing_hook_timer = typing_timer;
+    new_channel->self_typing_hook_timer = self_typing_timer;
     new_channel->members_speaking[0] = NULL;
     new_channel->members_speaking[1] = NULL;
+    new_channel->self_typings = NULL;
+    new_channel->last_self_typing = NULL;
     new_channel->typings = NULL;
     new_channel->last_typing = NULL;
     new_channel->members = NULL;
@@ -441,10 +473,11 @@ struct t_channel_typing *channel__typing_search(struct t_channel *channel,
     return NULL;
 }
 
-void channel__add_typing(struct t_channel *channel,
-                         struct t_user *user)
+int channel__add_typing(struct t_channel *channel,
+                        struct t_user *user)
 {
     struct t_channel_typing *new_typing;
+    int ret = 0;
 
     new_typing = channel__typing_search(channel, user->id);
     if (!new_typing)
@@ -460,10 +493,140 @@ void channel__add_typing(struct t_channel *channel,
         else
             channel->typings = new_typing;
         channel->last_typing = new_typing;
+
+        ret = 1;
     }
     new_typing->ts = time(NULL);
 
     channel__typing_cb(channel, NULL, 0);
+
+    return ret;
+}
+
+void channel__self_typing_free(struct t_channel *channel,
+                               struct t_channel_typing *typing)
+{
+    struct t_channel_typing *new_typings;
+
+    if (!channel || !typing)
+        return;
+
+    /* remove typing from typings list */
+    if (channel->last_self_typing == typing)
+        channel->last_self_typing = typing->prev_typing;
+    if (typing->prev_typing)
+    {
+        (typing->prev_typing)->next_typing = typing->next_typing;
+        new_typings = channel->self_typings;
+    }
+    else
+        new_typings = typing->next_typing;
+
+    if (typing->next_typing)
+        (typing->next_typing)->prev_typing = typing->prev_typing;
+
+    /* free typing data */
+    if (typing->name)
+        free(typing->name);
+
+    free(typing);
+
+    channel->self_typings = new_typings;
+}
+
+void channel__self_typing_free_all(struct t_channel *channel)
+{
+    while (channel->self_typings)
+        channel__self_typing_free(channel, channel->self_typings);
+}
+
+int channel__self_typing_cb(const void *pointer,
+                            void *data,
+                            int remaining_calls)
+{
+    struct t_channel_typing *ptr_typing, *next_typing;
+    struct t_account *account;
+    struct t_channel *channel;
+    time_t now;
+
+    (void) data;
+    (void) remaining_calls;
+
+    if (!pointer)
+        return WEECHAT_RC_ERROR;
+
+    channel = (struct t_channel *)pointer;
+    account = channel__account(channel);
+
+    now = time(NULL);
+
+    for (ptr_typing = channel->self_typings; ptr_typing;
+         ptr_typing = ptr_typing->next_typing)
+    {
+        next_typing = ptr_typing->next_typing;
+
+        while (ptr_typing && now - ptr_typing->ts > 10)
+        {
+            channel__send_paused(account, channel, ptr_typing->user);
+            channel__self_typing_free(channel, ptr_typing);
+            ptr_typing = next_typing;
+            if (ptr_typing)
+                next_typing = ptr_typing->next_typing;
+        }
+
+        if (!ptr_typing)
+            break;
+    }
+
+    return WEECHAT_RC_OK;
+}
+
+struct t_channel_typing *channel__self_typing_search(struct t_channel *channel,
+                                                     struct t_user *user)
+{
+    struct t_channel_typing *ptr_typing;
+
+    if (!channel)
+        return NULL;
+
+    for (ptr_typing = channel->self_typings; ptr_typing;
+         ptr_typing = ptr_typing->next_typing)
+    {
+        if (user == ptr_typing->user)
+            return ptr_typing;
+    }
+
+    return NULL;
+}
+
+int channel__add_self_typing(struct t_channel *channel,
+                             struct t_user *user)
+{
+    struct t_channel_typing *new_typing;
+    int ret = 0;
+
+    new_typing = channel__self_typing_search(channel, user);
+    if (!new_typing)
+    {
+        new_typing = malloc(sizeof(*new_typing));
+        new_typing->user = user;
+        new_typing->name = user ? strdup(user->profile.display_name) : NULL;
+
+        new_typing->prev_typing = channel->last_self_typing;
+        new_typing->next_typing = NULL;
+        new_typing->ts = time(NULL);
+        if (channel->last_self_typing)
+            (channel->last_self_typing)->next_typing = new_typing;
+        else
+            channel->self_typings = new_typing;
+        channel->last_self_typing = new_typing;
+
+        ret = 1;
+    }
+
+    channel__self_typing_cb(channel, NULL, 0);
+
+    return ret;
 }
 
 void channel__member_free(struct t_channel *channel,
@@ -532,8 +695,11 @@ void channel__free(struct t_account *account,
     /* free hooks */
     if (channel->typing_hook_timer)
         weechat_unhook(channel->typing_hook_timer);
+    if (channel->self_typing_hook_timer)
+        weechat_unhook(channel->self_typing_hook_timer);
 
     /* free linked lists */
+    channel__self_typing_free_all(channel);
     channel__typing_free_all(channel);
     channel__member_free_all(channel);
 
@@ -542,6 +708,8 @@ void channel__free(struct t_account *account,
         free(channel->id);
     if (channel->name)
         free(channel->name);
+    if (channel->pgp_id)
+        free(channel->pgp_id);
     if (channel->topic.value)
         free(channel->topic.value);
     if (channel->topic.creator)
@@ -593,6 +761,17 @@ struct t_channel_member *channel__add_member(struct t_account *account,
     struct t_channel_member *member;
     struct t_user *user;
 
+    user = user__search(account, id);
+
+    if (weechat_strcasecmp(user->id, channel->id) == 0
+        && channel->type == CHANNEL_TYPE_MUC)
+    {
+        weechat_printf_date_tags(channel->buffer, 0, "log2", "%sMUC: %s",
+                                 weechat_prefix("network"),
+                                 id);
+        return NULL;
+    }
+
     member = malloc(sizeof(struct t_channel_member));
     member->id = strdup(id);
 
@@ -607,18 +786,12 @@ struct t_channel_member *channel__add_member(struct t_account *account,
         channel->members = member;
     channel->last_member = member;
 
-    user = user__search(account, id);
     if (user)
         user__nicklist_add(account, channel, user);
 
     char *jid_bare = xmpp_jid_bare(account->context, user->id);
     char *jid_resource = xmpp_jid_resource(account->context, user->id);
-    if (weechat_strcasecmp(user->id, channel->id) == 0
-        && channel->type == CHANNEL_TYPE_MUC)
-        weechat_printf_date_tags(channel->buffer, 0, "log2", "%sMUC: %s",
-                                 weechat_prefix("network"),
-                                 user->id);
-    else if (weechat_strcasecmp(jid_bare, channel->id) == 0
+    if (weechat_strcasecmp(jid_bare, channel->id) == 0
              && channel->type == CHANNEL_TYPE_MUC)
         weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s %s%s%s %sentered%s %s %s%s%s",
                                  weechat_prefix("join"),
@@ -757,6 +930,26 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
     xmpp_message_set_body(message, body);
 
     char *url = strstr(body, "http");
+    if (channel->pgp_id)
+    {
+        xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(message__x, "x");
+        xmpp_stanza_set_ns(message__x, "jabber:x:encrypted");
+
+        xmpp_stanza_t *message__x__text = xmpp_stanza_new(account->context);
+        char *ciphertext = pgp__encrypt(account->pgp, channel->pgp_id, body);
+        if (ciphertext)
+            xmpp_stanza_set_text(message__x__text, ciphertext);
+        free(ciphertext);
+
+        xmpp_stanza_add_child(message__x, message__x__text);
+        xmpp_stanza_release(message__x__text);
+
+        xmpp_stanza_add_child(message, message__x);
+        xmpp_stanza_release(message__x);
+
+        weechat_printf(channel->buffer, "[~]\t%s%s: PGP", weechat_color("gray"), account_jid(account));
+    }
     if (url)
     {
         xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
@@ -786,4 +979,45 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
                                  "%s\t%s",
                                  user__as_prefix_raw(account, account_jid(account)),
                                  body);
+}
+
+void channel__send_typing(struct t_account *account, struct t_channel *channel,
+                          struct t_user *user)
+{
+    if (channel__add_self_typing(channel, user))
+    {
+        xmpp_stanza_t *message = xmpp_message_new(account->context,
+                                                  channel->type == CHANNEL_TYPE_MUC
+                                                  ? "groupchat" : "chat",
+                                                  user ? user->id : channel->id, NULL);
+
+        xmpp_stanza_t *message__composing = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(message__composing, "composing");
+        xmpp_stanza_set_ns(message__composing, "http://jabber.org/protocol/chatstates");
+
+        xmpp_stanza_add_child(message, message__composing);
+        xmpp_stanza_release(message__composing);
+
+        xmpp_send(account->connection, message);
+        xmpp_stanza_release(message);
+    }
+}
+
+void channel__send_paused(struct t_account *account, struct t_channel *channel,
+                          struct t_user *user)
+{
+    xmpp_stanza_t *message = xmpp_message_new(account->context,
+                                              channel->type == CHANNEL_TYPE_MUC
+                                              ? "groupchat" : "chat",
+                                              user ? user->id : channel->id, NULL);
+
+    xmpp_stanza_t *message__paused = xmpp_stanza_new(account->context);
+    xmpp_stanza_set_name(message__paused, "paused");
+    xmpp_stanza_set_ns(message__paused, "http://jabber.org/protocol/chatstates");
+
+    xmpp_stanza_add_child(message, message__paused);
+    xmpp_stanza_release(message__paused);
+
+    xmpp_send(account->connection, message);
+    xmpp_stanza_release(message);
 }

@@ -15,7 +15,10 @@ enum t_channel_type
 
 struct t_channel_typing
 {
-    char *id;
+    union {
+        char *id;
+        struct t_user *user;
+    };
     char *name;
     time_t ts;
 
@@ -46,6 +49,7 @@ struct t_channel
     enum t_channel_type type;
     char *id;
     char *name;
+    char *pgp_id;
 
     struct t_channel_topic topic;
 
@@ -56,7 +60,10 @@ struct t_channel
     int unread_count_display;
 
     struct t_hook *typing_hook_timer;
+    struct t_hook *self_typing_hook_timer;
     struct t_weelist *members_speaking[2];
+    struct t_channel_typing *self_typings;
+    struct t_channel_typing *last_self_typing;
     struct t_channel_typing *typings;
     struct t_channel_typing *last_typing;
     struct t_channel_member *members;
@@ -67,6 +74,8 @@ struct t_channel
     struct t_channel *prev_channel;
     struct t_channel *next_channel;
 };
+
+struct t_account *channel__account(struct t_channel *channel);
 
 struct t_channel *channel__search(struct t_account *account,
                                   const char *id);
@@ -101,8 +110,23 @@ int channel__typing_cb(const void *pointer,
 struct t_channel_typing *channel__typing_search(struct t_channel *channel,
                                                 const char *id);
 
-void channel__add_typing(struct t_channel *channel,
-                         struct t_user *user);
+int channel__add_typing(struct t_channel *channel,
+                        struct t_user *user);
+
+void channel__self_typing_free(struct t_channel *channel,
+                               struct t_channel_typing *typing);
+
+void channel__self_typing_free_all(struct t_channel *channel);
+
+int channel__self_typing_cb(const void *pointer,
+                            void *data,
+                            int remaining_calls);
+
+struct t_channel_typing *channel__self_typing_search(struct t_channel *channel,
+                                                     struct t_user *user);
+
+int channel__add_self_typing(struct t_channel *channel,
+                             struct t_user *user);
 
 void channel__free(struct t_account *account,
                    struct t_channel *channel);
@@ -138,5 +162,11 @@ struct t_channel_member *channel__remove_member(struct t_account *account,
 
 void channel__send_message(struct t_account *account, struct t_channel *channel,
                            const char *to, const char *body);
+
+void channel__send_typing(struct t_account *account, struct t_channel *channel,
+                          struct t_user *user);
+
+void channel__send_paused(struct t_account *account, struct t_channel *channel,
+                          struct t_user *user);
 
 #endif /*WEECHAT_XMPP_CHANNEL_H*/
