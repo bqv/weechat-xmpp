@@ -30,7 +30,7 @@ void completion__channel_nicks_add_speakers(struct t_gui_completion *completion,
         list_size = weechat_list_size(channel->members_speaking[highlight]);
         for (i = 0; i < list_size; i++)
         {
-            member = weechat_list_string (
+            member = weechat_list_string(
                 weechat_list_get(channel->members_speaking[highlight], i));
             if (member)
             {

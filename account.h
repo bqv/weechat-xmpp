@@ -64,13 +64,13 @@ enum t_account_option
 #define account_pgp_keyid(account) \
     weechat_config_string(account->options[ACCOUNT_OPTION_PGP_KEYID])
 
-struct t_device
+struct t_account_device
 {
     int id;
     char *name;
 
-    struct t_device *prev_device;
-    struct t_device *next_device;
+    struct t_account_device *prev_device;
+    struct t_account_device *next_device;
 };
 
 struct t_account
@@ -97,8 +97,8 @@ struct t_account
     struct t_omemo *omemo;
     struct t_pgp *pgp;
 
-    struct t_device *devices;
-    struct t_device *last_device;
+    struct t_account_device *devices;
+    struct t_account_device *last_device;
     struct t_user *users;
     struct t_user *last_user;
     struct t_channel *channels;
@@ -113,9 +113,9 @@ extern char *account_options[][2];
 struct t_account *account__search(const char *account_name);
 struct t_account *account__casesearch (const char *account_name);
 int account__search_option(const char *option_name);
-struct t_device *account__search_device(struct t_account *account, int id);
-void account__add_device(struct t_account *account, struct t_device *device);
-void account__free_device(struct t_account *account, struct t_device *device);
+struct t_account_device *account__search_device(struct t_account *account, int id);
+void account__add_device(struct t_account *account, struct t_account_device *device);
+void account__free_device(struct t_account *account, struct t_account_device *device);
 void account__free_device_all(struct t_account *account);
 struct t_account *account__alloc(const char *name);
 void account__free_data(struct t_account *account);

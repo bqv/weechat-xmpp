@@ -28,6 +28,8 @@
   A weechat plugin in C to extend the chat client to
   support XMPP and a currently minimal but ideally maximal
   set of XEPs.
+  I'm gonna rewrite this in C++ at some point when I have a feel
+  for the full behaviour of an average client.
 
 * Usage
 
@@ -44,9 +46,8 @@
 
   - libstrophe (dynamic, dependency)
   - libxml2 (dynamic, dependency)
-  - glib (dynamic, dependency of libomemo)
-  - sqlite (dynamic, dependency of libomemo/axc)
-  - libsignal-protocol-c (dynamic, dependency of axc)
+  - libsignal-protocol-c (dynamic, dependency)
+  - rnp (dynamic, dependency)
   - weechat (>= v3.0)
 
   .. or just use the guix spec in .envrc
@@ -125,11 +126,14 @@
          * [ ] Announce
      * [ ] Messages
    * [ ] [#C] MUC PMs
-   * [ ] [#A] Send typing notifications
-   * [ ] [#A] Recv typing notifications
-   * [ ] [#C] Read receipts
-   * [ ] Message Carbons
+   * [X] [#A] Send typing notifications
+   * [X] [#A] Recv typing notifications
+   * [X] [#C] Read receipts
+     * [X] Chat Markers (XEP-0333)
+     * [X] Message Delivery (XEP-0184)
+   * [X] Message Carbons
    * [ ] Service Disco
+   * [X] MAM Fetching
    * [-] Bookmarks / Roster
      * [X] Autojoin bookmarks
      * [ ] Add bookmarks
@@ -142,10 +146,10 @@
      * [X] Decryption
      * [X] Encryption
      * [X] Custom set/clear key (/pgp)
+     * [ ] OOB data and media
    * [ ] Room Explorer (https://search.jabber.network/docs/api)
 ** TODO [#C] Implement completion engine (milestone v0.3)
 ** TODO [#D] Close all issues (milestone v1.0)
-   * [ ] Absorb libomemo / axc, and drop glib
 
 * Contributing
 

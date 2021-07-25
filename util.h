@@ -7,4 +7,8 @@
 
 int char_cmp(const void *p1, const void *p2);
 
+char *exec(const char *command);
+
+char *stanza_xml(struct _xmpp_stanza_t *stanza);
+
 #endif /*WEECHAT_XMPP_UTIL_H*/

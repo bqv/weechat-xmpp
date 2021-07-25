@@ -64,6 +64,7 @@ int input__typing(struct t_gui_buffer *buffer)
 
     if (account && account->is_connected && channel)
     {
+        channel__send_reads(account, channel);
         channel__send_typing(account, channel, NULL);
     }
 

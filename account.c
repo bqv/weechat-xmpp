@@ -90,9 +90,9 @@ int account__search_option(const char *option_name)
     return -1;
 }
 
-struct t_device *account__search_device(struct t_account *account, int id)
+struct t_account_device *account__search_device(struct t_account *account, int id)
 {
-    struct t_device *ptr_device;
+    struct t_account_device *ptr_device;
 
     if (!account)
         return NULL;
@@ -108,9 +108,9 @@ struct t_device *account__search_device(struct t_account *account, int id)
 }
 
 void account__add_device(struct t_account *account,
-                         struct t_device *device)
+                         struct t_account_device *device)
 {
-    struct t_device *new_device;
+    struct t_account_device *new_device;
 
     new_device = account__search_device(account, device->id);
     if (!new_device)
@@ -129,9 +129,9 @@ void account__add_device(struct t_account *account,
     }
 }
 
-void account__free_device(struct t_account *account, struct t_device *device)
+void account__free_device(struct t_account *account, struct t_account_device *device)
 {
-    struct t_device *new_devices;
+    struct t_account_device *new_devices;
 
     if (!account || !device)
         return;

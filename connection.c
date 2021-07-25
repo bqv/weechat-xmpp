@@ -87,7 +87,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     struct t_user *user;
     struct t_channel *channel;
     xmpp_stanza_t *iq__x_signed, *iq__x_muc_user, *iq__x__item, *iq__c, *iq__status;
-    const char *from, *from_bare, *from_res, *role = NULL, *affiliation = NULL, *jid = NULL;
+    const char *from, *from_bare, *from_res, *type, *role = NULL, *affiliation = NULL, *jid = NULL;
     const char *certificate = NULL, *node = NULL, *ver = NULL;
     char *clientid = NULL, *status;
 
@@ -96,6 +96,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
         return 1;
     from_bare = xmpp_jid_bare(account->context, from);
     from_res = xmpp_jid_resource(account->context, from);
+    type = xmpp_stanza_get_type(stanza);
     iq__x_signed = xmpp_stanza_get_child_by_name_and_ns(
         stanza, "x", "jabber:x:signed");
     if (iq__x_signed)
@@ -130,11 +131,12 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     status = iq__status ? xmpp_stanza_get_text(iq__status) : NULL;
 
     channel = channel__search(account, from_bare);
-    if (!iq__x_muc_user && !channel)
+    if (weechat_strcasecmp(type, "unavailable") && !iq__x_muc_user && !channel)
         channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
-    if (certificate)
+    if (certificate && channel)
     {
-        channel->pgp_id = pgp__verify(channel->buffer, account->pgp, certificate);
+        if (channel->type != CHANNEL_TYPE_MUC)
+            channel->pgp_id = pgp__verify(channel->buffer, account->pgp, certificate);
         weechat_printf(channel->buffer, "[PGP]\t%sKey %s from %s",
                        weechat_color("gray"), channel->pgp_id, from);
     }
@@ -145,7 +147,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
                          channel && weechat_strcasecmp(from_bare, channel->id) == 0
                          ? from_res : from);
 
-    if (!iq__x_muc_user)
+    if (!iq__x_muc_user && channel)
     {
         channel__add_member(account, channel, from, clientid, status);
     }
@@ -171,8 +173,8 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
     struct t_account *account = (struct t_account *)userdata;
     struct t_channel *channel;
-    xmpp_stanza_t *x, *body, *delay, *topic, *replace, *composing, *sent, *received, *forwarded;
-    const char *type, *from, *nick, *from_bare, *to, *to_bare, *id, *replace_id, *timestamp;
+    xmpp_stanza_t *x, *body, *delay, *topic, *replace, *request, *markable, *composing, *sent, *received, *result, *forwarded;
+    const char *type, *from, *nick, *from_bare, *to, *to_bare, *id, *thread, *replace_id, *timestamp;
     char *text, *intext, *difftext = NULL, *cleartext = NULL;
     struct tm time = {0};
     time_t date = 0;
@@ -237,6 +239,29 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
             return connection__message_handler(conn, message, userdata);
         }
 
+        result = xmpp_stanza_get_child_by_name_and_ns(
+            stanza, "result", "urn:xmpp:mam:2");
+        if (result)
+        {
+            forwarded = xmpp_stanza_get_child_by_name_and_ns(
+                result, "forwarded", "urn:xmpp:forward:0");
+            if (forwarded != NULL)
+            {
+                xmpp_stanza_t *message = xmpp_stanza_get_child_by_name(forwarded, "message");
+                if (message)
+                {
+                    message = xmpp_stanza_copy(message);
+                    delay = xmpp_stanza_get_child_by_name_and_ns(
+                        forwarded, "delay", "urn:xmpp:delay");
+                    if (delay != NULL)
+                        xmpp_stanza_add_child_ex(message, xmpp_stanza_copy(delay), 0);
+                    int ret = connection__message_handler(conn, message, userdata);
+                    xmpp_stanza_release(message);
+                    return ret;
+                }
+            }
+        }
+
         return 1;
     }
     type = xmpp_stanza_get_type(stanza);
@@ -247,11 +272,18 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
         return 1;
     from_bare = xmpp_jid_bare(account->context, from);
     to = xmpp_stanza_get_to(stanza);
+    if (to == NULL)
+        to = account_jid(account);
     to_bare = to ? xmpp_jid_bare(account->context, to) : NULL;
     id = xmpp_stanza_get_id(stanza);
+    thread = xmpp_stanza_get_attribute(stanza, "thread");
     replace = xmpp_stanza_get_child_by_name_and_ns(stanza, "replace",
                                                    "urn:xmpp:message-correct:0");
     replace_id = replace ? xmpp_stanza_get_id(replace) : NULL;
+    request = xmpp_stanza_get_child_by_name_and_ns(stanza, "request",
+                                                   "urn:xmpp:receipts");
+    markable = xmpp_stanza_get_child_by_name_and_ns(stanza, "markable",
+                                                    "urn:xmpp:chat-markers:0");
 
     const char *channel_id = weechat_strcasecmp(account_jid(account), from_bare)
         == 0 ? to_bare : from_bare;
@@ -261,6 +293,59 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                                weechat_strcasecmp(type, "groupchat") == 0
                                ? CHANNEL_TYPE_MUC : CHANNEL_TYPE_PM,
                                channel_id, channel_id);
+
+    if (id && (markable || request))
+    {
+        struct t_channel_unread *unread = malloc(sizeof(struct t_channel_unread));
+        unread->id = strdup(id);
+        unread->thread = thread ? strdup(thread) : NULL;
+
+        xmpp_stanza_t *message = xmpp_message_new(account->context, NULL,
+                                                  channel->id, NULL);
+
+        if (request)
+        {
+            xmpp_stanza_t *message__received = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(message__received, "received");
+            xmpp_stanza_set_ns(message__received, "urn:xmpp:receipts");
+            xmpp_stanza_set_id(message__received, unread->id);
+
+            xmpp_stanza_add_child(message, message__received);
+            xmpp_stanza_release(message__received);
+        }
+
+        if (markable)
+        {
+            xmpp_stanza_t *message__received = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(message__received, "received");
+            xmpp_stanza_set_ns(message__received, "urn:xmpp:chat-markers:0");
+            xmpp_stanza_set_id(message__received, unread->id);
+
+            xmpp_stanza_add_child(message, message__received);
+            xmpp_stanza_release(message__received);
+        }
+
+        if (unread->thread)
+        {
+            xmpp_stanza_t *message__thread = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(message__thread, "thread");
+
+            xmpp_stanza_t *message__thread__text = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_text(message__thread__text, unread->thread);
+            xmpp_stanza_add_child(message__thread, message__thread__text);
+            xmpp_stanza_release(message__thread__text);
+
+            xmpp_stanza_add_child(message, message__thread);
+            xmpp_stanza_release(message__thread);
+        }
+
+        xmpp_send(account->connection, message);
+        xmpp_stanza_release(message);
+
+        if (!channel->unreads)
+            channel->unreads = weechat_list_new();
+        weechat_list_add(channel->unreads, unread->id, WEECHAT_LIST_POS_END, unread);
+    }
 
     x = xmpp_stanza_get_child_by_name_and_ns(stanza, "x", "jabber:x:encrypted");
     intext = xmpp_stanza_get_text(body);
@@ -446,8 +531,20 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
         weechat_string_dyn_concat(dyn_tags, ",log1", -1);
 
     const char *edit = replace ? "* " : ""; // Losing which message was edited, sadly
-    if (x && text == cleartext)
-        weechat_printf(channel->buffer, "[~]\t%s%s: PGP", weechat_color("gray"), nick);
+    if (x && text == cleartext && channel->transport != CHANNEL_TRANSPORT_PGP)
+    {
+        channel->transport = CHANNEL_TRANSPORT_PGP;
+        weechat_printf_date_tags(channel->buffer, date, NULL, "%s%sTransport: %s",
+                                 weechat_prefix("network"), weechat_color("gray"),
+                                 channel__transport_name(channel->transport));
+    }
+    else if (!x && text == intext && channel->transport != CHANNEL_TRANSPORT_PLAINTEXT)
+    {
+        channel->transport = CHANNEL_TRANSPORT_PLAINTEXT;
+        weechat_printf_date_tags(channel->buffer, date, NULL, "%s%sTransport: %s",
+                                 weechat_prefix("network"), weechat_color("gray"),
+                                 channel__transport_name(channel->transport));
+    }
     if (channel_id == from_bare && strcmp(to, channel->id) == 0)
         weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s\t[to %s]: %s",
                                  edit, user__as_prefix_raw(account, nick),
@@ -726,7 +823,7 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
                     {
                         account__free_device_all(account);
 
-                        struct t_device *dev = malloc(sizeof(dev));
+                        struct t_account_device *dev = malloc(sizeof(struct t_account_device));
                         char id[64] = {0};
 
                         dev->id = account->omemo->device_id;
@@ -751,7 +848,7 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
 
                             device_id = xmpp_stanza_get_id(device);
 
-                            dev = malloc(sizeof(dev));
+                            dev = malloc(sizeof(struct t_account_device));
                             dev->id = atoi(device_id);
                             dev->name = strdup(device_id);
                             account__add_device(account, dev);
@@ -1032,12 +1129,12 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         uint8_t identity[128] = {0};
         if (b64_id && *b64_id)
             weechat_string_base_decode(64, b64_id, (char*)identity);
-        struct t_identity id_key = {
+        struct t_omemo_identity id_key = {
             .key = identity,
             .length = 4,
         };
 
-        omemo__init(&account->omemo, dev_id, b64_id && *b64_id ? &id_key : NULL);
+        omemo__init(account->buffer, &account->omemo, dev_id, b64_id && *b64_id ? &id_key : NULL);
 
         char account_id[64] = {0};
         snprintf(account_id, sizeof(account_id), "%d", account->omemo->device_id);

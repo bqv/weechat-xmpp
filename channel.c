@@ -19,6 +19,21 @@
 #include "buffer.h"
 #include "pgp.h"
 
+const char *channel__transport_name(enum t_channel_transport transport)
+{
+    switch (transport)
+    {
+        case CHANNEL_TRANSPORT_PLAINTEXT:
+            return "PLAINTEXT";
+        case CHANNEL_TRANSPORT_OMEMO:
+            return "OMEMO";
+        case CHANNEL_TRANSPORT_PGP:
+            return "PGP";
+        default:
+            return NULL;
+    }
+}
+
 struct t_account *channel__account(struct t_channel *channel)
 {
     struct t_account *ptr_account;
@@ -158,6 +173,7 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
                        account_nickname(account));
     weechat_buffer_set(ptr_buffer, "localvar_set_server", account->name);
     weechat_buffer_set(ptr_buffer, "localvar_set_channel", name);
+    weechat_buffer_set(ptr_buffer, "input_multiline", "1");
 
     if (buffer_created)
     {
@@ -240,6 +256,7 @@ struct t_channel *channel__new(struct t_account *account,
     new_channel->type = type;
     new_channel->id = strdup(id);
     new_channel->name = strdup(name);
+    new_channel->transport = CHANNEL_TRANSPORT_PLAINTEXT;
     new_channel->pgp_id = NULL;
 
     new_channel->topic.value = NULL;
@@ -255,6 +272,7 @@ struct t_channel *channel__new(struct t_account *account,
     new_channel->self_typing_hook_timer = self_typing_timer;
     new_channel->members_speaking[0] = NULL;
     new_channel->members_speaking[1] = NULL;
+    new_channel->unreads = NULL;
     new_channel->self_typings = NULL;
     new_channel->last_self_typing = NULL;
     new_channel->typings = NULL;
@@ -271,6 +289,15 @@ struct t_channel *channel__new(struct t_account *account,
     else
         account->channels = new_channel;
     account->last_channel = new_channel;
+
+    if (type != CHANNEL_TYPE_MUC)
+    {
+        time_t start = time(NULL);
+        struct tm *ago = gmtime(&start);
+        ago->tm_mday -= 7;
+        start = mktime(ago);
+        channel__fetch_mam(account, new_channel, &start, NULL);
+    }
 
     return new_channel;
 }
@@ -356,7 +383,7 @@ void channel__member_speaking_rename_if_present(struct t_account *account,
             list_size = weechat_list_size(channel->members_speaking[i]);
             for (j = 0; j < list_size; j++)
             {
-                ptr_item = weechat_list_get (channel->members_speaking[i], j);
+                ptr_item = weechat_list_get(channel->members_speaking[i], j);
                 if (ptr_item && (weechat_strcasecmp(weechat_list_string(ptr_item),
                                                     nick) == 0))
                     weechat_list_set(ptr_item, nick);
@@ -629,6 +656,41 @@ int channel__add_self_typing(struct t_channel *channel,
     return ret;
 }
 
+void channel__unread_free(struct t_channel_unread *unread)
+{
+    if (!unread)
+        return;
+
+    if (unread->id)
+        free(unread->id);
+    if (unread->thread)
+        free(unread->thread);
+    free(unread);
+}
+
+void channel__unread_free_all(struct t_channel *channel)
+{
+    if (channel->unreads)
+    {
+        int list_size = weechat_list_size(channel->unreads);
+
+        for (int i = 0; i < list_size; i++)
+        {
+            struct t_weelist_item *ptr_item = weechat_list_get(channel->unreads, i);
+            if (ptr_item)
+            {
+                struct t_channel_unread *unread = weechat_list_user_data(ptr_item);
+
+                channel__unread_free(unread);
+
+                weechat_list_remove(channel->unreads, ptr_item);
+            }
+        }
+
+        weechat_list_free(channel->unreads);
+    }
+}
+
 void channel__member_free(struct t_channel *channel,
                           struct t_channel_member *member)
 {
@@ -702,6 +764,7 @@ void channel__free(struct t_account *account,
     channel__self_typing_free_all(channel);
     channel__typing_free_all(channel);
     channel__member_free_all(channel);
+    channel__unread_free_all(channel);
 
     /* free channel data */
     if (channel->id)
@@ -923,10 +986,17 @@ struct t_channel_member *channel__remove_member(struct t_account *account,
 void channel__send_message(struct t_account *account, struct t_channel *channel,
                            const char *to, const char *body)
 {
+    channel__send_reads(account, channel);
+
     xmpp_stanza_t *message = xmpp_message_new(account->context,
                     channel->type == CHANNEL_TYPE_MUC
                     ? "groupchat" : "chat",
                     to, NULL);
+
+    char *id = xmpp_uuid_gen(account->context);
+    xmpp_stanza_set_id(message, id);
+    xmpp_free(account->context, id);
+
     xmpp_message_set_body(message, body);
 
     char *url = strstr(body, "http");
@@ -950,8 +1020,22 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
 
         xmpp_message_set_body(message, PGP_ADVICE);
 
-        weechat_printf(channel->buffer, "[~]\t%s%s: PGP", weechat_color("gray"), account_jid(account));
+        if (ciphertext && channel->transport != CHANNEL_TRANSPORT_PGP)
+        {
+            channel->transport = CHANNEL_TRANSPORT_PGP;
+            weechat_printf_date_tags(channel->buffer, 0, NULL, "%s%sTransport: %s",
+                                 weechat_prefix("network"), weechat_color("gray"),
+                                 channel__transport_name(channel->transport));
+        }
     }
+    else if (channel->transport != CHANNEL_TRANSPORT_PLAINTEXT)
+    {
+        channel->transport = CHANNEL_TRANSPORT_PLAINTEXT;
+        weechat_printf_date_tags(channel->buffer, 0, NULL, "%s%sTransport: %s",
+                                 weechat_prefix("network"), weechat_color("gray"),
+                                 channel__transport_name(channel->transport));
+    }
+
     if (url)
     {
         xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
@@ -981,6 +1065,55 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
                                  "%s\t%s",
                                  user__as_prefix_raw(account, account_jid(account)),
                                  body);
+}
+
+void channel__send_reads(struct t_account *account, struct t_channel *channel)
+{
+    if (channel && channel->unreads)
+    {
+        int list_size = weechat_list_size(channel->unreads);
+
+        for (int i = 0; i < list_size; i++)
+        {
+            struct t_weelist_item *ptr_item = weechat_list_get(channel->unreads, 0);
+            if (ptr_item)
+            {
+                const char *unread_id = weechat_list_string(ptr_item);
+                struct t_channel_unread *unread = weechat_list_user_data(ptr_item);
+
+                xmpp_stanza_t *message = xmpp_message_new(account->context, NULL,
+                                                          channel->id, NULL);
+
+                xmpp_stanza_t *message__displayed = xmpp_stanza_new(account->context);
+                xmpp_stanza_set_name(message__displayed, "displayed");
+                xmpp_stanza_set_ns(message__displayed, "urn:xmpp:chat-markers:0");
+                xmpp_stanza_set_id(message__displayed, unread->id ? unread->id : unread_id);
+                if (unread->thread)
+                {
+                    xmpp_stanza_t *message__thread = xmpp_stanza_new(account->context);
+                    xmpp_stanza_set_name(message__thread, "thread");
+
+                    xmpp_stanza_t *message__thread__text = xmpp_stanza_new(account->context);
+                    xmpp_stanza_set_text(message__thread__text, unread->thread);
+                    xmpp_stanza_add_child(message__thread, message__thread__text);
+                    xmpp_stanza_release(message__thread__text);
+
+                    xmpp_stanza_add_child(message, message__thread);
+                    xmpp_stanza_release(message__thread);
+                }
+
+                xmpp_stanza_add_child(message, message__displayed);
+                xmpp_stanza_release(message__displayed);
+
+                xmpp_send(account->connection, message);
+                xmpp_stanza_release(message);
+
+                channel__unread_free(unread);
+
+                weechat_list_remove(channel->unreads, ptr_item);
+            }
+        }
+    }
 }
 
 void channel__send_typing(struct t_account *account, struct t_channel *channel,
@@ -1022,4 +1155,117 @@ void channel__send_paused(struct t_account *account, struct t_channel *channel,
 
     xmpp_send(account->connection, message);
     xmpp_stanza_release(message);
+}
+
+void channel__fetch_mam(struct t_account *account, struct t_channel *channel,
+                        time_t *start, time_t *end)
+{
+    xmpp_stanza_t *iq = xmpp_iq_new(account->context, "set", "juliet1");
+
+    xmpp_stanza_t *query = xmpp_stanza_new(account->context);
+    xmpp_stanza_set_name(query, "query");
+    xmpp_stanza_set_ns(query, "urn:xmpp:mam:2");
+
+    xmpp_stanza_t *x = xmpp_stanza_new(account->context);
+    xmpp_stanza_set_name(x, "x");
+    xmpp_stanza_set_ns(x, "jabber:x:data");
+    xmpp_stanza_set_attribute(x, "type", "result");
+
+    xmpp_stanza_t *field, *value, *text;
+
+    {
+        field = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(field, "field");
+        xmpp_stanza_set_attribute(field, "var", "FORM_TYPE");
+        xmpp_stanza_set_attribute(field, "type", "hidden");
+
+        value = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(value, "value");
+
+        text = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_text(text, "urn:xmpp:mam:2");
+        xmpp_stanza_add_child(value, text);
+        xmpp_stanza_release(text);
+
+        xmpp_stanza_add_child(field, value);
+        xmpp_stanza_release(value);
+
+        xmpp_stanza_add_child(x, field);
+        xmpp_stanza_release(field);
+    }
+
+    {
+        field = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(field, "field");
+        xmpp_stanza_set_attribute(field, "var", "with");
+
+        value = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(value, "value");
+
+        text = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_text(text, channel->id);
+        xmpp_stanza_add_child(value, text);
+        xmpp_stanza_release(text);
+
+        xmpp_stanza_add_child(field, value);
+        xmpp_stanza_release(value);
+
+        xmpp_stanza_add_child(x, field);
+        xmpp_stanza_release(field);
+    }
+
+    if (start)
+    {
+        field = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(field, "field");
+        xmpp_stanza_set_attribute(field, "var", "start");
+
+        value = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(value, "value");
+
+        text = xmpp_stanza_new(account->context);
+        char time[256] = {0};
+        strftime(time, sizeof(time), "%Y-%m-%dT%H:%M:%SZ", gmtime(start));
+        xmpp_stanza_set_text(text, time);
+        xmpp_stanza_add_child(value, text);
+        xmpp_stanza_release(text);
+
+        xmpp_stanza_add_child(field, value);
+        xmpp_stanza_release(value);
+
+        xmpp_stanza_add_child(x, field);
+        xmpp_stanza_release(field);
+    }
+
+    if (end)
+    {
+        field = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(field, "field");
+        xmpp_stanza_set_attribute(field, "var", "end");
+
+        value = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(value, "value");
+
+        text = xmpp_stanza_new(account->context);
+        char time[256] = {0};
+        strftime(time, sizeof(time), "%Y-%m-%dT%H:%M:%SZ", gmtime(end));
+        xmpp_stanza_set_text(text, time);
+        xmpp_stanza_add_child(value, text);
+        xmpp_stanza_release(text);
+
+        xmpp_stanza_add_child(field, value);
+        xmpp_stanza_release(value);
+
+        xmpp_stanza_add_child(x, field);
+        xmpp_stanza_release(field);
+    }
+
+    xmpp_stanza_add_child(query, x);
+    xmpp_stanza_release(x);
+
+    xmpp_stanza_add_child(iq, query);
+    xmpp_stanza_release(query);
+
+    xmpp_send(account->connection, iq);
+    xmpp_stanza_release(iq);
 }

@@ -7,7 +7,7 @@
 
 extern const char *OMEMO_ADVICE;
 
-struct t_identity
+struct t_omemo_identity
 {
     uint8_t *key;
     size_t length;
@@ -15,18 +15,19 @@ struct t_identity
 
 struct t_omemo
 {
+    struct signal_context *context;
   //omemo_crypto_provider provider;
   //axc_context *context;
   //axc_bundle *a_bundle;
   //omemo_bundle *o_bundle;
 
-    struct t_identity *identity;
+    struct t_omemo_identity *identity;
 
     uint32_t device_id;
 };
 
-void omemo__init(struct t_omemo **omemo, uint32_t device,
-                 struct t_identity *identity);
+void omemo__init(struct t_gui_buffer *buffer, struct t_omemo **omemo,
+                 uint32_t device, struct t_omemo_identity *identity);
 
 void omemo__free(struct t_omemo *omemo);
 

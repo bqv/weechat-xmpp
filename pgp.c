@@ -240,6 +240,7 @@ char *pgp__verify(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *ce
     for (size_t i = 0; i < sigcount; i++) {
         rnp_op_verify_signature_t sig = NULL;
         rnp_key_handle_t          key = NULL;
+        rnp_signature_handle_t    signature = NULL;
         char *                    keyid = NULL;
 
         if ((ret = rnp_op_verify_get_signature_at(verify, i, &sig)) != RNP_SUCCESS) {
@@ -248,28 +249,36 @@ char *pgp__verify(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *ce
             goto verify_finish;
         }
 
-        if ((ret = rnp_op_verify_signature_get_key(sig, &key)) != RNP_SUCCESS) {
-            const char *reason = rnp_result_to_string(ret);
-            weechat_printf(buffer, "[PGP]\tfailed to get signature's %d key: %s\n", (int)i, reason);
-            goto verify_finish;
-        }
+        if ((ret = rnp_op_verify_signature_get_key(sig, &key)) == RNP_SUCCESS) {
+            if ((ret = rnp_key_get_keyid(key, &keyid)) != RNP_SUCCESS) {
+                const char *reason = rnp_result_to_string(ret);
+                weechat_printf(buffer, "[PGP]\tfailed to get key id %d: %s\n", (int)i, reason);
+                rnp_key_handle_destroy(key);
+                goto verify_finish;
+            }
 
-        if ((ret = rnp_key_get_keyid(key, &keyid)) != RNP_SUCCESS) {
-            const char *reason = rnp_result_to_string(ret);
-            weechat_printf(buffer, "[PGP]\tfailed to get key id %d: %s\n", (int)i, reason);
-            rnp_key_handle_destroy(key);
-            goto verify_finish;
-        }
+            if ((ret = rnp_key_get_signature_at(key, 0, &signature)) == RNP_SUCCESS) {
+                if ((ret = rnp_signature_get_keyid(signature, &keyid)) != RNP_SUCCESS) {
+                    const char *reason = rnp_result_to_string(ret);
+                    weechat_printf(buffer, "[PGP]\tfailed to get key id: %s\n", reason);
+                    rnp_key_handle_destroy(key);
+                    goto verify_finish;
+                }
+                rnp_signature_handle_destroy(signature);
+            }
+        } else {
+            if ((ret = rnp_op_verify_signature_get_handle(sig, &signature)) != RNP_SUCCESS) {
+                const char *reason = rnp_result_to_string(ret);
+                weechat_printf(buffer, "[PGP]\tfailed to get signature's %d handle: %s\n", (int)i, reason);
+                goto verify_finish;
+            }
 
-        rnp_signature_handle_t signature = NULL;
-        if ((ret = rnp_key_get_signature_at(key, 0, &signature)) == RNP_SUCCESS) {
             if ((ret = rnp_signature_get_keyid(signature, &keyid)) != RNP_SUCCESS) {
                 const char *reason = rnp_result_to_string(ret);
                 weechat_printf(buffer, "[PGP]\tfailed to get key id: %s\n", reason);
                 rnp_key_handle_destroy(key);
                 goto verify_finish;
             }
-            rnp_signature_handle_destroy(signature);
         }
 
         result = strdup(keyid);

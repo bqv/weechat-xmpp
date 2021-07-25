@@ -5,7 +5,7 @@ endif
 RM=rm -f
 FIND=find
 INCLUDES=-Ilibstrophe $(shell xml2-config --cflags) $(shell pkg-config --cflags librnp-0) $(shell pkg-config --cflags libsignal-protocol-c)
-CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -g -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -D_XOPEN_SOURCE=700 $(INCLUDES)
+CFLAGS+=$(DBGCFLAGS) -fno-omit-frame-pointer -fPIC -std=gnu99 -gdwarf-4 -Wall -Wextra -Werror-implicit-function-declaration -Wno-missing-field-initializers -D_XOPEN_SOURCE=700 $(INCLUDES)
 LDFLAGS+=$(DBGLDFLAGS) -shared -g $(DBGCFLAGS)
 LDLIBS=-lstrophe -lpthread $(shell xml2-config --libs) $(shell pkg-config --libs librnp-0) $(shell pkg-config --libs libsignal-protocol-c) -lgcrypt
 

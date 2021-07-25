@@ -95,7 +95,7 @@ void user__nicklist_add(struct t_account *account,
 {
     struct t_gui_nick_group *ptr_group;
     struct t_gui_buffer *ptr_buffer;
-    char *name = user->profile.display_name;
+    char *name = channel ? user->profile.display_name : user->id;
     if (channel && weechat_strcasecmp(xmpp_jid_bare(account->context, name),
                                       channel->id) == 0)
         name = xmpp_jid_resource(account->context, name);
