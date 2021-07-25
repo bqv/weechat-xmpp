@@ -7,27 +7,23 @@
 
 extern const char *OMEMO_ADVICE;
 
-struct t_omemo_identity
-{
-    uint8_t *key;
-    size_t length;
-};
-
 struct t_omemo
 {
     struct signal_context *context;
-  //omemo_crypto_provider provider;
-  //axc_context *context;
-  //axc_bundle *a_bundle;
-  //omemo_bundle *o_bundle;
 
-    struct t_omemo_identity *identity;
+    struct ratchet_identity_key_pair *identity;
 
     uint32_t device_id;
 };
 
 void omemo__init(struct t_gui_buffer *buffer, struct t_omemo **omemo,
-                 uint32_t device, struct t_omemo_identity *identity);
+                 char **device, char **identity);
+
+void omemo__serialize(struct t_omemo *omemo, char **device,
+                      char **identity, size_t *identity_len);
+
+void omemo__deserialize(struct t_omemo *omemo, const char *device,
+                        const char *identity, size_t identity_len);
 
 void omemo__free(struct t_omemo *omemo);
 

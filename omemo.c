@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <time.h>
+#include <math.h>
 #include <gcrypt.h>
 #include <signal_protocol.h>
 #include <key_helper.h>
@@ -441,20 +442,15 @@ int omemo__signal_init(struct t_gui_buffer *buffer, struct t_omemo *omemo)
     signal_context_set_crypto_provider(global_context, &provider);
     signal_context_set_locking_functions(global_context, &lock_function, &unlock_function);
 
-    ratchet_identity_key_pair *identity_key_pair;
-    uint32_t registration_id;
     signal_protocol_key_helper_pre_key_list_node *pre_keys_head;
     session_signed_pre_key *signed_pre_key;
     int start_id = 0;
     time_t timestamp = time(NULL);
 
-    signal_protocol_key_helper_generate_identity_key_pair(&identity_key_pair, global_context);
-    signal_protocol_key_helper_generate_registration_id(&registration_id, 0, global_context);
+    signal_protocol_key_helper_generate_identity_key_pair(&omemo->identity, global_context);
+    signal_protocol_key_helper_generate_registration_id(&omemo->device_id, 0, global_context);
     signal_protocol_key_helper_generate_pre_keys(&pre_keys_head, start_id, 100, global_context);
-    signal_protocol_key_helper_generate_signed_pre_key(&signed_pre_key, identity_key_pair, 5, timestamp, global_context);
-
-    /* Store identity_key_pair somewhere durable and safe. */
-    /* Store registration_id somewhere durable and safe. */
+    signal_protocol_key_helper_generate_signed_pre_key(&signed_pre_key, omemo->identity, 5, timestamp, global_context);
 
     /* Store pre keys in the pre key store. */
     /* Store signed pre key in the signed pre key store. */
@@ -465,36 +461,65 @@ int omemo__signal_init(struct t_gui_buffer *buffer, struct t_omemo *omemo)
 }
 
 void omemo__init(struct t_gui_buffer *buffer, struct t_omemo **omemo,
-                 uint32_t device, struct t_omemo_identity *const identity)
+                 char **device, char **identity)
 {
     struct t_omemo *new_omemo;
 
     new_omemo = calloc(1, sizeof(**omemo));
 
+    omemo__deserialize(new_omemo, *device, *identity, strlen(*identity));
+
     omemo__signal_init(buffer, new_omemo);
 
-    new_omemo->identity = malloc(sizeof(*identity));
-    if (identity)
-    {
-        new_omemo->identity->length = identity->length;
-        new_omemo->identity->key = calloc(identity->length, sizeof(*identity->key));
-        memcpy(new_omemo->identity->key, identity->key,
-               identity->length * sizeof(*identity->key));
-    }
-    else
-    {
-        new_omemo->identity->length = 4;
-        new_omemo->identity->key = calloc(new_omemo->identity->length, sizeof(*new_omemo->identity->key));
-
-        new_omemo->identity->key[0] = random();
-        new_omemo->identity->key[1] = random();
-        new_omemo->identity->key[2] = random();
-        new_omemo->identity->key[3] = random();
-    }
-
-    new_omemo->device_id = device ? device : random();
+    omemo__serialize(new_omemo, device, identity, NULL);
 
     *omemo = new_omemo;
+}
+
+void omemo__serialize(struct t_omemo *omemo, char **device,
+                      char **identity, size_t *identity_len)
+{
+    if (device)
+    {
+        size_t id_slen = log10(omemo->device_id) * 2;
+        char *id = malloc(sizeof(char) * id_slen);
+        snprintf(id, id_slen, "%d", omemo->device_id);
+
+        *device = id;
+    }
+    if (identity)
+    {
+        signal_buffer *buffer;
+        ratchet_identity_key_pair_serialize(&buffer, omemo->identity);
+
+        size_t key_slen = signal_buffer_len(buffer) * 2;
+        char *key = malloc(sizeof(char) * key_slen);
+        size_t length = weechat_string_base_encode(64, (char*)signal_buffer_data(buffer),
+                                                   signal_buffer_len(buffer), key);
+
+        *identity = key;
+        if (identity_len)
+            *identity_len = length;
+    }
+}
+
+void omemo__deserialize(struct t_omemo *omemo, const char *device,
+                        const char *identity, size_t identity_len)
+{
+    if (device)
+    {
+        uint32_t id = device[0] ? atoi(device) : 0;
+
+        omemo->device_id = id;
+    }
+    if (identity)
+    {
+        uint8_t *key = malloc(sizeof(uint8_t) * identity_len);
+        size_t length = weechat_string_base_decode(64, identity, (char*)key);
+
+        ratchet_identity_key_pair_deserialize(&omemo->identity,
+                                              key, length, omemo->context);
+    }
 }
 
 void omemo__free(struct t_omemo *omemo)
@@ -503,10 +528,9 @@ void omemo__free(struct t_omemo *omemo)
     {
         if (omemo->context)
             signal_context_destroy(omemo->context);
-        if (omemo->identity->key)
-            free(omemo->identity->key);
         if (omemo->identity)
-            free(omemo->identity);
+            ratchet_identity_key_pair_destroy(
+                (signal_type_base *)omemo->identity);
         free(omemo);
     }
 }
