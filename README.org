@@ -116,14 +116,16 @@
        * [X] [#B] Leaves
        * [X] [#B] Tracking
      * [X] [#B] Set/show topic
-   * [-] OMEMO (libsignal-protocol-c / axc)
+   * [-] OMEMO (libsignal-protocol-c)
      * [-] Presence
        * [X] Disco
        * [X] Disco response
-       * [-] Key Generation / storage (secured_data?)
+       * [-] Key Generation / storage (lmdb)
          * [X] Generation
-         * [X] Storage
-         * [ ] Announce
+         * [?] Storage
+         * [-] Announce
+           * [X] Device ID
+           * [ ] Bundles
      * [ ] Messages
    * [ ] [#C] MUC PMs
    * [X] [#A] Send typing notifications

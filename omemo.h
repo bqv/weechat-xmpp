@@ -10,6 +10,12 @@ extern const char *OMEMO_ADVICE;
 struct t_omemo
 {
     struct signal_context *context;
+    struct signal_protocol_store_context *store_context;
+
+    struct {
+        struct MDB_env *env;
+        struct MDB_dbi *dbi;
+    } db;
 
     struct ratchet_identity_key_pair *identity;
 
@@ -17,7 +23,7 @@ struct t_omemo
 };
 
 void omemo__init(struct t_gui_buffer *buffer, struct t_omemo **omemo,
-                 char **device, char **identity);
+                 const char *account_name);
 
 void omemo__serialize(struct t_omemo *omemo, char **device,
                       char **identity, size_t *identity_len);

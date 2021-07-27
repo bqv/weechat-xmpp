@@ -53,18 +53,18 @@ const char *user__as_prefix(struct t_account *account,
 }
 
 struct t_user *user__bot_search(struct t_account *account,
-                                const char *bot_id)
+                                const char *pgp_id)
 {
     struct t_user *ptr_user;
 
-    if (!account || !bot_id)
+    if (!account || !pgp_id)
         return NULL;
 
     for (ptr_user = account->users; ptr_user;
          ptr_user = ptr_user->next_user)
     {
-        if (ptr_user->profile.bot_id &&
-            weechat_strcasecmp(ptr_user->profile.bot_id, bot_id) == 0)
+        if (ptr_user->profile.pgp_id &&
+            weechat_strcasecmp(ptr_user->profile.pgp_id, pgp_id) == 0)
             return ptr_user;
     }
 
@@ -102,15 +102,28 @@ void user__nicklist_add(struct t_account *account,
 
     ptr_buffer = channel ? channel->buffer : account->buffer;
 
-    ptr_group = weechat_nicklist_search_group(ptr_buffer, NULL,
-                                              user->is_away ?
-                                              "+" : "...");
+    char *group = "...";
+    if (weechat_strcasecmp(user->profile.affiliation, "outcast") == 0)
+        group = "!";
+    if (weechat_strcasecmp(user->profile.role, "visitor") == 0)
+        group = "?";
+    if (weechat_strcasecmp(user->profile.role, "participant") == 0)
+        group = "+";
+    if (weechat_strcasecmp(user->profile.affiliation, "member") == 0)
+        group = "%";
+    if (weechat_strcasecmp(user->profile.role, "moderator") == 0)
+        group = "@";
+    if (weechat_strcasecmp(user->profile.affiliation, "admin") == 0)
+        group = "&";
+    if (weechat_strcasecmp(user->profile.affiliation, "owner") == 0)
+        group = "~";
+    ptr_group = weechat_nicklist_search_group(ptr_buffer, NULL, group);
     weechat_nicklist_add_nick(ptr_buffer, ptr_group,
                               name,
                               user->is_away ?
                               "weechat.color.nicklist_away" :
                               user__get_colour_for_nicklist(user),
-                              user->is_away ? "+" : "",
+                              group,
                               "bar_fg",
                               1);
 }
@@ -119,7 +132,7 @@ void user__nicklist_remove(struct t_account *account,
                            struct t_channel *channel,
                            struct t_user *user)
 {
-    struct t_gui_nick_group *ptr_group;
+    struct t_gui_nick *ptr_nick;
     struct t_gui_buffer *ptr_buffer;
     char *name = user->profile.display_name;
     if (channel && weechat_strcasecmp(xmpp_jid_bare(account->context, name),
@@ -128,11 +141,8 @@ void user__nicklist_remove(struct t_account *account,
 
     ptr_buffer = channel ? channel->buffer : account->buffer;
 
-    ptr_group = weechat_nicklist_search_group(ptr_buffer, NULL,
-                                              user->is_away ?
-                                              "+" : "...");
-    weechat_nicklist_remove_nick(ptr_buffer,
-        weechat_nicklist_search_nick(ptr_buffer, ptr_group, name));
+    if ((ptr_nick = weechat_nicklist_search_nick(ptr_buffer, NULL, name)))
+        weechat_nicklist_remove_nick(ptr_buffer, ptr_nick);
 }
 
 struct t_user *user__new(struct t_account *account,
@@ -173,14 +183,14 @@ struct t_user *user__new(struct t_account *account,
 
     new_user->profile.avatar_hash = NULL;
     new_user->profile.status_text = NULL;
-    new_user->profile.status_emoji = NULL;
+    new_user->profile.status = NULL;
     new_user->profile.real_name = NULL;
     new_user->profile.display_name = display_name ?
         strdup(display_name) : strdup("");
-    new_user->profile.real_name_normalized = NULL;
+    new_user->profile.affiliation = NULL;
     new_user->profile.email = NULL;
-    new_user->profile.team = NULL;
-    new_user->profile.bot_id = NULL;
+    new_user->profile.role = NULL;
+    new_user->profile.pgp_id = NULL;
     new_user->updated = 0;
     new_user->is_away = 0;
 
@@ -220,18 +230,18 @@ void user__free(struct t_account *account,
         free(user->profile.avatar_hash);
     if (user->profile.status_text)
         free(user->profile.status_text);
-    if (user->profile.status_emoji)
-        free(user->profile.status_emoji);
+    if (user->profile.status)
+        free(user->profile.status);
     if (user->profile.real_name)
         free(user->profile.real_name);
     if (user->profile.display_name)
         free(user->profile.display_name);
-    if (user->profile.real_name_normalized)
-        free(user->profile.real_name_normalized);
+    if (user->profile.affiliation)
+        free(user->profile.affiliation);
     if (user->profile.email)
         free(user->profile.email);
-    if (user->profile.team)
-        free(user->profile.team);
+    if (user->profile.role)
+        free(user->profile.role);
 
     free(user);
 

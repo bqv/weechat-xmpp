@@ -75,20 +75,20 @@ char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *t
     if ((ret = rnp_input_from_memory(&input, (uint8_t *)message, strlen(message), false)) !=
         RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(buffer, "[PGP]\tfailed to create input object: %s\n", reason);
+        weechat_printf(buffer, "%spgp: failed to create input object: %s\n", weechat_prefix("error"), reason);
         goto encrypt_finish;
     }
 
     if ((ret = rnp_output_to_memory(&output, 0)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(buffer, "[PGP]\tfailed to create output object: %s\n", reason);
+        weechat_printf(buffer, "%spgp: failed to create output object: %s\n", weechat_prefix("error"), reason);
         goto encrypt_finish;
     }
 
     /* create encryption operation */
     if ((ret = rnp_op_encrypt_create(&encrypt, pgp->context, input, output)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(buffer, "[PGP]\tfailed to create encrypt operation: %s\n", reason);
+        weechat_printf(buffer, "%spgp: failed to create encrypt operation: %s\n", weechat_prefix("error"), reason);
         goto encrypt_finish;
     }
 
@@ -103,13 +103,13 @@ char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *t
     /* locate recipient's key and add it to the operation context. */
     if ((ret = rnp_locate_key(pgp->context, "keyid", target, &key)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(buffer, "[PGP]\tfailed to locate recipient key: %s\n", reason);
+        weechat_printf(buffer, "%spgp: failed to locate recipient key: %s\n", weechat_prefix("error"), reason);
         goto encrypt_finish;
     }
 
     if ((ret = rnp_op_encrypt_add_recipient(encrypt, key)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(buffer, "[PGP]\tfailed to add recipient: %s\n", reason);
+        weechat_printf(buffer, "%spgp: failed to add recipient: %s\n", weechat_prefix("error"), reason);
         goto encrypt_finish;
     }
     rnp_key_handle_destroy(key);
@@ -118,7 +118,7 @@ char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *t
     /* execute encryption operation */
     if ((ret = rnp_op_encrypt_execute(encrypt)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(buffer, "[PGP]\tencryption failed: %s\n", reason);
+        weechat_printf(buffer, "%spgp: encryption failed: %s\n", weechat_prefix("error"), reason);
         goto encrypt_finish;
     }
 
@@ -156,19 +156,19 @@ char *pgp__decrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *c
      * message */
     if ((ret = rnp_input_from_memory(&input, buf, buf_len, false)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(buffer, "[PGP]\tfailed to create input object: %s\n", reason);
+        weechat_printf(buffer, "%spgp: failed to create input object: %s\n", weechat_prefix("error"), reason);
         goto decrypt_finish;
     }
 
     if ((ret = rnp_output_to_memory(&output, 0)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(buffer, "[PGP]\tfailed to create output object: %s\n", reason);
+        weechat_printf(buffer, "%spgp: failed to create output object: %s\n", weechat_prefix("error"), reason);
         goto decrypt_finish;
     }
 
     if ((ret = rnp_decrypt(pgp->context, input, output)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(buffer, "[PGP]\tpublic-key decryption failed: %s\n", reason);
+        weechat_printf(buffer, "%spgp: public-key decryption failed: %s\n", weechat_prefix("error"), reason);
         goto decrypt_finish;
     }
     free(buf);
@@ -204,19 +204,19 @@ char *pgp__verify(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *ce
     /* create file input memory objects for the signed message and verified message */
     if ((ret = rnp_input_from_memory(&input, buf, buf_len, false)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(buffer, "[PGP]\tfailed to create input object: %s\n", reason);
+        weechat_printf(buffer, "%spgp: failed to create input object: %s\n", weechat_prefix("error"), reason);
         goto verify_finish;
     }
 
     if ((ret = rnp_input_from_memory(&signature, buf, buf_len, false)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(buffer, "[PGP]\tfailed to create input object: %s\n", reason);
+        weechat_printf(buffer, "%spgp: failed to create input object: %s\n", weechat_prefix("error"), reason);
         goto verify_finish;
     }
 
     if ((ret = rnp_op_verify_detached_create(&verify, pgp->context, input, signature)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(buffer, "[PGP]\tfailed to create verification context: %s\n", reason);
+        weechat_printf(buffer, "%spgp: failed to create verification context: %s\n", weechat_prefix("error"), reason);
         goto verify_finish;
     }
 
@@ -226,14 +226,14 @@ char *pgp__verify(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *ce
   //        ) != RNP_ERROR_SIGNATURE_INVALID)
   //    if (ret != RNP_ERROR_SIGNATURE_INVALID) {
   //        const char *reason = rnp_result_to_string(ret);
-  //        weechat_printf(buffer, "[PGP]\tfailed to execute verification operation: %s\n", reason);
+  //        weechat_printf(buffer, "%spgp: failed to execute verification operation: %s\n", weechat_prefix("error"), reason);
   //        goto verify_finish;
   //    }
 
     /* now check signatures and get some info about them */
     if ((ret = rnp_op_verify_get_signature_count(verify, &sigcount)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
-        weechat_printf(buffer, "[PGP]\tfailed to get signature count: %s\n", reason);
+        weechat_printf(buffer, "%spgp: failed to get signature count: %s\n", weechat_prefix("error"), reason);
         goto verify_finish;
     }
 
@@ -245,14 +245,14 @@ char *pgp__verify(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *ce
 
         if ((ret = rnp_op_verify_get_signature_at(verify, i, &sig)) != RNP_SUCCESS) {
             const char *reason = rnp_result_to_string(ret);
-            weechat_printf(buffer, "[PGP]\tfailed to get signature %d: %s\n", (int)i, reason);
+            weechat_printf(buffer, "%spgp: failed to get signature %d: %s\n", weechat_prefix("error"), (int)i, reason);
             goto verify_finish;
         }
 
         if ((ret = rnp_op_verify_signature_get_key(sig, &key)) == RNP_SUCCESS) {
             if ((ret = rnp_key_get_keyid(key, &keyid)) != RNP_SUCCESS) {
                 const char *reason = rnp_result_to_string(ret);
-                weechat_printf(buffer, "[PGP]\tfailed to get key id %d: %s\n", (int)i, reason);
+                weechat_printf(buffer, "%spgp: failed to get key id %d: %s\n", weechat_prefix("error"), (int)i, reason);
                 rnp_key_handle_destroy(key);
                 goto verify_finish;
             }
@@ -260,7 +260,7 @@ char *pgp__verify(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *ce
             if ((ret = rnp_key_get_signature_at(key, 0, &signature)) == RNP_SUCCESS) {
                 if ((ret = rnp_signature_get_keyid(signature, &keyid)) != RNP_SUCCESS) {
                     const char *reason = rnp_result_to_string(ret);
-                    weechat_printf(buffer, "[PGP]\tfailed to get key id: %s\n", reason);
+                    weechat_printf(buffer, "%spgp: failed to get key id: %s\n", weechat_prefix("error"), reason);
                     rnp_key_handle_destroy(key);
                     goto verify_finish;
                 }
@@ -269,13 +269,13 @@ char *pgp__verify(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *ce
         } else {
             if ((ret = rnp_op_verify_signature_get_handle(sig, &signature)) != RNP_SUCCESS) {
                 const char *reason = rnp_result_to_string(ret);
-                weechat_printf(buffer, "[PGP]\tfailed to get signature's %d handle: %s\n", (int)i, reason);
+                weechat_printf(buffer, "%spgp: failed to get signature's %d handle: %s\n", weechat_prefix("error"), (int)i, reason);
                 goto verify_finish;
             }
 
             if ((ret = rnp_signature_get_keyid(signature, &keyid)) != RNP_SUCCESS) {
                 const char *reason = rnp_result_to_string(ret);
-                weechat_printf(buffer, "[PGP]\tfailed to get key id: %s\n", reason);
+                weechat_printf(buffer, "%spgp: failed to get key id: %s\n", weechat_prefix("error"), reason);
                 rnp_key_handle_destroy(key);
                 goto verify_finish;
             }
@@ -309,18 +309,18 @@ char *pgp__sign(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *sour
      * message */
     if (rnp_input_from_memory(&input, (uint8_t *)message, strlen(message), false) !=
         RNP_SUCCESS) {
-        weechat_printf(buffer, "[PGP]\tfailed to create input object\n");
+        weechat_printf(buffer, "%spgp: failed to create input object\n", weechat_prefix("error"));
         goto sign_finish;
     }
 
     if (rnp_output_to_memory(&output, 0) != RNP_SUCCESS) {
-        weechat_printf(buffer, "[PGP]\tfailed to create output object\n");
+        weechat_printf(buffer, "%spgp: failed to create output object\n", weechat_prefix("error"));
         goto sign_finish;
     }
 
     /* initialize and configure sign operation */
     if (rnp_op_sign_detached_create(&sign, pgp->context, input, output) != RNP_SUCCESS) {
-        weechat_printf(buffer, "[PGP]\tfailed to create sign operation\n");
+        weechat_printf(buffer, "%spgp: failed to create sign operation\n", weechat_prefix("error"));
         goto sign_finish;
     }
 
@@ -338,12 +338,12 @@ char *pgp__sign(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *sour
 
     /* now add signatures. First locate the signing key, then add and setup signature */
     if (rnp_locate_key(pgp->context, "keyid", source, &key) != RNP_SUCCESS) {
-        weechat_printf(buffer, "[PGP]\tfailed to locate signing key: %s\n", source);
+        weechat_printf(buffer, "%spgp: failed to locate signing key: %s\n", weechat_prefix("error"), source);
         goto sign_finish;
     }
 
     if (rnp_op_sign_add_signature(sign, key, NULL) != RNP_SUCCESS) {
-        weechat_printf(buffer, "[PGP]\tfailed to add signature for key: %s\n", source);
+        weechat_printf(buffer, "%spgp: failed to add signature for key: %s\n", weechat_prefix("error"), source);
         goto sign_finish;
     }
 
@@ -352,7 +352,7 @@ char *pgp__sign(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *sour
 
     /* finally do signing */
     if (rnp_op_sign_execute(sign) != RNP_SUCCESS) {
-        weechat_printf(buffer, "[PGP]\tfailed to sign with key: %s\n", source);
+        weechat_printf(buffer, "%spgp: failed to sign with key: %s\n", weechat_prefix("error"), source);
         goto sign_finish;
     }
 

@@ -507,7 +507,7 @@ void account__disconnect(struct t_account *account, int reconnect)
     account__set_lag(account);
     */ // lag based on xmpp ping
 
-    account->disconnected = 1;
+    account->disconnected = !reconnect;
 
     /* send signal "account_disconnected" with account name */
     (void) weechat_hook_signal_send("xmpp_account_disconnected",
@@ -572,8 +572,6 @@ void account__close_connection(struct t_account *account)
 
 int account__connect(struct t_account *account)
 {
-    account->disconnected = 0;
-
     if (!account->buffer)
     {
         if (!account__create_buffer(account))
@@ -587,7 +585,7 @@ int account__connect(struct t_account *account)
         connection__connect(account, &account->connection, account_jid(account),
                             account_password(account), account_tls(account));
 
-    (void) weechat_hook_signal_send("xmpp_account_connected",
+    (void) weechat_hook_signal_send("xmpp_account_connecting",
                                     WEECHAT_HOOK_SIGNAL_STRING, account->name);
 
     return account->is_connected;
@@ -608,6 +606,7 @@ int account__timer_cb(const void *pointer, void *data, int remaining_calls)
             && (xmpp_conn_is_connecting(ptr_account->connection)
                 || xmpp_conn_is_connected(ptr_account->connection)))
             connection__process(ptr_account->context, ptr_account->connection, 10);
+        else if (ptr_account->disconnected);
         else if (ptr_account->reconnect_start > 0
                  && ptr_account->reconnect_start < time(NULL))
         {

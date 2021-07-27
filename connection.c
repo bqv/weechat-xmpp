@@ -86,9 +86,9 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     struct t_account *account = (struct t_account *)userdata;
     struct t_user *user;
     struct t_channel *channel;
-    xmpp_stanza_t *iq__x_signed, *iq__x_muc_user, *iq__x__item, *iq__c, *iq__status;
+    xmpp_stanza_t *iq__x_signed, *iq__x_muc_user, *show, *iq__x__item, *iq__c, *iq__status;
     const char *from, *from_bare, *from_res, *type, *role = NULL, *affiliation = NULL, *jid = NULL;
-    const char *certificate = NULL, *node = NULL, *ver = NULL;
+    const char *show__text = NULL, *certificate = NULL, *node = NULL, *ver = NULL;
     char *clientid = NULL, *status;
 
     from = xmpp_stanza_get_from(stanza);
@@ -97,20 +97,13 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     from_bare = xmpp_jid_bare(account->context, from);
     from_res = xmpp_jid_resource(account->context, from);
     type = xmpp_stanza_get_type(stanza);
+    show = xmpp_stanza_get_child_by_name(stanza, "show");
+    show__text = show ? xmpp_stanza_get_text(show) : NULL;
     iq__x_signed = xmpp_stanza_get_child_by_name_and_ns(
         stanza, "x", "jabber:x:signed");
     if (iq__x_signed)
     {
         certificate = xmpp_stanza_get_text(iq__x_signed);
-    }
-    iq__x_muc_user = xmpp_stanza_get_child_by_name_and_ns(
-        stanza, "x", "http://jabber.org/protocol/muc#user");
-    if (iq__x_muc_user)
-    {
-        iq__x__item = xmpp_stanza_get_child_by_name(iq__x_muc_user, "item");
-        role = xmpp_stanza_get_attribute(iq__x__item, "role");
-        affiliation = xmpp_stanza_get_attribute(iq__x__item, "affiliation");
-        jid = xmpp_stanza_get_attribute(iq__x__item, "jid");
     }
     iq__c = xmpp_stanza_get_child_by_name_and_ns(
         stanza, "c", "http://jabber.org/protocol/caps");
@@ -118,9 +111,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     {
         node = xmpp_stanza_get_attribute(iq__c, "node");
         ver = xmpp_stanza_get_attribute(iq__c, "ver");
-        if (jid)
-            clientid = strdup(jid);
-        else if (node && ver)
+        if (node && ver)
         {
             int len = strlen(node)+1+strlen(ver);
             clientid = malloc(sizeof(char)*len);
@@ -129,36 +120,76 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     }
     iq__status = xmpp_stanza_get_child_by_name(stanza, "status");
     status = iq__status ? xmpp_stanza_get_text(iq__status) : NULL;
+    iq__x_muc_user = xmpp_stanza_get_child_by_name_and_ns(
+        stanza, "x", "http://jabber.org/protocol/muc#user");
 
     channel = channel__search(account, from_bare);
     if (weechat_strcasecmp(type, "unavailable") && !iq__x_muc_user && !channel)
         channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
-    if (certificate && channel)
-    {
-        if (channel->type != CHANNEL_TYPE_MUC)
-            channel->pgp_id = pgp__verify(channel->buffer, account->pgp, certificate);
-        weechat_printf(channel->buffer, "[PGP]\t%sKey %s from %s",
-                       weechat_color("gray"), channel->pgp_id, from);
-    }
 
-    user = user__search(account, from);
-    if (!user)
-        user = user__new(account, from,
-                         channel && weechat_strcasecmp(from_bare, channel->id) == 0
-                         ? from_res : from);
+    if (iq__x_muc_user)
+    for (iq__x__item = xmpp_stanza_get_children(iq__x_muc_user);
+         iq__x__item; iq__x__item = xmpp_stanza_get_next(iq__x__item))
+    {
+        if (weechat_strcasecmp(xmpp_stanza_get_name(iq__x__item), "item") != 0)
+            continue;
 
-    if (!iq__x_muc_user && channel)
-    {
-        channel__add_member(account, channel, from, clientid, status);
+        role = xmpp_stanza_get_attribute(iq__x__item, "role");
+        affiliation = xmpp_stanza_get_attribute(iq__x__item, "affiliation");
+        jid = xmpp_stanza_get_attribute(iq__x__item, "jid");
+
+        user = user__search(account, from);
+        if (!user)
+            user = user__new(account, from,
+                             channel && weechat_strcasecmp(from_bare, channel->id) == 0
+                             ? from_res : from);
+        user->profile.status_text = status ? strdup(status) : NULL;
+        user->profile.status = show ? strdup(show__text) : NULL;
+        user->is_away = show ? weechat_strcasecmp(show__text, "away") == 0 : 0;
+        user->profile.role = role ? strdup(role) : NULL;
+        user->profile.affiliation = affiliation && strcmp(affiliation, "none") != 0
+            ? strdup(affiliation) : NULL;
+        if (certificate && channel)
+        {
+            user->profile.pgp_id = pgp__verify(channel->buffer, account->pgp, certificate);
+            if (channel->type != CHANNEL_TYPE_MUC)
+                channel->pgp_id = user->profile.pgp_id;
+        }
+
+        if (channel)
+        {
+            if (weechat_strcasecmp(role, "none") == 0)
+                channel__remove_member(account, channel, from, status);
+            else
+                channel__add_member(account, channel, from, jid ? jid : clientid);
+        }
     }
-    else if (channel)
+    else
     {
-        channel__set_member_role(account, channel, from, role);
-        channel__set_member_affiliation(account, channel, from, affiliation);
-        if (weechat_strcasecmp(role, "none") == 0)
-            channel__remove_member(account, channel, from, status);
-        else
-            channel__add_member(account, channel, from, clientid, status);
+        user = user__search(account, from);
+        if (!user)
+            user = user__new(account, from,
+                             channel && weechat_strcasecmp(from_bare, channel->id) == 0
+                             ? from_res : from);
+        user->profile.status_text = status ? strdup(status) : NULL;
+        user->profile.status = show ? strdup(show__text) : NULL;
+        user->profile.role = role ? strdup(role) : NULL;
+        user->profile.affiliation = affiliation && strcmp(affiliation, "none") != 0
+            ? strdup(affiliation) : NULL;
+        if (certificate && channel)
+        {
+            user->profile.pgp_id = pgp__verify(channel->buffer, account->pgp, certificate);
+            if (channel->type != CHANNEL_TYPE_MUC)
+                channel->pgp_id = user->profile.pgp_id;
+        }
+
+        if (channel)
+        {
+            if (weechat_strcasecmp(type, "unavailable") == 0)
+                channel__remove_member(account, channel, from, status);
+            else
+                channel__add_member(account, channel, from, clientid);
+        }
     }
 
     if (clientid)
@@ -219,8 +250,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
             channel__add_typing(channel, user);
             weechat_printf(channel->buffer, "...\t%s%s typing",
                            weechat_color("gray"),
-                           weechat_strcasecmp(from_bare, channel->id) == 0
-                           ? nick : from);
+                           channel->type == CHANNEL_TYPE_MUC ? nick : from);
         }
 
         sent = xmpp_stanza_get_child_by_name_and_ns(
@@ -819,19 +849,21 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
                 {
                     list = xmpp_stanza_get_child_by_name_and_ns(
                         item, "list", "eu.siacs.conversations.axolotl");
-                    if (list)
+                    if (list && account->omemo)
                     {
                         account__free_device_all(account);
 
-                        struct t_account_device *dev = malloc(sizeof(struct t_account_device));
+                        struct t_account_device *dev;
                         char id[64] = {0};
+                        int i = 0;
+
+                        dev = malloc(sizeof(struct t_account_device));
 
                         dev->id = account->omemo->device_id;
                         snprintf(id, sizeof(id), "%d", dev->id);
                         dev->name = strdup(id);
                         account__add_device(account, dev);
 
-                        int i = 0;
                         children = malloc(sizeof(xmpp_stanza_t *) * 128);
                         children[i++] = stanza__iq_pubsub_publish_item_list_device(
                             account->context, NULL, with_noop(dev->name));
@@ -1005,6 +1037,8 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
 
     if (status == XMPP_CONN_CONNECT)
     {
+        account->disconnected = 0;
+
         xmpp_stanza_t *pres, *pres__c, *pres__status, *pres__status__text,
             *pres__x, *pres__x__text, **children;
         char cap_hash[28+1] = {0};
@@ -1113,45 +1147,10 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         xmpp_send(conn, children[0]);
         xmpp_stanza_release(children[0]);
 
-        struct t_hashtable *variables = weechat_hashtable_new (8,
-                                                              WEECHAT_HASHTABLE_STRING,
-                                                              WEECHAT_HASHTABLE_STRING,
-                                                              NULL, NULL);
-        weechat_hashtable_set(variables, "account", account->name);
-        char *device_r = weechat_string_eval_expression(
-            "${sec.data.xmpp_device_${account}}",
-            NULL, variables, NULL);
-        char *device_w = device_r;
-        char *account_r = weechat_string_eval_expression(
-            "${sec.data.xmpp_identity_${account}}",
-            NULL, variables, NULL);
-        char *account_w = account_r;
-        weechat_hashtable_free(variables);
+        omemo__init(account->buffer, &account->omemo, account->name);
 
-        omemo__init(account->buffer, &account->omemo, &device_w, &account_w);
-
-        if (weechat_strcasecmp(device_w, device_r) != 0)
-        {
-            char **command = weechat_string_dyn_alloc(256);
-            weechat_string_dyn_concat(command, "/secure set ", -1);
-            weechat_string_dyn_concat(command, "xmpp_device_", -1);
-            weechat_string_dyn_concat(command, account->name, -1);
-            weechat_string_dyn_concat(command, " ", -1);
-            weechat_string_dyn_concat(command, device_w, -1);
-            weechat_command(account->buffer, *command);
-            weechat_string_dyn_free(command, 1);
-        }
-        if (weechat_strcasecmp(account_w, account_r) != 0)
-        {
-            char **command = weechat_string_dyn_alloc(256);
-            weechat_string_dyn_concat(command, "/secure set ", -1);
-            weechat_string_dyn_concat(command, "xmpp_identity_", -1);
-            weechat_string_dyn_concat(command, account->name, -1);
-            weechat_string_dyn_concat(command, " ", -1);
-            weechat_string_dyn_concat(command, account_w, -1);
-            weechat_command(account->buffer, *command);
-            weechat_string_dyn_free(command, 1);
-        }
+        (void) weechat_hook_signal_send("xmpp_account_connected",
+                                        WEECHAT_HOOK_SIGNAL_STRING, account->name);
     }
     else
     {

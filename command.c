@@ -6,17 +6,20 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
 //#include "oauth.h"
-//#include "teaminfo.h"
 #include "account.h"
 #include "user.h"
 #include "channel.h"
 #include "buffer.h"
 #include "message.h"
 #include "command.h"
+
+#define MAM_DEFAULT_DAYS 2
+#define STR(X) #X
 
 void command__display_account(struct t_account *account)
 {
@@ -147,7 +150,7 @@ void command__add_account(const char *name, const char *jid, const char *passwor
         account_option_set(account, ACCOUNT_OPTION_NICKNAME,
                            strdup(xmpp_jid_node(account->context, jid)));
 
-    weechat_printf (
+    weechat_printf(
         NULL,
         _("%s: account %s%s%s %s(%s%s%s)%s added"),
         WEECHAT_XMPP_PLUGIN_NAME,
@@ -161,9 +164,11 @@ void command__add_account(const char *name, const char *jid, const char *passwor
         weechat_color("reset"));
 }
 
-void command__account_add(int argc, char **argv)
+void command__account_add(struct t_gui_buffer *buffer, int argc, char **argv)
 {
     char *name, *jid = NULL, *password = NULL;
+
+    (void) buffer;
 
     switch (argc)
     {
@@ -202,11 +207,12 @@ int command__connect_account(struct t_account *account)
     return 1;
 }
 
-int command__account_connect(int argc, char **argv)
+int command__account_connect(struct t_gui_buffer *buffer, int argc, char **argv)
 {
     int i, nb_connect, connect_ok;
     struct t_account *ptr_account;
 
+    (void) buffer;
     (void) argc;
     (void) argv;
 
@@ -257,7 +263,7 @@ int command__disconnect_account(struct t_account *account)
     return 1;
 }
 
-int command__account_disconnect(int argc, char **argv)
+int command__account_disconnect(struct t_gui_buffer *buffer, int argc, char **argv)
 {
     int i, nb_disconnect, disconnect_ok;
     struct t_account *ptr_account;
@@ -268,6 +274,20 @@ int command__account_disconnect(int argc, char **argv)
     disconnect_ok = 1;
 
     nb_disconnect = 0;
+    if (argc < 2)
+    {
+        struct t_channel *ptr_channel;
+
+        buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);
+
+        if (ptr_account)
+        {
+            if (!command__disconnect_account(ptr_account))
+            {
+                disconnect_ok = 0;
+            }
+        }
+    }
     for (i = 2; i < argc; i++)
     {
         nb_disconnect++;
@@ -292,14 +312,16 @@ int command__account_disconnect(int argc, char **argv)
     return (disconnect_ok) ? WEECHAT_RC_OK : WEECHAT_RC_ERROR;
 }
 
-int command__account_reconnect(int argc, char **argv)
+int command__account_reconnect(struct t_gui_buffer *buffer, int argc, char **argv)
 {
-    command__account_disconnect(argc, argv);
-    return command__account_connect(argc, argv);
+    command__account_disconnect(buffer, argc, argv);
+    return command__account_connect(buffer, argc, argv);
 }
 
-void command__account_delete(int argc, char **argv)
+void command__account_delete(struct t_gui_buffer *buffer, int argc, char **argv)
 {
+    (void) buffer;
+
     struct t_account *account;
     char *account_name;
 
@@ -337,7 +359,7 @@ void command__account_delete(int argc, char **argv)
 
     account_name = strdup(account->name);
     account__free(account);
-    weechat_printf (
+    weechat_printf(
         NULL,
         _("%s: account %s%s%s has been deleted"),
         WEECHAT_XMPP_PLUGIN_NAME,
@@ -349,8 +371,8 @@ void command__account_delete(int argc, char **argv)
 }
 
 int command__account(const void *pointer, void *data,
-                 struct t_gui_buffer *buffer, int argc,
-                 char **argv, char **argv_eol)
+                     struct t_gui_buffer *buffer, int argc,
+                     char **argv, char **argv_eol)
 {
 
     (void) pointer;
@@ -367,31 +389,31 @@ int command__account(const void *pointer, void *data,
     {
         if (weechat_strcasecmp(argv[1], "add") == 0)
         {
-            command__account_add(argc, argv);
+            command__account_add(buffer, argc, argv);
             return WEECHAT_RC_OK;
         }
 
         if (weechat_strcasecmp(argv[1], "connect") == 0)
         {
-            command__account_connect(argc, argv);
+            command__account_connect(buffer, argc, argv);
             return WEECHAT_RC_OK;
         }
 
         if (weechat_strcasecmp(argv[1], "disconnect") == 0)
         {
-            command__account_disconnect(argc, argv);
+            command__account_disconnect(buffer, argc, argv);
             return WEECHAT_RC_OK;
         }
 
         if (weechat_strcasecmp(argv[1], "reconnect") == 0)
         {
-            command__account_reconnect(argc, argv);
+            command__account_reconnect(buffer, argc, argv);
             return WEECHAT_RC_OK;
         }
 
         if (weechat_strcasecmp(argv[1], "delete") == 0)
         {
-            command__account_delete(argc, argv);
+            command__account_delete(buffer, argc, argv);
             return WEECHAT_RC_OK;
         }
 
@@ -477,6 +499,33 @@ int command__enter(const void *pointer, void *data,
             weechat_command(ptr_account->buffer, buf);
         }
         weechat_string_free_split(jids);
+    }
+    else
+    {
+        const char *buffer_jid = weechat_buffer_get_string(buffer, "localvar_channel");
+
+        pres_jid = xmpp_jid_new(
+            ptr_account->context,
+            xmpp_jid_node(ptr_account->context, buffer_jid),
+            xmpp_jid_domain(ptr_account->context, buffer_jid),
+            weechat_buffer_get_string(buffer, "localvar_nick"));
+
+        ptr_channel = channel__search(ptr_account, buffer_jid);
+        if (!ptr_channel)
+            ptr_channel = channel__new(ptr_account, CHANNEL_TYPE_MUC, buffer_jid, buffer_jid);
+
+        pres = xmpp_presence_new(ptr_account->context);
+        xmpp_stanza_set_to(pres, pres_jid);
+        xmpp_stanza_set_from(pres, account_jid(ptr_account));
+
+        xmpp_stanza_t *pres__x = xmpp_stanza_new(ptr_account->context);
+        xmpp_stanza_set_name(pres__x, "x");
+        xmpp_stanza_set_ns(pres__x, "http://jabber.org/protocol/muc");
+        xmpp_stanza_add_child(pres, pres__x);
+        xmpp_stanza_release(pres__x);
+
+        xmpp_send(ptr_account->connection, pres);
+        xmpp_stanza_release(pres);
     }
 
     return WEECHAT_RC_OK;
@@ -564,7 +613,7 @@ int command__msg(const void *pointer, void *data,
 
     if (!ptr_channel)
     {
-        weechat_printf (
+        weechat_printf(
             ptr_account->buffer,
             _("%s%s: \"%s\" command can not be executed on a account buffer"),
             weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME, "msg");
@@ -619,7 +668,7 @@ int command__me(const void *pointer, void *data,
 
     if (!ptr_channel)
     {
-        weechat_printf (
+        weechat_printf(
             ptr_account->buffer,
             _("%s%s: \"%s\" command can not be executed on a account buffer"),
             weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME, "me");
@@ -656,6 +705,58 @@ int command__me(const void *pointer, void *data,
     return WEECHAT_RC_OK;
 }
 
+int command__mam(const void *pointer, void *data,
+                 struct t_gui_buffer *buffer, int argc,
+                 char **argv, char **argv_eol)
+{
+    struct t_account *ptr_account = NULL;
+    struct t_channel *ptr_channel = NULL;
+    int days;
+
+    (void) pointer;
+    (void) data;
+    (void) argv_eol;
+
+    buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);
+
+    if (!ptr_account)
+        return WEECHAT_RC_ERROR;
+
+    if (!ptr_channel)
+    {
+        weechat_printf(
+            ptr_account->buffer,
+            _("%s%s: \"%s\" command can not be executed on a account buffer"),
+            weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME, "mam");
+        return WEECHAT_RC_OK;
+    }
+
+    time_t start = time(NULL);
+    struct tm *ago = gmtime(&start);
+    if (argc > 1)
+    {
+        errno = 0;
+        days = strtol(argv[1], NULL, 10);
+
+        if (errno == 0)
+            ago->tm_mday -= days;
+        else
+        {
+            weechat_printf(
+                ptr_channel->buffer,
+                _("%s%s: \"%s\" is not a valid number of %s for %s"),
+                weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME, "days", "mam");
+            ago->tm_mday -= MAM_DEFAULT_DAYS;
+        }
+    }
+    else
+        ago->tm_mday -= MAM_DEFAULT_DAYS;
+    start = mktime(ago);
+    channel__fetch_mam(ptr_account, ptr_channel, &start, NULL);
+
+    return WEECHAT_RC_OK;
+}
+
 int command__pgp(const void *pointer, void *data,
                  struct t_gui_buffer *buffer, int argc,
                  char **argv, char **argv_eol)
@@ -675,10 +776,10 @@ int command__pgp(const void *pointer, void *data,
 
     if (!ptr_channel)
     {
-        weechat_printf (
+        weechat_printf(
             ptr_account->buffer,
             _("%s%s: \"%s\" command can not be executed on a account buffer"),
-            weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME, "me");
+            weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME, "pgp");
         return WEECHAT_RC_OK;
     }
 
@@ -796,6 +897,15 @@ void command__init()
         NULL, &command__me, NULL, NULL);
     if (!hook)
         weechat_printf(NULL, "Failed to setup command /me");
+
+    hook = weechat_hook_command(
+        "mam",
+        N_("retrieve mam messages for the current channel"),
+        N_("[days]"),
+        N_("days: number of days to fetch (default: " STR(MAM_DEFAULT_DAYS) ")"),
+        NULL, &command__mam, NULL, NULL);
+    if (!hook)
+        weechat_printf(NULL, "Failed to setup command /mam");
 
     hook = weechat_hook_command(
         "pgp",

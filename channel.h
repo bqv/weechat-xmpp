@@ -170,20 +170,14 @@ void channel__update_purpose(struct t_channel *channel,
 
 struct t_channel_member *channel__add_member(struct t_account *account,
                                              struct t_channel *channel,
-                                             const char *id, const char *client,
-                                             const char *status);
+                                             const char *id, const char *client);
 
-int channel__set_member_role(struct t_account *account,
-                             struct t_channel *channel,
-                             const char *id, const char *role);
-
-int channel__set_member_affiliation(struct t_account *account,
-                                    struct t_channel *channel,
-                                    const char *id, const char *affiliation);
+struct t_channel_member *channel__member_search(struct t_channel *channel,
+                                                const char *id);
 
 struct t_channel_member *channel__remove_member(struct t_account *account,
                                                 struct t_channel *channel,
-                                                const char *id, const char *status);
+                                                const char *id, const char *reason);
 
 void channel__send_message(struct t_account *account, struct t_channel *channel,
                            const char *to, const char *body);

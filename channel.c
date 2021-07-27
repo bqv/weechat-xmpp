@@ -211,12 +211,28 @@ void channel__add_nicklist_groups(struct t_account *account,
 
     ptr_buffer = channel ? channel->buffer : account->buffer;
 
-    snprintf(str_group, sizeof(str_group), "%03d|%s",
-             000, "+");
+    snprintf(str_group, sizeof(str_group), "%03d|%s", 000, "~");
     weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
                                "weechat.color.nicklist_group", 1);
-    snprintf(str_group, sizeof(str_group), "%03d|%s",
-             999, "...");
+    snprintf(str_group, sizeof(str_group), "%03d|%s", 001, "&");
+    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+                               "weechat.color.nicklist_group", 1);
+    snprintf(str_group, sizeof(str_group), "%03d|%s", 002, "@");
+    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+                               "weechat.color.nicklist_group", 1);
+    snprintf(str_group, sizeof(str_group), "%03d|%s", 003, "%");
+    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+                               "weechat.color.nicklist_group", 1);
+    snprintf(str_group, sizeof(str_group), "%03d|%s", 004, "+");
+    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+                               "weechat.color.nicklist_group", 1);
+    snprintf(str_group, sizeof(str_group), "%03d|%s", 005, "?");
+    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+                               "weechat.color.nicklist_group", 1);
+    snprintf(str_group, sizeof(str_group), "%03d|%s", 006, "!");
+    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+                               "weechat.color.nicklist_group", 1);
+    snprintf(str_group, sizeof(str_group), "%03d|%s", 999, "...");
     weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
                                "weechat.color.nicklist_group", 1);
 }
@@ -289,6 +305,8 @@ struct t_channel *channel__new(struct t_account *account,
     else
         account->channels = new_channel;
     account->last_channel = new_channel;
+
+    channel__add_nicklist_groups(account, new_channel);
 
     if (type != CHANNEL_TYPE_MUC)
     {
@@ -818,15 +836,14 @@ void channel__update_topic(struct t_channel *channel,
 
 struct t_channel_member *channel__add_member(struct t_account *account,
                                              struct t_channel *channel,
-                                             const char *id, const char *client,
-                                             const char *status)
+                                             const char *id, const char *client)
 {
     struct t_channel_member *member;
     struct t_user *user;
 
     user = user__search(account, id);
 
-    if (weechat_strcasecmp(user->id, channel->id) == 0
+    if (user && weechat_strcasecmp(user->id, channel->id) == 0
         && channel->type == CHANNEL_TYPE_MUC)
     {
         weechat_printf_date_tags(channel->buffer, 0, "log2", "%sMUC: %s",
@@ -835,19 +852,24 @@ struct t_channel_member *channel__add_member(struct t_account *account,
         return NULL;
     }
 
-    member = malloc(sizeof(struct t_channel_member));
-    member->id = strdup(id);
+    if (!(member = channel__member_search(channel, id)))
+    {
+        member = malloc(sizeof(struct t_channel_member));
+        member->id = strdup(id);
 
-    member->role = NULL;
-    member->affiliation = NULL;
+        member->role = NULL;
+        member->affiliation = NULL;
 
-    member->prev_member = channel->last_member;
-    member->next_member = NULL;
-    if (channel->last_member)
-        (channel->last_member)->next_member = member;
-    else
-        channel->members = member;
-    channel->last_member = member;
+        member->prev_member = channel->last_member;
+        member->next_member = NULL;
+        if (channel->last_member)
+            (channel->last_member)->next_member = member;
+        else
+            channel->members = member;
+        channel->last_member = member;
+    }
+    else if (user)
+        user__nicklist_remove(account, channel, user);
 
     if (user)
         user__nicklist_add(account, channel, user);
@@ -856,28 +878,45 @@ struct t_channel_member *channel__add_member(struct t_account *account,
     char *jid_resource = xmpp_jid_resource(account->context, user->id);
     if (weechat_strcasecmp(jid_bare, channel->id) == 0
              && channel->type == CHANNEL_TYPE_MUC)
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s %s%s%s %sentered%s %s %s%s%s",
+        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s%s%s%s %s%s%s%s %s%s%s%s%s%s%s%s%s%s%s%s%s%s",
                                  weechat_prefix("join"),
                                  user__as_prefix_raw(account, jid_resource),
-                                 client ? "(" : "", client, client ? ")" : "",
+                                 client ? " (" : "",
+                                 client ? client : "",
+                                 client ? ")" : "",
+                                 user->profile.status ? "is " : "",
                                  weechat_color("irc.color.message_join"),
+                                 user->profile.status ? user->profile.status : "entered",
                                  weechat_color("reset"),
                                  channel->id,
-                                 status ? "[" : "",
-                                 status ? status : "",
-                                 status ? "]" : "");
+                                 user->profile.status_text ? " [" : "",
+                                 user->profile.status_text ? user->profile.status_text : "",
+                                 user->profile.status_text ? "]" : "",
+                                 weechat_color("yellow"), " as ", weechat_color("reset"),
+                                 user->profile.affiliation ? user->profile.affiliation : "",
+                                 user->profile.affiliation ? " " : "",
+                                 user->profile.role,
+                                 user->profile.pgp_id ? weechat_color("gray") : "",
+                                 user->profile.pgp_id ? " with PGP:" : "",
+                                 user->profile.pgp_id ? user->profile.pgp_id : "",
+                                 user->profile.pgp_id ? weechat_color("reset") : "");
     else
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s (%s) %sentered%s %s %s%s%s",
+        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s (%s) %s%s%s%s %s%s%s%s%s%s%s%s",
                                  weechat_prefix("join"),
-                                 user__as_prefix_raw(account,
-                                                     xmpp_jid_bare(account->context, user->id)),
-                                 xmpp_jid_resource(account->context, user->id),
+                                 jid_resource ? user__as_prefix_raw(account, jid_bare) : "You",
+                                 jid_resource ? jid_resource : user__as_prefix_raw(account, jid_bare),
+                                 user->profile.status ? "is " : "",
                                  weechat_color("irc.color.message_join"),
+                                 user->profile.status ? user->profile.status : "entered",
                                  weechat_color("reset"),
                                  channel->id,
-                                 status ? "[" : "",
-                                 status ? status : "",
-                                 status ? "]" : "");
+                                 user->profile.status_text ? " [" : "",
+                                 user->profile.status_text ? user->profile.status_text : "",
+                                 user->profile.status_text ? "]" : "",
+                                 user->profile.pgp_id ? weechat_color("gray") : "",
+                                 user->profile.pgp_id ? " with PGP:" : "",
+                                 user->profile.pgp_id ? user->profile.pgp_id : "",
+                                 user->profile.pgp_id ? weechat_color("reset") : "");
 
     return member;
 }
@@ -900,56 +939,16 @@ struct t_channel_member *channel__member_search(struct t_channel *channel,
     return NULL;
 }
 
-int channel__set_member_role(struct t_account *account,
-                             struct t_channel *channel,
-                             const char *id, const char *role)
-{
-    struct t_channel_member *member;
-    struct t_user *user;
-
-    user = user__search(account, id);
-    if (!user)
-        return 0;
-
-    member = channel__member_search(channel, id);
-    if (!member)
-        return 0;
-
-    member->role = strdup(role);
-
-    return 1;
-}
-
-int channel__set_member_affiliation(struct t_account *account,
-                                    struct t_channel *channel,
-                                    const char *id, const char *affiliation)
-{
-    struct t_channel_member *member;
-    struct t_user *user;
-
-    user = user__search(account, id);
-    if (!user)
-        return 0;
-
-    member = channel__member_search(channel, id);
-    if (!member)
-        return 0;
-
-    member->affiliation = strdup(affiliation);
-
-    return 1;
-}
-
 struct t_channel_member *channel__remove_member(struct t_account *account,
                                                 struct t_channel *channel,
-                                                const char *id, const char *status)
+                                                const char *id, const char *reason)
 {
     struct t_channel_member *member;
     struct t_user *user;
 
     user = user__search(account, id);
-  //if (user)
-  //    user__nicklist_remove(account, channel, user);
+    if (user)
+        user__nicklist_remove(account, channel, user);
 
     member = channel__member_search(channel, id);
     if (member)
@@ -965,9 +964,9 @@ struct t_channel_member *channel__remove_member(struct t_account *account,
                                  weechat_color("irc.color.message_quit"),
                                  weechat_color("reset"),
                                  channel->id,
-                                 status ? "[" : "",
-                                 status ? status : "",
-                                 status ? "]" : "");
+                                 reason ? "[" : "",
+                                 reason ? reason : "",
+                                 reason ? "]" : "");
     else
         weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,leave,log4", "%s%s (%s) %sleft%s %s %s%s%s",
                                  weechat_prefix("quit"),
@@ -976,9 +975,9 @@ struct t_channel_member *channel__remove_member(struct t_account *account,
                                  weechat_color("irc.color.message_quit"),
                                  weechat_color("reset"),
                                  channel->id,
-                                 status ? "[" : "",
-                                 status ? status : "",
-                                 status ? "]" : "");
+                                 reason ? "[" : "",
+                                 reason ? reason : "",
+                                 reason ? "]" : "");
 
     return member;
 }

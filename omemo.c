@@ -9,6 +9,7 @@
 #include <gcrypt.h>
 #include <signal_protocol.h>
 #include <key_helper.h>
+#include <lmdb.h>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
@@ -90,19 +91,19 @@ signal_protocol_address* signal_protocol_address_new(const char* name, int32_t d
     return address;
 }
 
-int signal_randomize(uint8_t *data, size_t len) {
+int cp_randomize(uint8_t *data, size_t len) {
     gcry_randomize(data, len, GCRY_STRONG_RANDOM);
     return SG_SUCCESS;
 }
 
-int signal_random_generator(uint8_t *data, size_t len, void *user_data) {
+int cp_random_generator(uint8_t *data, size_t len, void *user_data) {
     (void) user_data;
 
     gcry_randomize(data, len, GCRY_STRONG_RANDOM);
     return SG_SUCCESS;
 }
 
-int signal_hmac_sha256_init(void **hmac_context, const uint8_t *key, size_t key_len, void *user_data) {
+int cp_hmac_sha256_init(void **hmac_context, const uint8_t *key, size_t key_len, void *user_data) {
     (void) user_data;
 
     gcry_mac_hd_t* ctx = malloc(sizeof(gcry_mac_hd_t));
@@ -123,7 +124,7 @@ int signal_hmac_sha256_init(void **hmac_context, const uint8_t *key, size_t key_
     return SG_SUCCESS;
 }
 
-int signal_hmac_sha256_update(void *hmac_context, const uint8_t *data, size_t data_len, void *user_data) {
+int cp_hmac_sha256_update(void *hmac_context, const uint8_t *data, size_t data_len, void *user_data) {
     (void) user_data;
 
     gcry_mac_hd_t* ctx = hmac_context;
@@ -133,7 +134,7 @@ int signal_hmac_sha256_update(void *hmac_context, const uint8_t *data, size_t da
     return SG_SUCCESS;
 }
 
-int signal_hmac_sha256_final(void *hmac_context, signal_buffer **output, void *user_data) {
+int cp_hmac_sha256_final(void *hmac_context, signal_buffer **output, void *user_data) {
     (void) user_data;
 
     size_t len = gcry_mac_get_algo_maclen(GCRY_MAC_HMAC_SHA256);
@@ -150,7 +151,7 @@ int signal_hmac_sha256_final(void *hmac_context, signal_buffer **output, void *u
     return SG_SUCCESS;
 }
 
-void signal_hmac_sha256_cleanup(void *hmac_context, void *user_data) {
+void cp_hmac_sha256_cleanup(void *hmac_context, void *user_data) {
     (void) user_data;
 
     gcry_mac_hd_t* ctx = hmac_context;
@@ -160,7 +161,7 @@ void signal_hmac_sha256_cleanup(void *hmac_context, void *user_data) {
     }
 }
 
-int signal_sha512_digest_init(void **digest_context, void *user_data) {
+int cp_sha512_digest_init(void **digest_context, void *user_data) {
     (void) user_data;
 
     gcry_md_hd_t* ctx = malloc(sizeof(gcry_mac_hd_t));
@@ -176,7 +177,7 @@ int signal_sha512_digest_init(void **digest_context, void *user_data) {
     return SG_SUCCESS;
 }
 
-int signal_sha512_digest_update(void *digest_context, const uint8_t *data, size_t data_len, void *user_data) {
+int cp_sha512_digest_update(void *digest_context, const uint8_t *data, size_t data_len, void *user_data) {
     (void) user_data;
 
     gcry_md_hd_t* ctx = digest_context;
@@ -186,7 +187,7 @@ int signal_sha512_digest_update(void *digest_context, const uint8_t *data, size_
     return SG_SUCCESS;
 }
 
-int signal_sha512_digest_final(void *digest_context, signal_buffer **output, void *user_data) {
+int cp_sha512_digest_final(void *digest_context, signal_buffer **output, void *user_data) {
     (void) user_data;
 
     size_t len = gcry_md_get_algo_dlen(GCRY_MD_SHA512);
@@ -206,7 +207,7 @@ int signal_sha512_digest_final(void *digest_context, signal_buffer **output, voi
     return SG_SUCCESS;
 }
 
-void signal_sha512_digest_cleanup(void *digest_context, void *user_data) {
+void cp_sha512_digest_cleanup(void *digest_context, void *user_data) {
     (void) user_data;
 
     gcry_md_hd_t* ctx = digest_context;
@@ -243,7 +244,7 @@ int aes_cipher(int cipher, size_t key_len, int* algo, int* mode) {
     return SG_SUCCESS;
 }
 
-int signal_encrypt(signal_buffer **output,
+int cp_encrypt(signal_buffer **output,
         int cipher,
         const uint8_t *key, size_t key_len,
         const uint8_t *iv, size_t iv_len,
@@ -320,7 +321,7 @@ no_error:
     return SG_SUCCESS;
 }
 
-int signal_decrypt(signal_buffer **output,
+int cp_decrypt(signal_buffer **output,
         int cipher,
         const uint8_t *key, size_t key_len,
         const uint8_t *iv, size_t iv_len,
@@ -415,63 +416,131 @@ void omemo__log_emit_weechat(int level, const char *message, size_t len, void *u
         log_level_name[level], len, message);
 }
 
-int omemo__signal_init(struct t_gui_buffer *buffer, struct t_omemo *omemo)
+int iks_get_identity_key_pair(signal_buffer **public_data, signal_buffer **private_data, void *user_data)
 {
-    signal_context *global_context;
+    (void) public_data;
+    (void) private_data;
+    (void) user_data;
+    // Get the local client's identity key pair
+}
+
+int iks_get_local_registration_id(void *user_data, uint32_t *registration_id)
+{
+    (void) user_data;
+    (void) registration_id;
+    // Return the local client's registration ID
+}
+
+int iks_save_identity(const signal_protocol_address *address, uint8_t *key_data, size_t key_len, void *user_data)
+{
+    (void) address;
+    (void) key_data;
+    (void) key_len;
+    (void) user_data;
+    // Save a remote client's identity key
+}
+
+int iks_is_trusted_identity(const signal_protocol_address *address, uint8_t *key_data, size_t key_len, void *user_data)
+{
+    (void) address;
+    (void) key_data;
+    (void) key_len;
+    (void) user_data;
+    // Verify a remote client's identity key
+}
+
+void iks_destroy_func(void *user_data)
+{
+    (void) user_data;
+    // Function called to perform cleanup when the data store context is being destroyed
+}
+
+
+void omemo__init(struct t_gui_buffer *buffer, struct t_omemo **omemo,
+                 const char *account_name)
+{
+    struct t_omemo *new_omemo;
 
     gcry_check_version(NULL);
 
-    signal_context_create(&global_context, buffer);
-    signal_context_set_log_function(global_context, &omemo__log_emit_weechat);
+    new_omemo = calloc(1, sizeof(**omemo));
 
-    struct signal_crypto_provider provider = {
-        .random_func = &signal_random_generator,
-        .hmac_sha256_init_func = &signal_hmac_sha256_init,
-        .hmac_sha256_update_func = &signal_hmac_sha256_update,
-        .hmac_sha256_final_func = &signal_hmac_sha256_final,
-        .hmac_sha256_cleanup_func = &signal_hmac_sha256_cleanup,
-        .sha512_digest_init_func = &signal_sha512_digest_init,
-        .sha512_digest_update_func = &signal_sha512_digest_update,
-        .sha512_digest_final_func = &signal_sha512_digest_final,
-        .sha512_digest_cleanup_func = &signal_sha512_digest_cleanup,
-        .encrypt_func = &signal_encrypt,
-        .decrypt_func = &signal_decrypt,
+    signal_context_create(&new_omemo->context, buffer);
+    signal_context_set_log_function(new_omemo->context, &omemo__log_emit_weechat);
+
+    mdb_env_create(&new_omemo->db.env);
+    mdb_env_set_maxdbs(new_omemo->db.env, 50);
+    mdb_env_set_mapsize(new_omemo->db.env, (size_t)1048576 * 100000); // 1MB * 100000
+    char *path = weechat_string_eval_expression("${weechat_data_dir}/xmpp.omemo.db",
+                                                NULL, NULL, NULL);
+    if (mdb_env_open(new_omemo->db.env, path, MDB_NOSUBDIR, 0664) != 0)
+    {
+        return;
+    }
+    free(path);
+
+    MDB_txn *parentTransaction = NULL;
+    MDB_txn *transaction;
+    if (mdb_txn_begin(new_omemo->db.env, parentTransaction, 0 ? MDB_RDONLY : 0, &transaction)) {
+        //Error
+    }
+
+    if (0) {
+        mdb_txn_abort(transaction);
+    } else {
+        mdb_txn_commit(transaction);
+    }
+
+    if (mdb_dbi_open(transaction, "databasename", MDB_DUPSORT | MDB_CREATE, new_omemo->db.dbi)) {
+        //Error
+    }
+
+    struct signal_crypto_provider crypto_provider = {
+        .random_func = &cp_random_generator,
+        .hmac_sha256_init_func = &cp_hmac_sha256_init,
+        .hmac_sha256_update_func = &cp_hmac_sha256_update,
+        .hmac_sha256_final_func = &cp_hmac_sha256_final,
+        .hmac_sha256_cleanup_func = &cp_hmac_sha256_cleanup,
+        .sha512_digest_init_func = &cp_sha512_digest_init,
+        .sha512_digest_update_func = &cp_sha512_digest_update,
+        .sha512_digest_final_func = &cp_sha512_digest_final,
+        .sha512_digest_cleanup_func = &cp_sha512_digest_cleanup,
+        .encrypt_func = &cp_encrypt,
+        .decrypt_func = &cp_decrypt,
         .user_data = buffer,
     };
 
-    signal_context_set_crypto_provider(global_context, &provider);
-    signal_context_set_locking_functions(global_context, &lock_function, &unlock_function);
+    signal_context_set_crypto_provider(new_omemo->context, &crypto_provider);
+    signal_context_set_locking_functions(new_omemo->context, &lock_function, &unlock_function);
 
     signal_protocol_key_helper_pre_key_list_node *pre_keys_head;
     session_signed_pre_key *signed_pre_key;
     int start_id = 0;
     time_t timestamp = time(NULL);
 
-    signal_protocol_key_helper_generate_identity_key_pair(&omemo->identity, global_context);
-    signal_protocol_key_helper_generate_registration_id(&omemo->device_id, 0, global_context);
-    signal_protocol_key_helper_generate_pre_keys(&pre_keys_head, start_id, 100, global_context);
-    signal_protocol_key_helper_generate_signed_pre_key(&signed_pre_key, omemo->identity, 5, timestamp, global_context);
+    if (new_omemo->identity)
+        0;
+    else
+        signal_protocol_key_helper_generate_identity_key_pair(&new_omemo->identity, new_omemo->context);
+    signal_protocol_key_helper_generate_registration_id(&new_omemo->device_id, 0, new_omemo->context);
+    signal_protocol_key_helper_generate_pre_keys(&pre_keys_head, start_id, 100, new_omemo->context);
+    signal_protocol_key_helper_generate_signed_pre_key(&signed_pre_key, new_omemo->identity, 5, timestamp, new_omemo->context);
 
     /* Store pre keys in the pre key store. */
     /* Store signed pre key in the signed pre key store. */
 
-    omemo->context = global_context;
+    signal_protocol_store_context_create(&new_omemo->store_context, new_omemo->context);
 
-    return SG_SUCCESS;
-}
+    struct signal_protocol_identity_key_store identity_key_store = {
+        .get_identity_key_pair = &iks_get_identity_key_pair,
+        .get_local_registration_id = &iks_get_local_registration_id,
+        .save_identity = &iks_save_identity,
+        .is_trusted_identity = &iks_is_trusted_identity,
+        .destroy_func = &iks_destroy_func,
+        .user_data = account_name,
+    };
 
-void omemo__init(struct t_gui_buffer *buffer, struct t_omemo **omemo,
-                 char **device, char **identity)
-{
-    struct t_omemo *new_omemo;
-
-    new_omemo = calloc(1, sizeof(**omemo));
-
-    omemo__deserialize(new_omemo, *device, *identity, strlen(*identity));
-
-    omemo__signal_init(buffer, new_omemo);
-
-    omemo__serialize(new_omemo, device, identity, NULL);
+    signal_protocol_store_context_set_identity_key_store(new_omemo->store_context, &identity_key_store);
 
     *omemo = new_omemo;
 }

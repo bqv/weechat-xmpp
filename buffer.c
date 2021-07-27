@@ -155,7 +155,7 @@ int buffer__close_cb(const void *pointer, void *data,
     {
         if (ptr_account)
         {
-            if (!ptr_account->disconnected)
+            if (ptr_account->is_connected)
             {
                 account__disconnect(ptr_account, 0);
             }
@@ -167,7 +167,7 @@ int buffer__close_cb(const void *pointer, void *data,
     {
         if (ptr_account && ptr_channel)
         {
-            if (!ptr_account->disconnected)
+            if (ptr_account->is_connected)
             {
                 channel__free(ptr_account, ptr_channel);
             }
@@ -177,7 +177,7 @@ int buffer__close_cb(const void *pointer, void *data,
     {
         if (ptr_account && ptr_channel)
         {
-            if (!ptr_account->disconnected)
+            if (ptr_account->is_connected)
             {
                 channel__free(ptr_account, ptr_channel);
             }

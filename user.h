@@ -9,13 +9,13 @@ struct t_user_profile
 {
     char *avatar_hash;
     char *status_text;
-    char *status_emoji;
+    char *status;
     char *real_name;
     char *display_name;
-    char *real_name_normalized;
     char *email;
-    char *team;
-    char *bot_id;
+    char *role;
+    char *affiliation;
+    char *pgp_id;
 };
 
 struct t_user
@@ -40,9 +40,6 @@ const char *user__as_prefix_raw(struct t_account *account,
 const char *user__as_prefix(struct t_account *account,
                             struct t_user *user,
                             const char *name);
-
-struct t_user *user__bot_search(struct t_account *account,
-                                const char *bot_id);
 
 struct t_user *user__search(struct t_account *account,
                             const char *id);
