@@ -73,6 +73,19 @@ struct t_account_device
     struct t_account_device *next_device;
 };
 
+struct t_account_mam_query
+{
+    char *id;
+    char *with;
+    int has_start;
+    time_t start;
+    int has_end;
+    time_t end;
+
+    struct t_account_mam_query *prev_mam_query;
+    struct t_account_mam_query *next_mam_query;
+};
+
 struct t_account
 {
     char *name;
@@ -99,6 +112,8 @@ struct t_account
 
     struct t_account_device *devices;
     struct t_account_device *last_device;
+    struct t_account_mam_query *mam_queries;
+    struct t_account_mam_query *last_mam_query;
     struct t_user *users;
     struct t_user *last_user;
     struct t_channel *channels;
@@ -117,6 +132,15 @@ struct t_account_device *account__search_device(struct t_account *account, int i
 void account__add_device(struct t_account *account, struct t_account_device *device);
 void account__free_device(struct t_account *account, struct t_account_device *device);
 void account__free_device_all(struct t_account *account);
+struct t_account_mam_query *account__add_mam_query(struct t_account *account,
+                                                   struct t_channel *channel,
+                                                   const char *id,
+                                                   time_t *start, time_t *end);
+struct t_account_mam_query *account__mam_query_search(struct t_account *account,
+                                                      const char *id);
+void account__mam_query_free(struct t_account *account,
+                             struct t_account_mam_query *mam_query);
+void account__mam_query_free_all(struct t_account *account);
 struct t_account *account__alloc(const char *name);
 void account__free_data(struct t_account *account);
 void account__free(struct t_account *account);

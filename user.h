@@ -10,7 +10,7 @@ struct t_user_profile
     char *avatar_hash;
     char *status_text;
     char *status;
-    char *real_name;
+    char *idle;
     char *display_name;
     char *email;
     char *role;

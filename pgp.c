@@ -60,7 +60,7 @@ void pgp__free(struct t_pgp *pgp)
     }
 }
 
-char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *target, const char *message)
+char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *source, const char *target, const char *message)
 {
     rnp_op_encrypt_t encrypt = NULL;
     rnp_key_handle_t key = NULL;
@@ -102,6 +102,21 @@ char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *t
 
     /* locate recipient's key and add it to the operation context. */
     if ((ret = rnp_locate_key(pgp->context, "keyid", target, &key)) != RNP_SUCCESS) {
+        const char *reason = rnp_result_to_string(ret);
+        weechat_printf(buffer, "%spgp: failed to locate recipient key: %s\n", weechat_prefix("error"), reason);
+        goto encrypt_finish;
+    }
+
+    if ((ret = rnp_op_encrypt_add_recipient(encrypt, key)) != RNP_SUCCESS) {
+        const char *reason = rnp_result_to_string(ret);
+        weechat_printf(buffer, "%spgp: failed to add recipient: %s\n", weechat_prefix("error"), reason);
+        goto encrypt_finish;
+    }
+    rnp_key_handle_destroy(key);
+    key = NULL;
+
+    /* locate carbon-copy key and add it to the operation context. */
+    if ((ret = rnp_locate_key(pgp->context, "keyid", source, &key)) != RNP_SUCCESS) {
         const char *reason = rnp_result_to_string(ret);
         weechat_printf(buffer, "%spgp: failed to locate recipient key: %s\n", weechat_prefix("error"), reason);
         goto encrypt_finish;

@@ -191,6 +191,6 @@ void channel__send_paused(struct t_account *account, struct t_channel *channel,
                           struct t_user *user);
 
 void channel__fetch_mam(struct t_account *account, struct t_channel *channel,
-                        time_t *start, time_t *end);
+                        const char *id, time_t *start, time_t *end, const char *after);
 
 #endif /*WEECHAT_XMPP_CHANNEL_H*/

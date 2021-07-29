@@ -28,6 +28,9 @@
   A weechat plugin in C to extend the chat client to
   support XMPP and a currently minimal but ideally maximal
   set of XEPs.
+  My priority here is to have an android-available XMPP client
+  that hides as little as possible from the user. To use this with
+  android, set up a relay (`/relay`) and see weechat-android.
   I'm gonna rewrite this in C++ at some point when I have a feel
   for the full behaviour of an average client.
 
@@ -132,6 +135,11 @@
    * [X] [#A] Recv typing notifications
    * [X] [#C] Read receipts
      * [X] Chat Markers (XEP-0333)
+       * [X] Composing
+       * [X] Paused
+       * [?] Active
+       * [ ] Inactive
+       * [ ] Gone
      * [X] Message Delivery (XEP-0184)
    * [X] Message Carbons
    * [ ] Service Disco

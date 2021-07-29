@@ -314,7 +314,7 @@ struct t_channel *channel__new(struct t_account *account,
         struct tm *ago = gmtime(&start);
         ago->tm_mday -= 7;
         start = mktime(ago);
-        channel__fetch_mam(account, new_channel, &start, NULL);
+        channel__fetch_mam(account, new_channel, NULL, &start, NULL, NULL);
     }
 
     return new_channel;
@@ -886,7 +886,7 @@ struct t_channel_member *channel__add_member(struct t_account *account,
                                  client ? ")" : "",
                                  user->profile.status ? "is " : "",
                                  weechat_color("irc.color.message_join"),
-                                 user->profile.status ? user->profile.status : "entered",
+                                 user->profile.status ? user->profile.status : (user->profile.idle ? "idle" : "entered"),
                                  weechat_color("reset"),
                                  channel->id,
                                  user->profile.status_text ? " [" : "",
@@ -901,15 +901,16 @@ struct t_channel_member *channel__add_member(struct t_account *account,
                                  user->profile.pgp_id ? user->profile.pgp_id : "",
                                  user->profile.pgp_id ? weechat_color("reset") : "");
     else
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s (%s) %s%s%s%s %s%s%s%s%s%s%s%s",
+        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s (%s) %s%s%s%s %s%s%s%s%s%s%s%s%s",
                                  weechat_prefix("join"),
                                  jid_resource ? user__as_prefix_raw(account, jid_bare) : "You",
                                  jid_resource ? jid_resource : user__as_prefix_raw(account, jid_bare),
                                  user->profile.status ? "is " : "",
                                  weechat_color("irc.color.message_join"),
-                                 user->profile.status ? user->profile.status : "entered",
+                                 user->profile.status ? user->profile.status : (user->profile.idle ? "idle" : "entered"),
                                  weechat_color("reset"),
-                                 channel->id,
+                                 user->profile.idle ? "since " : "",
+                                 user->profile.idle ? user->profile.idle : "",
                                  user->profile.status_text ? " [" : "",
                                  user->profile.status_text ? user->profile.status_text : "",
                                  user->profile.status_text ? "]" : "",
@@ -996,8 +997,6 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
     xmpp_stanza_set_id(message, id);
     xmpp_free(account->context, id);
 
-    xmpp_message_set_body(message, body);
-
     char *url = strstr(body, "http");
     if (channel->pgp_id)
     {
@@ -1006,7 +1005,7 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
         xmpp_stanza_set_ns(message__x, "jabber:x:encrypted");
 
         xmpp_stanza_t *message__x__text = xmpp_stanza_new(account->context);
-        char *ciphertext = pgp__encrypt(channel->buffer, account->pgp, channel->pgp_id, body);
+        char *ciphertext = pgp__encrypt(channel->buffer, account->pgp, account_pgp_keyid(account), channel->pgp_id, body);
         if (ciphertext)
             xmpp_stanza_set_text(message__x__text, ciphertext);
         free(ciphertext);
@@ -1016,6 +1015,14 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
 
         xmpp_stanza_add_child(message, message__x);
         xmpp_stanza_release(message__x);
+
+        xmpp_stanza_t *message__encryption = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(message__encryption, "encryption");
+        xmpp_stanza_set_ns(message__encryption, "urn:xmpp:eme:0");
+        xmpp_stanza_set_attribute(message__encryption, "namespace", "jabber:x:encryption");
+
+        xmpp_stanza_add_child(message, message__encryption);
+        xmpp_stanza_release(message__encryption);
 
         xmpp_message_set_body(message, PGP_ADVICE);
 
@@ -1027,12 +1034,17 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
                                  channel__transport_name(channel->transport));
         }
     }
-    else if (channel->transport != CHANNEL_TRANSPORT_PLAINTEXT)
+    else
     {
-        channel->transport = CHANNEL_TRANSPORT_PLAINTEXT;
-        weechat_printf_date_tags(channel->buffer, 0, NULL, "%s%sTransport: %s",
-                                 weechat_prefix("network"), weechat_color("gray"),
-                                 channel__transport_name(channel->transport));
+        xmpp_message_set_body(message, body);
+
+        if (channel->transport != CHANNEL_TRANSPORT_PLAINTEXT)
+        {
+            channel->transport = CHANNEL_TRANSPORT_PLAINTEXT;
+            weechat_printf_date_tags(channel->buffer, 0, NULL, "%s%sTransport: %s",
+                                     weechat_prefix("network"), weechat_color("gray"),
+                                     channel__transport_name(channel->transport));
+        }
     }
 
     if (url)
@@ -1055,6 +1067,13 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
         xmpp_stanza_add_child(message, message__x);
         xmpp_stanza_release(message__x);
     }
+
+    xmpp_stanza_t *message__active = xmpp_stanza_new(account->context);
+    xmpp_stanza_set_name(message__active, "active");
+    xmpp_stanza_set_ns(message__active, "http://jabber./org/protocol/chatstates");
+
+    xmpp_stanza_add_child(message, message__active);
+    xmpp_stanza_release(message__active);
 
     xmpp_send(account->connection, message);
     xmpp_stanza_release(message);
@@ -1157,9 +1176,10 @@ void channel__send_paused(struct t_account *account, struct t_channel *channel,
 }
 
 void channel__fetch_mam(struct t_account *account, struct t_channel *channel,
-                        time_t *start, time_t *end)
+                        const char *id, time_t *start, time_t *end, const char* after)
 {
     xmpp_stanza_t *iq = xmpp_iq_new(account->context, "set", "juliet1");
+    xmpp_stanza_set_id(iq, id ? id : xmpp_uuid_gen(account->context));
 
     xmpp_stanza_t *query = xmpp_stanza_new(account->context);
     xmpp_stanza_set_name(query, "query");
@@ -1261,6 +1281,32 @@ void channel__fetch_mam(struct t_account *account, struct t_channel *channel,
 
     xmpp_stanza_add_child(query, x);
     xmpp_stanza_release(x);
+
+    if (after)
+    {
+        xmpp_stanza_t *set, *set__after, *set__after__text;
+
+        set = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(set, "set");
+        xmpp_stanza_set_ns(set, "http://jabber.org/protocol/rsm");
+
+        set__after = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(set__after, "after");
+
+        set__after__text = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_text(set__after__text, after);
+        xmpp_stanza_add_child(set__after, set__after__text);
+        xmpp_stanza_release(set__after__text);
+
+        xmpp_stanza_add_child(set, set__after);
+        xmpp_stanza_release(set__after);
+
+        xmpp_stanza_add_child(query, set);
+        xmpp_stanza_release(set);
+    }
+    else
+        account__add_mam_query(account, channel,
+                               xmpp_stanza_get_id(iq), start, end);
 
     xmpp_stanza_add_child(iq, query);
     xmpp_stanza_release(query);

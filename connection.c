@@ -86,9 +86,9 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     struct t_account *account = (struct t_account *)userdata;
     struct t_user *user;
     struct t_channel *channel;
-    xmpp_stanza_t *iq__x_signed, *iq__x_muc_user, *show, *iq__x__item, *iq__c, *iq__status;
+    xmpp_stanza_t *iq__x_signed, *iq__x_muc_user, *show, *idle, *iq__x__item, *iq__c, *iq__status;
     const char *from, *from_bare, *from_res, *type, *role = NULL, *affiliation = NULL, *jid = NULL;
-    const char *show__text = NULL, *certificate = NULL, *node = NULL, *ver = NULL;
+    const char *show__text = NULL, *idle__since = NULL, *certificate = NULL, *node = NULL, *ver = NULL;
     char *clientid = NULL, *status;
 
     from = xmpp_stanza_get_from(stanza);
@@ -99,6 +99,8 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     type = xmpp_stanza_get_type(stanza);
     show = xmpp_stanza_get_child_by_name(stanza, "show");
     show__text = show ? xmpp_stanza_get_text(show) : NULL;
+    idle = xmpp_stanza_get_child_by_name_and_ns(stanza, "idle", "urn:xmpp:idle:1");
+    idle__since = idle ? xmpp_stanza_get_attribute(idle, "since") : NULL;
     iq__x_signed = xmpp_stanza_get_child_by_name_and_ns(
         stanza, "x", "jabber:x:signed");
     if (iq__x_signed)
@@ -145,6 +147,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
                              ? from_res : from);
         user->profile.status_text = status ? strdup(status) : NULL;
         user->profile.status = show ? strdup(show__text) : NULL;
+        user->profile.idle = idle ? strdup(idle__since) : NULL;
         user->is_away = show ? weechat_strcasecmp(show__text, "away") == 0 : 0;
         user->profile.role = role ? strdup(role) : NULL;
         user->profile.affiliation = affiliation && strcmp(affiliation, "none") != 0
@@ -173,6 +176,8 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
                              ? from_res : from);
         user->profile.status_text = status ? strdup(status) : NULL;
         user->profile.status = show ? strdup(show__text) : NULL;
+        user->profile.idle = idle ? strdup(idle__since) : NULL;
+        user->is_away = show ? weechat_strcasecmp(show__text, "away") == 0 : 0;
         user->profile.role = role ? strdup(role) : NULL;
         user->profile.affiliation = affiliation && strcmp(affiliation, "none") != 0
             ? strdup(affiliation) : NULL;
@@ -602,14 +607,13 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
 int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 {
-    (void) conn;
-
     struct t_account *account = (struct t_account *)userdata;
-    xmpp_stanza_t *reply, *query, *identity, *feature, *x, *field, *value, *text;
+    xmpp_stanza_t *reply, *query, *identity, *feature, *x, *field, *value, *text, *fin;
     xmpp_stanza_t         *pubsub, *items, *item, *list, *device, **children;
     xmpp_stanza_t         *storage, *conference, *nick;
     static struct utsname osinfo;
 
+    const char *id = xmpp_stanza_get_id(stanza);
     query = xmpp_stanza_get_child_by_name_and_ns(
         stanza, "query", "http://jabber.org/protocol/disco#info");
     const char *type = xmpp_stanza_get_attribute(stanza, "type");
@@ -1020,6 +1024,38 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
                     }
                 }
             }
+        }
+    }
+
+    fin = xmpp_stanza_get_child_by_name_and_ns(
+        stanza, "fin", "urn:xmpp:mam:2");
+    if (fin)
+    {
+        xmpp_stanza_t *set, *set__last;
+        char *set__last__text;
+        struct t_account_mam_query *mam_query;
+
+        set = xmpp_stanza_get_child_by_name_and_ns(
+            fin, "set", "http://jabber.org/protocol/rsm");
+        mam_query = account__mam_query_search(account, id);
+        if (set && mam_query)
+        {
+            struct t_channel *channel = channel__search(account,
+                                                        mam_query->with);
+
+            set__last = xmpp_stanza_get_child_by_name(set, "last");
+            set__last__text = set__last
+                ? xmpp_stanza_get_text(set__last) : NULL;
+
+            if (channel && set__last__text)
+            {
+                channel__fetch_mam(account, channel, id,
+                                   mam_query->has_start ? &mam_query->start : NULL,
+                                   mam_query->has_end ? &mam_query->end : NULL,
+                                   set__last__text);
+            }
+            else if (!set__last)
+                account__mam_query_free(account, mam_query);
         }
     }
 

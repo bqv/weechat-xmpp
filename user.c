@@ -184,7 +184,7 @@ struct t_user *user__new(struct t_account *account,
     new_user->profile.avatar_hash = NULL;
     new_user->profile.status_text = NULL;
     new_user->profile.status = NULL;
-    new_user->profile.real_name = NULL;
+    new_user->profile.idle = NULL;
     new_user->profile.display_name = display_name ?
         strdup(display_name) : strdup("");
     new_user->profile.affiliation = NULL;
@@ -232,8 +232,8 @@ void user__free(struct t_account *account,
         free(user->profile.status_text);
     if (user->profile.status)
         free(user->profile.status);
-    if (user->profile.real_name)
-        free(user->profile.real_name);
+    if (user->profile.idle)
+        free(user->profile.idle);
     if (user->profile.display_name)
         free(user->profile.display_name);
     if (user->profile.affiliation)

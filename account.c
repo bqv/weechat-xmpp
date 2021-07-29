@@ -165,6 +165,95 @@ void account__free_device_all(struct t_account *account)
         account__free_device(account, account->devices);
 }
 
+struct t_account_mam_query *account__add_mam_query(struct t_account *account,
+                                                   struct t_channel *channel,
+                                                   const char *id,
+                                                   time_t *start, time_t *end)
+{
+    struct t_account_mam_query *mam_query;
+
+    if (!(mam_query = account__mam_query_search(account, id)))
+    {
+        mam_query = malloc(sizeof(struct t_account_mam_query));
+        mam_query->id = strdup(id);
+        mam_query->with = strdup(channel->id);
+
+        mam_query->has_start = start != NULL;
+        if (mam_query->has_start)
+            mam_query->start = *start;
+        mam_query->has_end = end != NULL;
+        if (mam_query->has_end)
+            mam_query->end = *end;
+
+        mam_query->prev_mam_query = account->last_mam_query;
+        mam_query->next_mam_query = NULL;
+        if (account->last_mam_query)
+            (account->last_mam_query)->next_mam_query = mam_query;
+        else
+            account->mam_queries = mam_query;
+        account->last_mam_query = mam_query;
+    }
+
+    return mam_query;
+}
+
+struct t_account_mam_query *account__mam_query_search(struct t_account *account,
+                                                      const char *id)
+{
+    struct t_account_mam_query *ptr_mam_query;
+
+    if (!account || !id)
+        return NULL;
+
+    for (ptr_mam_query = account->mam_queries; ptr_mam_query;
+         ptr_mam_query = ptr_mam_query->next_mam_query)
+    {
+        if (weechat_strcasecmp(ptr_mam_query->id, id) == 0)
+            return ptr_mam_query;
+    }
+
+    return NULL;
+}
+
+void account__mam_query_free(struct t_account *account,
+                             struct t_account_mam_query *mam_query)
+{
+    struct t_account_mam_query *new_mam_queries;
+
+    if (!account || !mam_query)
+        return;
+
+    /* remove mam_query from mam_queries list */
+    if (account->last_mam_query == mam_query)
+        account->last_mam_query = mam_query->prev_mam_query;
+    if (mam_query->prev_mam_query)
+    {
+        (mam_query->prev_mam_query)->next_mam_query = mam_query->next_mam_query;
+        new_mam_queries = account->mam_queries;
+    }
+    else
+        new_mam_queries = mam_query->next_mam_query;
+
+    if (mam_query->next_mam_query)
+        (mam_query->next_mam_query)->prev_mam_query = mam_query->prev_mam_query;
+
+    /* free mam_query data */
+    if (mam_query->id)
+        free(mam_query->id);
+    if (mam_query->with)
+        free(mam_query->with);
+
+    free(mam_query);
+
+    account->mam_queries = new_mam_queries;
+}
+
+void account__mam_query_free_all(struct t_account *account)
+{
+    while (account->mam_queries)
+        account__mam_query_free(account, account->mam_queries);
+}
+
 void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t level,
                                const char *const area, const char *const msg)
 {
@@ -304,6 +393,8 @@ struct t_account *account__alloc(const char *name)
 
     new_account->devices = NULL;
     new_account->last_device = NULL;
+    new_account->mam_queries = NULL;
+    new_account->last_mam_query = NULL;
     new_account->users = NULL;
     new_account->last_user = NULL;
     new_account->channels = NULL;
@@ -364,6 +455,8 @@ void account__free_data(struct t_account *account)
     xmpp_redirect_free_all(account);
     xmpp_notify_free_all(account);
     */
+    account__free_device_all(account);
+    account__mam_query_free_all(account);
     channel__free_all(account);
     user__free_all(account);
 

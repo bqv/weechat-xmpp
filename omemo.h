@@ -12,10 +12,7 @@ struct t_omemo
     struct signal_context *context;
     struct signal_protocol_store_context *store_context;
 
-    struct {
-        struct MDB_env *env;
-        struct MDB_dbi *dbi;
-    } db;
+    struct t_omemo_db *db;
 
     struct ratchet_identity_key_pair *identity;
 

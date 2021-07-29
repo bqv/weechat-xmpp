@@ -752,7 +752,7 @@ int command__mam(const void *pointer, void *data,
     else
         ago->tm_mday -= MAM_DEFAULT_DAYS;
     start = mktime(ago);
-    channel__fetch_mam(ptr_account, ptr_channel, &start, NULL);
+    channel__fetch_mam(ptr_account, ptr_channel, NULL, &start, NULL, NULL);
 
     return WEECHAT_RC_OK;
 }

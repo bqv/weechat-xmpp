@@ -21,8 +21,8 @@ struct t_config_option *config_look_nick_completion_smart;
 struct t_config_option *config_account_default[ACCOUNT_NUM_OPTIONS];
 
 int config__account_check_value_cb(const void *pointer, void *data,
-                                  struct t_config_option *option,
-                                  const char *value)
+                                   struct t_config_option *option,
+                                   const char *value)
 {
     (void) pointer;
     (void) data;
@@ -33,15 +33,32 @@ int config__account_check_value_cb(const void *pointer, void *data,
 }
 
 void config__account_change_cb(const void *pointer, void *data,
-                              struct t_config_option *option)
+                               struct t_config_option *option)
 {
     (void) pointer;
     (void) data;
-    (void) option;
+
+    const char *name =
+        weechat_config_option_get_string(option, "name");
+    const char *value =
+        weechat_config_option_get_string(option, "value");
+
+    int split_num;
+    char **split = weechat_string_split(name, ".", NULL, 0, 2, &split_num);
+    struct t_account *account = account__search(split[0]);
+    if (split_num >= 2 && account)
+    {
+        const char *key = split[1];
+
+        (void) key;
+        (void) value;
+    }
+
+    weechat_string_free_split(split);
 }
 
 void config__account_default_change_cb(const void *pointer, void *data,
-                                      struct t_config_option *option)
+                                       struct t_config_option *option)
 {
     (void) pointer;
     (void) data;
@@ -346,7 +363,7 @@ int config__account_read_cb (const void *pointer, void *data,
     return rc;
 }
 
-int config__account_write_cb (const void *pointer, void *data,
+int config__account_write_cb(const void *pointer, void *data,
                              struct t_config_file *config_file,
                              const char *section_name)
 {
