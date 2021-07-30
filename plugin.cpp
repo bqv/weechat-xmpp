@@ -14,6 +14,7 @@ namespace c {
 #include <time.h>
 #include <strophe.h>
 
+#include "plugin.h"
 #include "config.h"
 #include "account.h"
 #include "connection.h"
@@ -21,6 +22,16 @@ namespace c {
 #include "input.h"
 #include "buffer.h"
 #include "completion.h"
+
+        struct t_weechat_plugin *weechat_xmpp_plugin() {
+            return weechat_plugin;
+        };
+        const char *weechat_xmpp_plugin_name() {
+            return weechat::plugin::instance.name().data();
+        };
+        const char *weechat_xmpp_plugin_version() {
+            return weechat::plugin::instance.version().data();
+        };
     }
 
 #define TIMER_INTERVAL_SEC 0.01
@@ -99,11 +110,11 @@ namespace weechat {
 
     bool plugin::init(std::vector<std::string>) {
         weechat_printf(nullptr, "%s: It works!", this->name().data());
-        return weechat_plugin_init();
+        return c::weechat_plugin_init();
     }
 
     bool plugin::end() {
-        weechat_plugin_end();
+        c::weechat_plugin_end();
         return true;
     }
 

@@ -38,11 +38,44 @@ LDLIBS=-lstrophe \
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
 
-HDRS=plugin.hh
-SRCS=plugin.cpp
-DEPS=deps/diff/libdiff.a
+HDRS=plugin.hh \
+     plugin.h \
+     account.h \
+     buffer.h \
+     channel.h \
+     command.h \
+     completion.h \
+     config.h \
+     connection.h \
+     input.h \
+     message.h \
+     omemo.h \
+     pgp.h \
+     user.h \
+     util.h \
+     xmpp/stanza.h \
+
+SRCS=plugin.cpp \
+     account.c \
+     buffer.c \
+     channel.c \
+     command.c \
+     completion.c \
+     config.c \
+     connection.c \
+     input.c \
+     message.c \
+     omemo.c \
+     pgp.c \
+     user.c \
+     util.c \
+     xmpp/presence.c \
+     xmpp/iq.c \
+
+DEPS=deps/diff/libdiff.a \
+
 TSTS=$(patsubst %.cpp,tests/%.cc,$(SRCS)) tests/main.cc
-OBJS=$(patsubst %.cpp,.%.o,$(SRCS))
+OBJS=$(patsubst %.cpp,.%.o,$(patsubst %.c,.%.o,$(patsubst xmpp/%.c,xmpp/.%.o,$(SRCS))))
 JOBS=$(patsubst tests/%.cc,tests/.%.o,$(TSTS))
 
 all: weechat-xmpp
@@ -56,6 +89,12 @@ xmpp.so: $(OBJS) $(DEPS) $(HDRS)
 
 .%.o: %.cpp
 	@$(CXX) $(CPPFLAGS) -c $< -o $@
+
+.%.o: %.c
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+xmpp/.%.o: xmpp/%.c
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 tests/.%.o: tests/%.cc
 	@$(CXX) $(CPPFLAGS) -c $< -o $@
