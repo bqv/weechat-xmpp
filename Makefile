@@ -28,57 +28,62 @@ LDFLAGS+=$(DBGLDFLAGS) \
 	 -shared -gdwarf-4 \
 	 $(DBGCFLAGS)
 LDLIBS=-lstrophe \
-       -lpthread \
-       $(shell xml2-config --libs) \
-       $(shell pkg-config --libs librnp-0) \
-       $(shell pkg-config --libs libsignal-protocol-c) \
-       -lgcrypt \
-       -llmdb
+	   -lpthread \
+	   $(shell xml2-config --libs) \
+	   $(shell pkg-config --libs librnp-0) \
+	   $(shell pkg-config --libs libsignal-protocol-c) \
+	   -lgcrypt \
+	   -llmdb
 
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
 
 HDRS=plugin.hh \
-     plugin.h \
-     account.h \
-     buffer.h \
-     channel.h \
-     command.h \
-     completion.h \
-     config.h \
-     connection.h \
-     input.h \
-     message.h \
-     omemo.h \
-     pgp.h \
-     user.h \
-     util.h \
-     xmpp/stanza.h \
+	 plugin.h \
+	 strophe.hh \
+	 account.h \
+	 buffer.h \
+	 channel.h \
+	 command.h \
+	 completion.h \
+	 config.h \
+	 connection.h \
+	 input.h \
+	 message.h \
+	 omemo.h \
+	 pgp.h \
+	 user.h \
+	 util.h \
+	 xmpp/stanza.h \
 
 SRCS=plugin.cpp \
-     account.c \
-     buffer.c \
-     channel.c \
-     command.c \
-     completion.c \
-     config.c \
-     connection.c \
-     input.c \
-     message.c \
-     omemo.c \
-     pgp.c \
-     user.c \
-     util.c \
-     xmpp/presence.c \
-     xmpp/iq.c \
+	 strophe.cpp \
+	 account.c \
+	 buffer.c \
+	 channel.c \
+	 command.c \
+	 completion.c \
+	 config.c \
+	 connection.c \
+	 input.c \
+	 message.c \
+	 omemo.c \
+	 pgp.c \
+	 user.c \
+	 util.c \
+	 xmpp/presence.c \
+	 xmpp/iq.c \
 
 DEPS=deps/diff/libdiff.a \
 
-TSTS=$(patsubst %.cpp,tests/%.cc,$(SRCS)) tests/main.cc
+TSTS=$(patsubst %.cpp,tests/%.cc,$(filter %.cpp,$(SRCS))) tests/main.cc
 OBJS=$(patsubst %.cpp,.%.o,$(patsubst %.c,.%.o,$(patsubst xmpp/%.c,xmpp/.%.o,$(SRCS))))
 JOBS=$(patsubst tests/%.cc,tests/.%.o,$(TSTS))
 
-all: weechat-xmpp
+all:
+	make depend
+	make weechat-xmpp && make test
+
 weechat-xmpp: $(DEPS) xmpp.so
 
 xmpp.so: $(OBJS) $(DEPS) $(HDRS)
@@ -120,7 +125,7 @@ debug: xmpp.so
 
 depend: .depend
 
-.depend: $(SRCS)
+.depend: $(SRCS) $(HDRS) $(TSTS)
 	$(RM) ./.depend
 	$(CXX) $(CPPFLAGS) -MM $^>>./.depend
 
@@ -147,7 +152,7 @@ else
 	chmod 755 ~/.weechat/plugins/xmpp.so
 endif
 
-.PHONY: check
+.PHONY: all weechat-xmpp test debug depend tidy clean distclean install check
 
 check:
 	clang-check --analyze *.c *.cc *.cpp

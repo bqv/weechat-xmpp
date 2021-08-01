@@ -12,7 +12,6 @@
 #include <curve.h>
 #include <lmdb.h>
 #include <strophe.h>
-#include <weechat/weechat-plugin.h>
 
 struct t_omemo_db {
     MDB_env *env;

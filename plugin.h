@@ -6,6 +6,7 @@
 #define _WEECHAT_XMPP_PLUGIN_H_
 
 #ifndef __cplusplus
+#include <weechat/weechat-plugin.h>
 #define weechat_plugin weechat_xmpp_plugin()
 #define WEECHAT_XMPP_PLUGIN_NAME weechat_xmpp_plugin_name()
 #define WEECHAT_XMPP_PLUGIN_VERSION weechat_xmpp_plugin_version()

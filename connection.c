@@ -9,7 +9,6 @@
 #include <string.h>
 #include <sys/utsname.h>
 #include <strophe.h>
-#include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
 #include "deps/diff/diff.h"
@@ -147,7 +146,16 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
                              ? from_res : from);
         user->profile.status_text = status ? strdup(status) : NULL;
         user->profile.status = show ? strdup(show__text) : NULL;
-        user->profile.idle = idle ? strdup(idle__since) : NULL;
+        if (idle)
+        {
+            struct tm *since = {0};
+            strptime(idle__since, "%FT%T", since);
+            char timestamp[256] = {0};
+            strftime(timestamp, sizeof(timestamp), "%T", since);
+            user->profile.idle = strdup(idle__since);
+        }
+        else
+            user->profile.idle = NULL;
         user->is_away = show ? weechat_strcasecmp(show__text, "away") == 0 : 0;
         user->profile.role = role ? strdup(role) : NULL;
         user->profile.affiliation = affiliation && strcmp(affiliation, "none") != 0
@@ -176,7 +184,16 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
                              ? from_res : from);
         user->profile.status_text = status ? strdup(status) : NULL;
         user->profile.status = show ? strdup(show__text) : NULL;
-        user->profile.idle = idle ? strdup(idle__since) : NULL;
+        if (idle)
+        {
+            struct tm *since = {0};
+            strptime(idle__since, "%FT%T", since);
+            char timestamp[256] = {0};
+            strftime(timestamp, sizeof(timestamp), "%T", since);
+            user->profile.idle = strdup(idle__since);
+        }
+        else
+            user->profile.idle = NULL;
         user->is_away = show ? weechat_strcasecmp(show__text, "away") == 0 : 0;
         user->profile.role = role ? strdup(role) : NULL;
         user->profile.affiliation = affiliation && strcmp(affiliation, "none") != 0

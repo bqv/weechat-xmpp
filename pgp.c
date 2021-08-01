@@ -7,7 +7,6 @@
 #include <string.h>
 #include <time.h>
 #include <rnp/rnp.h>
-#include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
 #include "pgp.h"

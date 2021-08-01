@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <time.h>
 #include <strophe.h>
-#include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
 #include "omemo.h"
@@ -901,16 +900,17 @@ struct t_channel_member *channel__add_member(struct t_account *account,
                                  user->profile.pgp_id ? user->profile.pgp_id : "",
                                  user->profile.pgp_id ? weechat_color("reset") : "");
     else
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s (%s) %s%s%s%s %s%s%s%s%s%s%s%s%s",
+        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s (%s) %s%s%s%s%s %s%s%s%s%s%s%s%s%s",
                                  weechat_prefix("join"),
-                                 jid_resource ? user__as_prefix_raw(account, jid_bare) : "You",
-                                 jid_resource ? jid_resource : user__as_prefix_raw(account, jid_bare),
+                                 user__as_prefix_raw(account, jid_bare),
+                                 jid_resource,
                                  user->profile.status ? "is " : "",
                                  weechat_color("irc.color.message_join"),
-                                 user->profile.status ? user->profile.status : (user->profile.idle ? "idle" : "entered"),
-                                 weechat_color("reset"),
-                                 user->profile.idle ? "since " : "",
+                                 user->profile.status ? user->profile.status : "entered",
+                                 user->profile.idle ? " (idle since " : "",
                                  user->profile.idle ? user->profile.idle : "",
+                                 user->profile.idle ? ")" : "",
+                                 weechat_color("reset"),
                                  user->profile.status_text ? " [" : "",
                                  user->profile.status_text ? user->profile.status_text : "",
                                  user->profile.status_text ? "]" : "",

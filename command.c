@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
 //#include "oauth.h"

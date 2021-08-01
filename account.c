@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <assert.h>
 #include <libxml/xmlwriter.h>
-#include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
 #include "config.h"

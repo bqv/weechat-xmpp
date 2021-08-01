@@ -7,7 +7,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <regex.h>
-#include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
 #include "account.h"

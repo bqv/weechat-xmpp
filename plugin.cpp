@@ -3,17 +3,13 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "plugin.hh"
+#include "strophe.hh"
 
 #define WEECHAT_XMPP_PLUGIN_NAME "xmpp"
 #define WEECHAT_XMPP_PLUGIN_VERSION "0.2.0"
 
 namespace c {
     extern "C" {
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <strophe.h>
-
 #include "plugin.h"
 #include "config.h"
 #include "account.h"
@@ -24,101 +20,91 @@ namespace c {
 #include "completion.h"
 
         struct t_weechat_plugin *weechat_xmpp_plugin() {
-            return weechat_plugin;
+            return (struct t_weechat_plugin*)weechat::globals::plugin;
         };
         const char *weechat_xmpp_plugin_name() {
-            return weechat::plugin::instance.name().data();
+            return WEECHAT_XMPP_PLUGIN_NAME;
         };
         const char *weechat_xmpp_plugin_version() {
-            return weechat::plugin::instance.version().data();
+            return WEECHAT_XMPP_PLUGIN_VERSION;
         };
-    }
-
-#define TIMER_INTERVAL_SEC 0.01
-
-    struct t_hook *weechat_xmpp_process_timer = NULL;
-
-    struct t_gui_bar_item *weechat_xmpp_typing_bar_item = NULL;
-
-    bool weechat_plugin_init()
-    {
-        if (!config__init())
-            return false;
-
-        config__read();
-
-        connection__init();
-
-        command__init();
-
-        completion__init();
-
-        weechat_xmpp_process_timer = weechat_hook_timer(TIMER_INTERVAL_SEC * 1000, 0, 0,
-                &account__timer_cb,
-                NULL, NULL);
-
-        if (!weechat_bar_search("typing"))
-        {
-            weechat_bar_new("typing", "off", "400", "window", "${typing}",
-                    "bottom", "horizontal", "vertical",
-                    "1", "1", "default", "default", "default", "default",
-                    "off", "xmpp_typing");
-        }
-
-        weechat_xmpp_typing_bar_item = weechat_bar_item_new("xmpp_typing",
-                &buffer__typing_bar_cb,
-                NULL, NULL);
-
-        weechat_hook_signal("input_text_changed", &input__text_changed_cb, NULL, NULL);
-
-        return true;
-    }
-
-    void weechat_plugin_end()
-    {
-        if (weechat_xmpp_typing_bar_item)
-            weechat_bar_item_remove(weechat_xmpp_typing_bar_item);
-
-        if (weechat_xmpp_process_timer)
-            weechat_unhook(weechat_xmpp_process_timer);
-
-        config__write();
-
-        account__disconnect_all();
-
-        account__free_all();
-
-        xmpp_shutdown();
     }
 }
 
 namespace weechat {
-    plugin::plugin() {
-    }
-
-    plugin::plugin(plugin_ptr ptr)
-        : plugin_ptr(std::move(ptr)) {
-        this->m_name = WEECHAT_XMPP_PLUGIN_NAME;
-        this->m_version = WEECHAT_XMPP_PLUGIN_VERSION;
-    }
-
-    plugin::plugin(struct t_weechat_plugin *ptr)
-        : plugin(std::move(weechat::plugin_ptr(
-            ptr, [this] (struct t_weechat_plugin *) { }
-        ))) {
+    plugin::plugin()
+        : std::reference_wrapper<weechat_plugin>(
+            // try not to think about it too hard
+            *(weechat_plugin*)nullptr) {
     }
 
     bool plugin::init(std::vector<std::string>) {
-        weechat_printf(nullptr, "%s: It works!", this->name().data());
-        return c::weechat_plugin_init();
-    }
+        if (!c::config__init())
+        {
+            weechat::printf(nullptr, "%s: Error during config init",
+                            globals::plugin->name);
+            return false;
+        }
 
-    bool plugin::end() {
-        c::weechat_plugin_end();
+        c::config__read();
+
+        c::connection__init();
+
+        c::command__init();
+
+        c::completion__init();
+
+        globals::process_timer =
+            weechat::hook_timer(plugin::timer_interval_sec * 1000, 0, 0,
+                                &c::account__timer_cb, nullptr, nullptr);
+
+        if (!weechat::bar_search("typing"))
+        {
+            weechat::bar_new("typing", "off", "400", "window", "${typing}",
+                             "bottom", "horizontal", "vertical",
+                             "1", "1", "default", "default", "default", "default",
+                             "off", "xmpp_typing");
+        }
+
+        globals::typing_bar_item =
+            weechat::bar_item_new("xmpp_typing",
+                                  (char* (*)(const void*, void*,
+                                             t_gui_bar_item*, t_gui_window*,
+                                             t_gui_buffer*, t_hashtable*))(&c::buffer__typing_bar_cb),
+                                  nullptr, nullptr);
+
+        weechat::hook_signal("input_text_changed", &c::input__text_changed_cb, nullptr, nullptr);
+
         return true;
     }
 
-    plugin plugin::instance;
+    bool plugin::end() {
+        if (globals::typing_bar_item)
+            weechat::bar_item_remove(globals::typing_bar_item);
+
+        if (globals::process_timer)
+            weechat::unhook(globals::process_timer);
+
+        c::config__write();
+
+        c::account__disconnect_all();
+
+        c::account__free_all();
+
+        xmpp::shutdown();
+
+        return true;
+    }
+
+    std::string_view plugin::name() const {
+        return plugin_get_name(*this);
+    }
+
+    struct t_weechat_plugin* globals::plugin = nullptr;
+
+    hook* globals::process_timer = nullptr;
+
+    gui_bar_item* globals::typing_bar_item = nullptr;
 }
 
 extern "C" {
@@ -129,15 +115,15 @@ extern "C" {
     WEECHAT_PLUGIN_LICENSE("MPL2");
     WEECHAT_PLUGIN_PRIORITY(5500);
 
-    int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
+    weechat::rc weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
     {
-        weechat::plugin::instance = std::move(weechat::plugin(plugin));
+        weechat::globals::plugin = (weechat::weechat_plugin*)plugin;
         std::vector<std::string> args(argv, argv+argc);
-        return weechat::plugin::instance.init(args) ? WEECHAT_RC_OK : WEECHAT_RC_ERROR;
+        return weechat::plugin::init(args) ? WEECHAT_RC_OK : WEECHAT_RC_ERROR;
     }
 
-    int weechat_plugin_end(struct t_weechat_plugin *)
+    weechat::rc weechat_plugin_end(struct t_weechat_plugin *)
     {
-        return weechat::plugin::instance.end() ? WEECHAT_RC_OK : WEECHAT_RC_ERROR;
+        return weechat::plugin::end() ? WEECHAT_RC_OK : WEECHAT_RC_ERROR;
     }
 }

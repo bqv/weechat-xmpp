@@ -13,6 +13,6 @@ TEST_CASE("placeholder")
         CHECK(argc != 1);
     }
 
-    weechat::plugin c;
-    CHECK(&c.name() == NULL);
+  //weechat::plugin c;
+  //CHECK(&c.name() == NULL);
 }

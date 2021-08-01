@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <strophe.h>
-#include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
 #include "util.h"
