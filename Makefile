@@ -123,11 +123,19 @@ debug: xmpp.so
 	env LD_PRELOAD=$(DEBUG) gdb -ex "handle SIGPIPE nostop noprint pass" --args \
 		weechat -a -P 'alias,buflist,exec,irc' -r '/plugin load ./xmpp.so'
 
-depend: .depend
-
-.depend: $(SRCS) $(HDRS) $(TSTS)
-	$(RM) ./.depend
-	$(CXX) $(CPPFLAGS) -MM $^>>./.depend
+depend: $(SRCS) $(HDRS)
+	$(RM) -f ./.depend
+	echo > ./.depend
+	for src in $(SRCS) ; do \
+		if [[ $$src == *.cpp ]]; then \
+			$(CXX) $(CPPFLAGS) -MM -MMD -MP -MF - \
+				-MT .$${src/.cpp/.o} $$src >> ./.depend ; \
+		elif [[ $$src == *.c ]]; then \
+			$(CC) $(CFLAGS) -MM -MMD -MP -MF - \
+				-MT .$${src/.c/.o} $$src >> ./.depend ; \
+		fi \
+	done
+	sed -i 's/\.\([a-z]*\/\)/\1./' .depend
 
 tidy:
 	$(FIND) . -name "*.o" -delete

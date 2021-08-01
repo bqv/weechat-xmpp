@@ -20,7 +20,7 @@ namespace c {
 #include "completion.h"
 
         struct t_weechat_plugin *weechat_xmpp_plugin() {
-            return (struct t_weechat_plugin*)weechat::globals::plugin;
+            return (struct t_weechat_plugin*)&*weechat::globals::plugin;
         };
         const char *weechat_xmpp_plugin_name() {
             return WEECHAT_XMPP_PLUGIN_NAME;
@@ -33,16 +33,19 @@ namespace c {
 
 namespace weechat {
     plugin::plugin()
-        : std::reference_wrapper<weechat_plugin>(
-            // try not to think about it too hard
-            *(weechat_plugin*)nullptr) {
+        // try not to think about it too hard
+        : plugin(nullptr) {
+    }
+
+    plugin::plugin(struct t_weechat_plugin* plugin)
+        : std::reference_wrapper<struct t_weechat_plugin>(*plugin) {
     }
 
     bool plugin::init(std::vector<std::string>) {
         if (!c::config__init())
         {
             weechat::printf(nullptr, "%s: Error during config init",
-                            globals::plugin->name);
+                            this->name());
             return false;
         }
 
@@ -54,9 +57,9 @@ namespace weechat {
 
         c::completion__init();
 
-        globals::process_timer =
+        this->m_process_timer =
             weechat::hook_timer(plugin::timer_interval_sec * 1000, 0, 0,
-                                &c::account__timer_cb, nullptr, nullptr);
+                                &c::account__timer_cb);
 
         if (!weechat::bar_search("typing"))
         {
@@ -66,24 +69,22 @@ namespace weechat {
                              "off", "xmpp_typing");
         }
 
-        globals::typing_bar_item =
+        this->m_typing_bar_item =
             weechat::bar_item_new("xmpp_typing",
                                   (char* (*)(const void*, void*,
                                              t_gui_bar_item*, t_gui_window*,
-                                             t_gui_buffer*, t_hashtable*))(&c::buffer__typing_bar_cb),
-                                  nullptr, nullptr);
+                                             t_gui_buffer*, t_hashtable*))(
+                                                 &c::buffer__typing_bar_cb));
 
-        weechat::hook_signal("input_text_changed", &c::input__text_changed_cb, nullptr, nullptr);
+        weechat::hook_signal("input_text_changed", &c::input__text_changed_cb);
 
         return true;
     }
 
     bool plugin::end() {
-        if (globals::typing_bar_item)
-            weechat::bar_item_remove(globals::typing_bar_item);
+        this->m_typing_bar_item.reset();
 
-        if (globals::process_timer)
-            weechat::unhook(globals::process_timer);
+        this->m_process_timer.reset();
 
         c::config__write();
 
@@ -100,11 +101,23 @@ namespace weechat {
         return plugin_get_name(*this);
     }
 
-    struct t_weechat_plugin* globals::plugin = nullptr;
+    weechat::plugin globals::plugin;
 
-    hook* globals::process_timer = nullptr;
+    hook::hook(struct t_hook* hook)
+        : std::reference_wrapper<struct t_hook>(*hook) {
+    }
 
-    gui_bar_item* globals::typing_bar_item = nullptr;
+    hook::~hook() {
+        weechat::unhook(*this);
+    }
+
+    gui_bar_item::gui_bar_item(struct t_gui_bar_item* item)
+        : std::reference_wrapper<struct t_gui_bar_item>(*item) {
+    }
+
+    gui_bar_item::~gui_bar_item() {
+        weechat::bar_item_remove(*this);
+    }
 }
 
 extern "C" {
@@ -117,13 +130,15 @@ extern "C" {
 
     weechat::rc weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
     {
-        weechat::globals::plugin = (weechat::weechat_plugin*)plugin;
+        weechat::globals::plugin = (struct weechat::t_weechat_plugin*)plugin;
         std::vector<std::string> args(argv, argv+argc);
-        return weechat::plugin::init(args) ? WEECHAT_RC_OK : WEECHAT_RC_ERROR;
+        return weechat::globals::plugin.init(args)
+            ? WEECHAT_RC_OK : WEECHAT_RC_ERROR;
     }
 
     weechat::rc weechat_plugin_end(struct t_weechat_plugin *)
     {
-        return weechat::plugin::end() ? WEECHAT_RC_OK : WEECHAT_RC_ERROR;
+        return weechat::globals::plugin.end()
+            ? WEECHAT_RC_OK : WEECHAT_RC_ERROR;
     }
 }

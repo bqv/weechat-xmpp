@@ -16,14 +16,13 @@ namespace weechat {
 #include <weechat/weechat-plugin.h>
 
         typedef int rc;
-        typedef struct t_weechat_plugin weechat_plugin;
         typedef struct t_config_option config_option;
         typedef struct t_config_section config_section;
         typedef struct t_config_file config_file;
         typedef struct t_gui_window gui_window;
         typedef struct t_gui_buffer gui_buffer;
         typedef struct t_gui_bar gui_bar;
-        typedef struct t_gui_bar_item gui_bar_item;
+      //typedef struct t_gui_bar_item gui_bar_item;
         typedef struct t_gui_bar_window gui_bar_window;
         typedef struct t_gui_completion gui_completion;
         typedef struct t_gui_nick gui_nick;
@@ -36,34 +35,65 @@ namespace weechat {
         typedef struct t_arraylist arraylist;
         typedef struct t_hashtable hashtable;
         typedef struct t_hdata hdata;
-        typedef struct t_hook hook;
+      //typedef struct t_weechat_plugin weechat_plugin;
     }
 
-    namespace globals {
-        extern weechat_plugin* plugin;
-        extern hook* process_timer;
-        extern gui_bar_item* typing_bar_item;
-    }
-
-    class plugin : public std::reference_wrapper<weechat_plugin> {
+    class gui_bar_item : public std::reference_wrapper<struct t_gui_bar_item> {
     public:
-        plugin();
+        gui_bar_item(struct t_gui_bar_item* item);
+        ~gui_bar_item();
 
-        std::string_view name() const;
-
-        inline operator weechat_plugin* () const { return &this->get(); }
-
-        static bool init(std::vector<std::string> args);
-        static bool end();
-
-        static constexpr const double timer_interval_sec = 0.01;
+        inline operator struct t_gui_bar_item* () const { return &this->get(); }
+        inline gui_bar_item& operator= (struct t_gui_bar_item* item_ptr) {
+            *this = std::move(gui_bar_item(item_ptr));
+            return *this;
+        }
     };
 
-    inline std::string_view plugin_get_name(weechat_plugin *plugin) {
-        return globals::plugin->plugin_get_name(globals::plugin);
+    class hook : public std::reference_wrapper<struct t_hook> {
+    public:
+        hook(struct t_hook* hook);
+        ~hook();
+
+        inline operator struct t_hook* () const { return &this->get(); }
+        inline hook& operator= (struct t_hook* hook_ptr) {
+            *this = std::move(hook(hook_ptr));
+            return *this;
+        }
+    };
+
+    class plugin : public std::reference_wrapper<struct t_weechat_plugin> {
+    public:
+        plugin();
+        plugin(struct t_weechat_plugin* plugin);
+
+        bool init(std::vector<std::string> args);
+        bool end();
+        std::string_view name() const;
+
+        inline operator struct t_weechat_plugin* () const { return &this->get(); }
+        inline struct t_weechat_plugin* operator-> () const { return &this->get(); }
+        inline plugin& operator= (struct t_weechat_plugin* plugin_ptr) {
+            *this = std::move(plugin(plugin_ptr));
+            return *this;
+        }
+
+        static constexpr const double timer_interval_sec = 0.01;
+
+    private:
+        std::optional<hook> m_process_timer;
+        std::optional<gui_bar_item> m_typing_bar_item;
+    };
+
+    namespace globals {
+        extern weechat::plugin plugin;
     }
 
-    inline void charset_set(weechat_plugin *plugin, const char *charset) {
+    inline std::string_view plugin_get_name(struct t_weechat_plugin *plugin) {
+        return globals::plugin->plugin_get_name(plugin);
+    }
+
+    inline void charset_set(const char *charset) {
         return globals::plugin->charset_set(globals::plugin, charset);
     }
     inline char *iconv_to_internal(const char *charset, const char *string) {
@@ -524,8 +554,7 @@ namespace weechat {
         return globals::plugin->hashtable_free(hashtable);
     }
 
-    inline struct t_config_file *config_new(weechat_plugin *plugin,
-                                            const char *name,
+    inline struct t_config_file *config_new(const char *name,
                                             int (*callback_reload)(const void *pointer,
                                                                    void *data,
                                                                    struct t_config_file *config_file),
@@ -722,25 +751,20 @@ namespace weechat {
     inline struct t_config_option *config_get(const char *option_name) {
         return globals::plugin->config_get(option_name);
     }
-    inline const char *config_get_plugin(weechat_plugin *plugin,
-                                         const char *option_name) {
+    inline const char *config_get_plugin(const char *option_name) {
         return globals::plugin->config_get_plugin(globals::plugin, option_name);
     }
-    inline int config_is_set_plugin(weechat_plugin *plugin,
-                                    const char *option_name) {
+    inline int config_is_set_plugin(const char *option_name) {
         return globals::plugin->config_is_set_plugin(globals::plugin, option_name);
     }
-    inline int config_set_plugin(weechat_plugin *plugin,
-                                 const char *option_name, const char *value) {
+    inline int config_set_plugin(const char *option_name, const char *value) {
         return globals::plugin->config_set_plugin(globals::plugin, option_name, value);
     }
-    inline void config_set_desc_plugin(weechat_plugin *plugin,
-                                       const char *option_name,
+    inline void config_set_desc_plugin(const char *option_name,
                                        const char *description) {
         return globals::plugin->config_set_desc_plugin(globals::plugin, option_name, description);
     }
-    inline int config_unset_plugin(weechat_plugin *plugin,
-                                   const char *option_name) {
+    inline int config_unset_plugin(const char *option_name) {
         return globals::plugin->config_unset_plugin(globals::plugin, option_name);
     }
 
@@ -777,8 +801,7 @@ namespace weechat {
         return globals::plugin->log_printf(message, args...);
     }
 
-    inline struct t_hook *hook_command(weechat_plugin *plugin,
-                                       const char *command,
+    inline struct t_hook *hook_command(const char *command,
                                        const char *description,
                                        const char *args,
                                        const char *args_description,
@@ -792,8 +815,7 @@ namespace weechat {
                                        void *callback_data) {
         return globals::plugin->hook_command(globals::plugin, command, description, args, args_description, completion, callback, callback_pointer, callback_data);
     }
-    inline struct t_hook *hook_command_run(weechat_plugin *plugin,
-                                           const char *command,
+    inline struct t_hook *hook_command_run(const char *command,
                                            int (*callback)(const void *pointer,
                                                            void *data,
                                                            struct t_gui_buffer *buffer,
@@ -802,31 +824,23 @@ namespace weechat {
                                            void *callback_data) {
         return globals::plugin->hook_command_run(globals::plugin, command, callback, callback_pointer, callback_data);
     }
-    inline struct t_hook *hook_timer(weechat_plugin *plugin,
-                                     long interval,
-                                     int align_second,
-                                     int max_calls,
-                                     int (*callback)(const void *pointer,
-                                                     void *data,
-                                                     int remaining_calls),
-                                     const void *callback_pointer,
-                                     void *callback_data) {
-        return globals::plugin->hook_timer(globals::plugin, interval, align_second, max_calls, callback, callback_pointer, callback_data);
+    inline std::optional<hook> hook_timer(
+        long interval,
+        int align_second,
+        int max_calls,
+        int (*callback)(const void *pointer,
+                        void *data,
+                        int remaining_calls),
+        const void *callback_pointer = nullptr,
+        void *callback_data = nullptr) {
+        if (auto ptr = globals::plugin->hook_timer(
+                globals::plugin,
+                interval, align_second, max_calls,
+                callback, callback_pointer, callback_data))
+            return std::make_optional(hook(ptr));
+        return std::nullopt;
     }
-    inline hook* hook_timer(long interval,
-                            int align_second,
-                            int max_calls,
-                            int (*callback)(const void *pointer,
-                                            void *data,
-                                            int remaining_calls),
-                            const void *callback_pointer,
-                            void *callback_data) {
-        return globals::plugin->hook_timer(globals::plugin,
-            interval, align_second, max_calls,
-            callback, callback_pointer, callback_data);
-    }
-    inline struct t_hook *hook_fd(weechat_plugin *plugin,
-                                  int fd,
+    inline struct t_hook *hook_fd(int fd,
                                   int flag_read,
                                   int flag_write,
                                   int flag_exception,
@@ -837,8 +851,7 @@ namespace weechat {
                                   void *callback_data) {
         return globals::plugin->hook_fd(globals::plugin, fd, flag_read, flag_write, flag_exception, callback, callback_pointer, callback_data);
     }
-    inline struct t_hook *hook_process(weechat_plugin *plugin,
-                                       const char *command,
+    inline struct t_hook *hook_process(const char *command,
                                        int timeout,
                                        int (*callback)(const void *pointer,
                                                        void *data,
@@ -850,8 +863,7 @@ namespace weechat {
                                        void *callback_data) {
         return globals::plugin->hook_process(globals::plugin, command, timeout, callback, callback_pointer, callback_data);
     }
-    inline struct t_hook *hook_process_hashtable(weechat_plugin *plugin,
-                                                 const char *command,
+    inline struct t_hook *hook_process_hashtable(const char *command,
                                                  struct t_hashtable *options,
                                                  int timeout,
                                                  int (*callback)(const void *pointer,
@@ -864,8 +876,7 @@ namespace weechat {
                                                  void *callback_data) {
         return globals::plugin->hook_process_hashtable(globals::plugin, command, options, timeout, callback, callback_pointer, callback_data);
     }
-    inline struct t_hook *hook_connect(weechat_plugin *plugin,
-                                       const char *proxy,
+    inline struct t_hook *hook_connect(const char *proxy,
                                        const char *address,
                                        int port,
                                        int ipv6,
@@ -885,8 +896,7 @@ namespace weechat {
                                        void *callback_data) {
         return globals::plugin->hook_connect(globals::plugin, proxy, address, port, ipv6, retry, gnutls_sess, gnutls_cb, gnutls_dhkey_size, gnutls_priorities, local_hostname, callback, callback_pointer, callback_data);
     }
-    inline struct t_hook *hook_line(weechat_plugin *plugin,
-                                    const char *buffer_type,
+    inline struct t_hook *hook_line(const char *buffer_type,
                                     const char *buffer_name,
                                     const char *tags,
                                     struct t_hashtable *(*callback)(const void *pointer,
@@ -896,8 +906,7 @@ namespace weechat {
                                     void *callback_data) {
         return globals::plugin->hook_line(globals::plugin, buffer_type, buffer_name, tags, callback, callback_pointer, callback_data);
     }
-    inline struct t_hook *hook_print(weechat_plugin *plugin,
-                                     struct t_gui_buffer *buffer,
+    inline struct t_hook *hook_print(struct t_gui_buffer *buffer,
                                      const char *tags,
                                      const char *message,
                                      int strip_colors,
@@ -921,16 +930,15 @@ namespace weechat {
                                                       const char *signal,
                                                       const char *type_data,
                                                       void *signal_data),
-                                      const void *callback_pointer,
-                                      void *callback_data) {
+                                      const void *callback_pointer = nullptr,
+                                      void *callback_data = nullptr) {
         return globals::plugin->hook_signal(globals::plugin, signal, callback, callback_pointer, callback_data);
     }
     inline int hook_signal_send(const char *signal, const char *type_data,
                                 void *signal_data) {
         return globals::plugin->hook_signal_send(signal, type_data, signal_data);
     }
-    inline struct t_hook *hook_hsignal(weechat_plugin *plugin,
-                                       const char *signal,
+    inline struct t_hook *hook_hsignal(const char *signal,
                                        int (*callback)(const void *pointer,
                                                        void *data,
                                                        const char *signal,
@@ -943,8 +951,7 @@ namespace weechat {
                                  struct t_hashtable *hashtable) {
         return globals::plugin->hook_hsignal_send(signal, hashtable);
     }
-    inline struct t_hook *hook_config(weechat_plugin *plugin,
-                                      const char *option,
+    inline struct t_hook *hook_config(const char *option,
                                       int (*callback)(const void *pointer,
                                                       void *data,
                                                       const char *option,
@@ -953,8 +960,7 @@ namespace weechat {
                                       void *callback_data) {
         return globals::plugin->hook_config(globals::plugin, option, callback, callback_pointer, callback_data);
     }
-    inline struct t_hook *hook_completion(weechat_plugin *plugin,
-                                          const char *completion_item,
+    inline struct t_hook *hook_completion(const char *completion_item,
                                           const char *description,
                                           int (*callback)(const void *pointer,
                                                           void *data,
@@ -975,8 +981,7 @@ namespace weechat {
                                          const char *where) {
         return globals::plugin->hook_completion_list_add(completion, word, nick_completion, where);
     }
-    inline struct t_hook *hook_modifier(weechat_plugin *plugin,
-                                        const char *modifier,
+    inline struct t_hook *hook_modifier(const char *modifier,
                                         char *(*callback)(const void *pointer,
                                                           void *data,
                                                           const char *modifier,
@@ -986,14 +991,12 @@ namespace weechat {
                                         void *callback_data) {
         return globals::plugin->hook_modifier(globals::plugin, modifier, callback, callback_pointer, callback_data);
     }
-    inline char *hook_modifier_exec(weechat_plugin *plugin,
-                                    const char *modifier,
+    inline char *hook_modifier_exec(const char *modifier,
                                     const char *modifier_data,
                                     const char *string) {
         return globals::plugin->hook_modifier_exec(globals::plugin, modifier, modifier_data, string);
     }
-    inline struct t_hook *hook_info(weechat_plugin *plugin,
-                                    const char *info_name,
+    inline struct t_hook *hook_info(const char *info_name,
                                     const char *description,
                                     const char *args_description,
                                     char *(*callback)(const void *pointer,
@@ -1004,8 +1007,7 @@ namespace weechat {
                                     void *callback_data) {
         return globals::plugin->hook_info(globals::plugin, info_name, description, args_description, callback, callback_pointer, callback_data);
     }
-    inline struct t_hook *hook_info_hashtable(weechat_plugin *plugin,
-                                              const char *info_name,
+    inline struct t_hook *hook_info_hashtable(const char *info_name,
                                               const char *description,
                                               const char *args_description,
                                               const char *output_description,
@@ -1017,8 +1019,7 @@ namespace weechat {
                                               void *callback_data) {
         return globals::plugin->hook_info_hashtable(globals::plugin, info_name, description, args_description, output_description, callback, callback_pointer, callback_data);
     }
-    inline struct t_hook *hook_infolist(weechat_plugin *plugin,
-                                        const char *infolist_name,
+    inline struct t_hook *hook_infolist(const char *infolist_name,
                                         const char *description,
                                         const char *pointer_description,
                                         const char *args_description,
@@ -1031,8 +1032,7 @@ namespace weechat {
                                         void *callback_data) {
         return globals::plugin->hook_infolist(globals::plugin, infolist_name, description, pointer_description, args_description, callback, callback_pointer, callback_data);
     }
-    inline struct t_hook *hook_hdata(weechat_plugin *plugin,
-                                     const char *hdata_name,
+    inline struct t_hook *hook_hdata(const char *hdata_name,
                                      const char *description,
                                      struct t_hdata *(*callback)(const void *pointer,
                                                                  void *data,
@@ -1041,8 +1041,7 @@ namespace weechat {
                                      void *callback_data) {
         return globals::plugin->hook_hdata(globals::plugin, hdata_name, description, callback, callback_pointer, callback_data);
     }
-    inline struct t_hook *hook_focus(weechat_plugin *plugin,
-                                     const char *area,
+    inline struct t_hook *hook_focus(const char *area,
                                      struct t_hashtable *(*callback)(const void *pointer,
                                                                      void *data,
                                                                      struct t_hashtable *info),
@@ -1054,16 +1053,14 @@ namespace weechat {
                          const char *value) {
         return globals::plugin->hook_set(hook, property, value);
     }
-    inline void unhook(struct t_hook *hook) {
+    inline void unhook(hook& hook) {
         return globals::plugin->unhook(hook);
     }
-    inline void unhook_all(weechat_plugin *plugin,
-                           const char *subplugin) {
-        return globals::plugin->unhook_all(globals::plugin, subplugin);
+    inline void unhook_all(const char *plugin) {
+        return globals::plugin->unhook_all(globals::plugin, plugin);
     }
 
-    inline struct t_gui_buffer *buffer_new(weechat_plugin *plugin,
-                                           const char *name,
+    inline struct t_gui_buffer *buffer_new(const char *name,
                                            int (*input_callback)(const void *pointer,
                                                                  void *data,
                                                                  struct t_gui_buffer *buffer,
@@ -1241,21 +1238,27 @@ namespace weechat {
     inline struct t_gui_bar_item *bar_item_search(const char *name) {
         return globals::plugin->bar_item_search(name);
     }
-    inline struct t_gui_bar_item *bar_item_new(const char *name,
-                                               char *(*build_callback)(const void *pointer,
-                                                                       void *data,
-                                                                       struct t_gui_bar_item *item,
-                                                                       struct t_gui_window *window,
-                                                                       struct t_gui_buffer *buffer,
-                                                                       struct t_hashtable *extra_info),
-                                               const void *build_callback_pointer,
-                                               void *build_callback_data) {
-        return globals::plugin->bar_item_new(globals::plugin, name, build_callback, build_callback_pointer, build_callback_data);
+    inline std::optional<gui_bar_item> bar_item_new(
+        const char *name,
+        char *(*build_callback)(const void *pointer,
+                                void *data,
+                                struct t_gui_bar_item *item,
+                                struct t_gui_window *window,
+                                struct t_gui_buffer *buffer,
+                                struct t_hashtable *extra_info),
+        const void *build_callback_pointer = nullptr,
+        void *build_callback_data = nullptr) {
+        if (auto ptr = globals::plugin->bar_item_new(
+                globals::plugin,
+                name, build_callback,
+                build_callback_pointer, build_callback_data))
+            return std::make_optional(gui_bar_item(ptr));
+        return std::nullopt;
     }
     inline void bar_item_update(const char *name) {
         return globals::plugin->bar_item_update(name);
     }
-    inline void bar_item_remove(struct t_gui_bar_item *item) {
+    inline void bar_item_remove(gui_bar_item& item) {
         return globals::plugin->bar_item_remove(item);
     }
     inline struct t_gui_bar *bar_search(const char *name) {
@@ -1290,18 +1293,15 @@ namespace weechat {
         return globals::plugin->bar_remove(bar);
     }
 
-    inline int command(weechat_plugin *plugin,
-                       struct t_gui_buffer *buffer, const char *command) {
+    inline int command(struct t_gui_buffer *buffer, const char *command) {
         return globals::plugin->command(globals::plugin, buffer, command);
     }
-    inline int command_options(weechat_plugin *plugin,
-                               struct t_gui_buffer *buffer, const char *command,
+    inline int command_options(struct t_gui_buffer *buffer, const char *command,
                                struct t_hashtable *options) {
         return globals::plugin->command_options(globals::plugin, buffer, command, options);
     }
 
-    inline struct t_gui_completion *completion_new(weechat_plugin *plugin,
-                                                   struct t_gui_buffer *buffer) {
+    inline struct t_gui_completion *completion_new(struct t_gui_buffer *buffer) {
         return globals::plugin->completion_new(globals::plugin, buffer);
     }
     inline int completion_search(struct t_gui_completion *completion,
@@ -1332,17 +1332,15 @@ namespace weechat {
         return globals::plugin->network_connect_to(proxy, address, address_length);
     }
 
-    inline char *info_get(weechat_plugin *plugin, const char *info_name,
-                          const char *arguments) {
+    inline char *info_get(const char *info_name, const char *arguments) {
         return globals::plugin->info_get(globals::plugin, info_name, arguments);
     }
-    inline struct t_hashtable *info_get_hashtable(weechat_plugin *plugin,
-                                                  const char *info_name,
+    inline struct t_hashtable *info_get_hashtable(const char *info_name,
                                                   struct t_hashtable *hashtable) {
         return globals::plugin->info_get_hashtable(globals::plugin, info_name, hashtable);
     }
 
-    inline struct t_infolist *infolist_new(weechat_plugin *plugin) {
+    inline struct t_infolist *infolist_new() {
         return globals::plugin->infolist_new(globals::plugin);
     }
     inline struct t_infolist_item *infolist_new_item(struct t_infolist *infolist) {
@@ -1378,8 +1376,7 @@ namespace weechat {
                                                       const char *name) {
         return globals::plugin->infolist_search_var(infolist, name);
     }
-    inline struct t_infolist *infolist_get(weechat_plugin *plugin,
-                                           const char *infolist_name,
+    inline struct t_infolist *infolist_get(const char *infolist_name,
                                            void *pointer,
                                            const char *arguments) {
         return globals::plugin->infolist_get(globals::plugin, infolist_name, pointer, arguments);
@@ -1420,8 +1417,7 @@ namespace weechat {
         return globals::plugin->infolist_free(infolist);
     }
 
-    inline struct t_hdata *hdata_new(weechat_plugin *plugin,
-                                     const char *hdata_name, const char *var_prev,
+    inline struct t_hdata *hdata_new(const char *hdata_name, const char *var_prev,
                                      const char *var_next,
                                      int create_allowed, int delete_allowed,
                                      int (*callback_update)(void *data,
@@ -1440,8 +1436,7 @@ namespace weechat {
                                void *pointer, int flags) {
         return globals::plugin->hdata_new_list(hdata, name, pointer, flags);
     }
-    inline struct t_hdata *hdata_get(weechat_plugin *plugin,
-                                     const char *hdata_name) {
+    inline struct t_hdata *hdata_get(const char *hdata_name) {
         return globals::plugin->hdata_get(globals::plugin, hdata_name);
     }
     inline int hdata_get_var_offset(struct t_hdata *hdata, const char *name) {
