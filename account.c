@@ -693,7 +693,7 @@ int account__timer_cb(const void *pointer, void *data, int remaining_calls)
     struct t_account *ptr_account;
 
     for (ptr_account = accounts; ptr_account;
-         ptr_account = ptr_account->next_account)
+         ptr_account = ptr_account ? ptr_account->next_account : NULL)
     {
         if (ptr_account->is_connected
             && (xmpp_conn_is_connecting(ptr_account->connection)
