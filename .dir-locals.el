@@ -11,5 +11,6 @@
                                    " ")))
   (flycheck-clang-warnings . ("all" "extra" "error-implicit-function-declaration" "no-missing-field-initializers"))
   (flycheck-clang-language-standard . "c++17")
-  (flycheck-checker . c/c++-clang)
+  (flycheck-gcc-language-standard . "c++17")
+  (flycheck-checker . c/c++-gcc)
   (projectile-project-compilation-cmd . "make && (make test || true)")))

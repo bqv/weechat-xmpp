@@ -1,4 +1,3 @@
-#include <iostream>
 #include <doctest/doctest.h>
 
 #include "../plugin.hh"
@@ -13,6 +12,7 @@ TEST_CASE("placeholder")
         CHECK(argc != 1);
     }
 
+    (void) argv;
   //weechat::plugin c;
   //CHECK(&c.name() == NULL);
 }

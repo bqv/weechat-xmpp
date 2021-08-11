@@ -10,71 +10,40 @@
 #include <vector>
 #include <functional>
 #include <optional>
+#include <type_traits>
+#include <cstring>
+#include <stdexcept>
+
+#include "weechat.hh"
+#include "config.hh"
+
+template<typename Or_Input,
+         typename Func,
+         typename Input_Type = typename Or_Input::value_type,
+         typename Or_Output = std::invoke_result_t<Func, Input_Type>>
+constexpr Or_Output operator>>= (Or_Input input, Func f) {
+    static_assert(std::is_invocable_v<decltype(f), Input_Type>,
+                  "The function passed in must take type "
+                  "(Or_Input::value_type) as its argument");
+
+    return input ? std::invoke(f, *input) : std::nullopt;
+}
 
 namespace weechat {
-    extern "C" {
-#include <weechat/weechat-plugin.h>
-
-        typedef int rc;
-        typedef struct t_config_option config_option;
-        typedef struct t_config_section config_section;
-        typedef struct t_config_file config_file;
-        typedef struct t_gui_window gui_window;
-        typedef struct t_gui_buffer gui_buffer;
-        typedef struct t_gui_bar gui_bar;
-      //typedef struct t_gui_bar_item gui_bar_item;
-        typedef struct t_gui_bar_window gui_bar_window;
-        typedef struct t_gui_completion gui_completion;
-        typedef struct t_gui_nick gui_nick;
-        typedef struct t_gui_nick_group gui_nick_group;
-        typedef struct t_infolist infolist;
-        typedef struct t_infolist_item infolist_item;
-        typedef struct t_upgrade_file upgrade_file;
-        typedef struct t_weelist weelist;
-        typedef struct t_weelist_item weelist_item;
-        typedef struct t_arraylist arraylist;
-        typedef struct t_hashtable hashtable;
-        typedef struct t_hdata hdata;
-      //typedef struct t_weechat_plugin weechat_plugin;
-    }
-
-    class gui_bar_item : public std::reference_wrapper<struct t_gui_bar_item> {
-    public:
-        gui_bar_item(struct t_gui_bar_item* item);
-        ~gui_bar_item();
-
-        inline operator struct t_gui_bar_item* () const { return &this->get(); }
-        inline gui_bar_item& operator= (struct t_gui_bar_item* item_ptr) {
-            *this = std::move(gui_bar_item(item_ptr));
-            return *this;
-        }
-    };
-
-    class hook : public std::reference_wrapper<struct t_hook> {
-    public:
-        hook(struct t_hook* hook);
-        ~hook();
-
-        inline operator struct t_hook* () const { return &this->get(); }
-        inline hook& operator= (struct t_hook* hook_ptr) {
-            *this = std::move(hook(hook_ptr));
-            return *this;
-        }
-    };
-
     class plugin : public std::reference_wrapper<struct t_weechat_plugin> {
     public:
         plugin();
-        plugin(struct t_weechat_plugin* plugin);
+        explicit plugin(struct t_weechat_plugin* plugin);
 
         bool init(std::vector<std::string> args);
         bool end();
         std::string_view name() const;
+        weechat::xmpp::config& config();
 
         inline operator struct t_weechat_plugin* () const { return &this->get(); }
         inline struct t_weechat_plugin* operator-> () const { return &this->get(); }
         inline plugin& operator= (struct t_weechat_plugin* plugin_ptr) {
-            *this = std::move(plugin(plugin_ptr));
+            std::reference_wrapper<struct t_weechat_plugin>::operator=(*plugin_ptr);
             return *this;
         }
 
@@ -83,13 +52,14 @@ namespace weechat {
     private:
         std::optional<hook> m_process_timer;
         std::optional<gui_bar_item> m_typing_bar_item;
+        std::optional<weechat::xmpp::config> m_config;
     };
 
     namespace globals {
         extern weechat::plugin plugin;
     }
 
-    inline std::string_view plugin_get_name(struct t_weechat_plugin *plugin) {
+    inline const char *plugin_get_name(struct t_weechat_plugin *plugin) {
         return globals::plugin->plugin_get_name(plugin);
     }
 
@@ -356,7 +326,9 @@ namespace weechat {
     inline int util_timeval_cmp(struct timeval *tv1, struct timeval *tv2) {
         return globals::plugin->util_timeval_cmp(tv1, tv2);
     }
-    long long (*util_timeval_diff) (struct timeval *tv1, struct timeval *tv2);
+    inline long long util_timeval_diff(struct timeval *tv1, struct timeval *tv2) {
+        return globals::plugin->util_timeval_diff(tv1, tv2);
+    }
     inline void util_timeval_add(struct timeval *tv, long long interval) {
         return globals::plugin->util_timeval_add(tv, interval);
     }
@@ -555,53 +527,58 @@ namespace weechat {
     }
 
     inline struct t_config_file *config_new(const char *name,
-                                            int (*callback_reload)(const void *pointer,
-                                                                   void *data,
-                                                                   struct t_config_file *config_file),
-                                            const void *callback_reload_pointer,
-                                            void *callback_reload_data) {
-        return globals::plugin->config_new(globals::plugin, name, callback_reload, callback_reload_pointer, callback_reload_data);
+                                            config_file::reload_callback& reload_cb) {
+        return globals::plugin->config_new(
+            globals::plugin, name,
+            [] (const void *pointer, void *, struct t_config_file *file) {
+                auto func = *reinterpret_cast<const config_file::reload_callback*>(pointer);
+                config_file file_(file);
+                return func(file_);
+            }, &reload_cb, nullptr);
     }
-    inline struct t_config_section *config_new_section(struct t_config_file *config_file,
+    inline struct t_config_section *config_new_section(struct t_config_file *file,
                                                        const char *name,
-                                                       int user_can_add_options,
-                                                       int user_can_delete_options,
-                                                       int (*callback_read)(const void *pointer,
-                                                                            void *data,
-                                                                            struct t_config_file *config_file,
-                                                                            struct t_config_section *section,
-                                                                            const char *option_name,
-                                                                            const char *value),
-                                                       const void *callback_read_pointer,
-                                                       void *callback_read_data,
-                                                       int (*callback_write)(const void *pointer,
-                                                                             void *data,
-                                                                             struct t_config_file *config_file,
-                                                                             const char *section_name),
-                                                       const void *callback_write_pointer,
-                                                       void *callback_write_data,
-                                                       int (*callback_write_default)(const void *pointer,
-                                                                                     void *data,
-                                                                                     struct t_config_file *config_file,
-                                                                                     const char *section_name),
-                                                       const void *callback_write_default_pointer,
-                                                       void *callback_write_default_data,
-                                                       int (*callback_create_option)(const void *pointer,
-                                                                                     void *data,
-                                                                                     struct t_config_file *config_file,
-                                                                                     struct t_config_section *section,
-                                                                                     const char *option_name,
-                                                                                     const char *value),
-                                                       const void *callback_create_option_pointer,
-                                                       void *callback_create_option_data,
-                                                       int (*callback_delete_option)(const void *pointer,
-                                                                                     void *data,
-                                                                                     struct t_config_file *config_file,
-                                                                                     struct t_config_section *section,
-                                                                                     struct t_config_option *option),
-                                                       const void *callback_delete_option_pointer,
-                                                       void *callback_delete_option_data) {
-        return globals::plugin->config_new_section(config_file, name, user_can_add_options, user_can_delete_options, callback_read, callback_read_pointer, callback_read_data, callback_write, callback_write_pointer, callback_write_data, callback_write_default, callback_write_default_pointer, callback_write_default_data, callback_create_option, callback_create_option_pointer, callback_create_option_data, callback_delete_option, callback_delete_option_pointer, callback_delete_option_data);
+                                                       bool user_can_add_options,
+                                                       bool user_can_delete_options,
+                                                       config_section::read_callback& read_cb,
+                                                       config_section::write_callback& write_cb,
+                                                       config_section::write_default_callback& write_default_cb,
+                                                       config_section::create_option_callback& create_cb,
+                                                       config_section::delete_option_callback& delete_cb) {
+        return globals::plugin->config_new_section(
+            file, name, user_can_add_options, user_can_delete_options,
+            [] (const void *pointer, void *, struct t_config_file *file,
+                struct t_config_section *section, const char *key, const char *value) {
+                auto func = *reinterpret_cast<const config_section::read_callback*>(pointer);
+                config_file file_(file);
+                config_section section_(section);
+                return func(file_, section_, key, value);
+            }, &read_cb, nullptr,
+            [] (const void *pointer, void *, struct t_config_file *file, const char *name) {
+                auto func = *reinterpret_cast<const config_section::write_callback*>(pointer);
+                config_file file_(file);
+                return func(file_, name);
+            }, &write_cb, nullptr,
+            [] (const void *pointer, void *, struct t_config_file *file, const char *name) {
+                auto func = *reinterpret_cast<const config_section::write_default_callback*>(pointer);
+                config_file file_(file);
+                return func(file_, name);
+            }, &write_default_cb, nullptr,
+            [] (const void *pointer, void *, struct t_config_file *file,
+                struct t_config_section *section, const char *key, const char *value) {
+                auto func = *reinterpret_cast<const config_section::create_option_callback*>(pointer);
+                config_file file_(file);
+                config_section section_(section);
+                return func(file_, section_, key, value);
+            }, &create_cb, nullptr,
+            [] (const void *pointer, void *, struct t_config_file *file,
+                struct t_config_section *section, struct t_config_option *option) {
+                auto func = *reinterpret_cast<const config_section::delete_option_callback*>(pointer);
+                config_file file_(file);
+                config_section section_(section);
+                config_option option_(option);
+                return func(file_, section_, option_);
+            }, &delete_cb, nullptr);
     }
     inline struct t_config_section *config_search_section(struct t_config_file *config_file,
                                                           const char *section_name) {
@@ -609,32 +586,35 @@ namespace weechat {
     }
     inline struct t_config_option *config_new_option(struct t_config_file *config_file,
                                                      struct t_config_section *section,
-                                                     const char *name,
-                                                     const char *type,
+                                                     const char *name, const char *type,
                                                      const char *description,
                                                      const char *string_values,
-                                                     int min,
-                                                     int max,
+                                                     int min, int max,
                                                      const char *default_value,
                                                      const char *value,
-                                                     int null_value_allowed,
-                                                     int (*callback_check_value)(const void *pointer,
-                                                                                 void *data,
-                                                                                 struct t_config_option *option,
-                                                                                 const char *value),
-                                                     const void *callback_check_value_pointer,
-                                                     void *callback_check_value_data,
-                                                     void (*callback_change)(const void *pointer,
-                                                                             void *data,
-                                                                             struct t_config_option *option),
-                                                     const void *callback_change_pointer,
-                                                     void *callback_change_data,
-                                                     void (*callback_delete)(const void *pointer,
-                                                                             void *data,
-                                                                             struct t_config_option *option),
-                                                     const void *callback_delete_pointer,
-                                                     void *callback_delete_data) {
-        return globals::plugin->config_new_option(config_file, section, name, type, description, string_values, min, max, default_value, value, null_value_allowed, callback_check_value, callback_check_value_pointer, callback_check_value_data, callback_change, callback_change_pointer, callback_change_data, callback_delete, callback_delete_pointer, callback_delete_data);
+                                                     bool null_value_allowed,
+                                                     config_option::check_callback& check_value_cb,
+                                                     config_option::change_callback& change_cb,
+                                                     config_option::delete_callback& delete_cb) {
+        return globals::plugin->config_new_option(
+            config_file, section,
+            name, type, description, string_values,
+            min, max, default_value, value, null_value_allowed,
+            [] (const void *pointer, void *, struct t_config_option *option, const char *value) {
+                auto func = *reinterpret_cast<const config_option::check_callback*>(pointer);
+                config_option option_(option);
+                return static_cast<int>(func(option_, value));
+            }, &check_value_cb, nullptr,
+            [] (const void *pointer, void *, struct t_config_option *option) {
+                auto func = *reinterpret_cast<const config_option::change_callback*>(pointer);
+                config_option option_(option);
+                return func(option_);
+            }, &change_cb, nullptr,
+            [] (const void *pointer, void *, struct t_config_option *option) {
+                auto func = *reinterpret_cast<const config_option::delete_callback*>(pointer);
+                config_option option_(option);
+                return func(option_);
+            }, &delete_cb, nullptr);
     }
     inline struct t_config_option *config_search_option(struct t_config_file *config_file,
                                                         struct t_config_section *section,
@@ -784,7 +764,7 @@ namespace weechat {
     template<typename... Args>
     inline void printf(struct t_gui_buffer *buffer, const char *message, Args... args) {
         return globals::plugin->printf_date_tags(
-            buffer, 0, NULL, message, args...);
+            buffer, 0, nullptr, message, args...);
     }
     template<typename... Args>
     inline void printf_date_tags(struct t_gui_buffer *buffer, time_t date,
@@ -824,21 +804,18 @@ namespace weechat {
                                            void *callback_data) {
         return globals::plugin->hook_command_run(globals::plugin, command, callback, callback_pointer, callback_data);
     }
-    inline std::optional<hook> hook_timer(
+    inline struct t_hook *hook_timer(
         long interval,
         int align_second,
         int max_calls,
-        int (*callback)(const void *pointer,
-                        void *data,
-                        int remaining_calls),
-        const void *callback_pointer = nullptr,
-        void *callback_data = nullptr) {
-        if (auto ptr = globals::plugin->hook_timer(
-                globals::plugin,
-                interval, align_second, max_calls,
-                callback, callback_pointer, callback_data))
-            return std::make_optional(hook(ptr));
-        return std::nullopt;
+        hook::timer_callback *callback) {
+        return globals::plugin->hook_timer(
+            globals::plugin,
+            interval, align_second, max_calls,
+            callback ? static_cast<hook::timer_fn>([] (const void *pointer, void *, int remaining_calls) {
+                auto func = *reinterpret_cast<const hook::timer_callback*>(pointer);
+                return static_cast<int>(func(remaining_calls));
+            }) : nullptr, callback, nullptr);
     }
     inline struct t_hook *hook_fd(int fd,
                                   int flag_read,
@@ -934,8 +911,9 @@ namespace weechat {
                                       void *callback_data = nullptr) {
         return globals::plugin->hook_signal(globals::plugin, signal, callback, callback_pointer, callback_data);
     }
+    template<typename T>
     inline int hook_signal_send(const char *signal, const char *type_data,
-                                void *signal_data) {
+                                T signal_data) {
         return globals::plugin->hook_signal_send(signal, type_data, signal_data);
     }
     inline struct t_hook *hook_hsignal(const char *signal,
@@ -1061,18 +1039,24 @@ namespace weechat {
     }
 
     inline struct t_gui_buffer *buffer_new(const char *name,
-                                           int (*input_callback)(const void *pointer,
-                                                                 void *data,
-                                                                 struct t_gui_buffer *buffer,
-                                                                 const char *input_data),
-                                           const void *input_callback_pointer,
-                                           void *input_callback_data,
-                                           int (*close_callback)(const void *pointer,
-                                                                 void *data,
-                                                                 struct t_gui_buffer *buffer),
-                                           const void *close_callback_pointer,
-                                           void *close_callback_data) {
-        return globals::plugin->buffer_new(globals::plugin, name, input_callback, input_callback_pointer, input_callback_data, close_callback, close_callback_pointer, close_callback_data);
+                                           gui_buffer::input_callback& input_cb,
+                                           gui_buffer::close_callback& close_cb) {
+        return globals::plugin->buffer_new(
+            globals::plugin,
+            name,
+            [] (const void *pointer, void *,
+                struct t_gui_buffer *buffer,
+                const char *input_data) {
+                auto func = *reinterpret_cast<const gui_buffer::input_callback*>(pointer);
+                gui_buffer buffer_(buffer);
+                return static_cast<int>(func(buffer_, input_data));
+            }, &input_cb, nullptr,
+            [] (const void *pointer, void *,
+                struct t_gui_buffer *buffer) {
+                auto func = *reinterpret_cast<const gui_buffer::close_callback*>(pointer);
+                gui_buffer buffer_(buffer);
+                return static_cast<int>(func(buffer_));
+            }, &close_cb, nullptr);
     }
     inline struct t_gui_buffer *buffer_search(const char *plugin, const char *name) {
         return globals::plugin->buffer_search(plugin, name);
@@ -1238,22 +1222,26 @@ namespace weechat {
     inline struct t_gui_bar_item *bar_item_search(const char *name) {
         return globals::plugin->bar_item_search(name);
     }
-    inline std::optional<gui_bar_item> bar_item_new(
+    inline struct t_gui_bar_item *bar_item_new(
         const char *name,
-        char *(*build_callback)(const void *pointer,
-                                void *data,
-                                struct t_gui_bar_item *item,
-                                struct t_gui_window *window,
-                                struct t_gui_buffer *buffer,
-                                struct t_hashtable *extra_info),
-        const void *build_callback_pointer = nullptr,
-        void *build_callback_data = nullptr) {
-        if (auto ptr = globals::plugin->bar_item_new(
-                globals::plugin,
-                name, build_callback,
-                build_callback_pointer, build_callback_data))
-            return std::make_optional(gui_bar_item(ptr));
-        return std::nullopt;
+        gui_bar_item::build_callback& build_callback) {
+        return globals::plugin->bar_item_new(
+            globals::plugin,
+            name, [] (const void *pointer, void *,
+                      struct t_gui_bar_item *item,
+                      struct t_gui_window *window,
+                      struct t_gui_buffer *buffer,
+                      struct t_hashtable *extra_args) {
+                auto func = *reinterpret_cast<const gui_bar_item::build_callback*>(pointer);
+                gui_bar_item item_(item);
+                gui_buffer buffer_(buffer);
+                auto res = func(item_, window, buffer_, extra_args);
+                char *str = reinterpret_cast<char*>(
+                    std::calloc(res.size() + 1, sizeof(char)));
+                std::copy(res.begin(), res.end(), str);
+                str[res.size()] = '\0';
+                return str;
+            }, &build_callback, nullptr);
     }
     inline void bar_item_update(const char *name) {
         return globals::plugin->bar_item_update(name);
