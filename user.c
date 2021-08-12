@@ -141,7 +141,7 @@ void user__nicklist_remove(struct t_account *account,
 
     ptr_buffer = channel ? channel->buffer : account->buffer;
 
-    if ((ptr_nick = weechat_nicklist_search_nick(ptr_buffer, NULL, name)))
+    if (name && (ptr_nick = weechat_nicklist_search_nick(ptr_buffer, NULL, name)))
         weechat_nicklist_remove_nick(ptr_buffer, ptr_nick);
 }
 
