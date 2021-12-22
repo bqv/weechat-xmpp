@@ -167,6 +167,8 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
                            xmpp_jid_node(account->context, account_jid(account)));
 
     weechat_buffer_set(ptr_buffer, "name", name);
+    weechat_buffer_set(ptr_buffer, "notify",
+                       (type == CHANNEL_TYPE_PM) ? "3" : "1");
     weechat_buffer_set(ptr_buffer, "localvar_set_type",
                        (type == CHANNEL_TYPE_PM) ? "private" : "channel");
     weechat_buffer_set(ptr_buffer, "localvar_set_nick",

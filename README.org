@@ -167,7 +167,7 @@
   Please submit a pull request or create an issue
   to add a new or missing feature.
 
-* Testemonials
+* Testimonials
 
   "Weechat-Strophe - for the discerning dual IRCer XMPPer" -- [[github.com/janicez][Ellenor et al Bjornsdottir]]
 

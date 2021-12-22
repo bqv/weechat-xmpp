@@ -563,7 +563,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
              && weechat_strcasecmp(from_bare, account_jid(account)) != 0)
         weechat_string_dyn_concat(dyn_tags, ",notify_private", -1);
     else
-        weechat_string_dyn_concat(dyn_tags, ",log1", -1);
+        weechat_string_dyn_concat(dyn_tags, ",notify_message,log1", -1);
 
     const char *edit = replace ? "* " : ""; // Losing which message was edited, sadly
     if (x && text == cleartext && channel->transport != CHANNEL_TRANSPORT_PGP)
