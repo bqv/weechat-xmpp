@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <strophe.h>
@@ -191,6 +192,7 @@ struct t_user *user__new(struct t_account *account,
     new_user->profile.email = NULL;
     new_user->profile.role = NULL;
     new_user->profile.pgp_id = NULL;
+    new_user->profile.omemo = 0;
     new_user->updated = 0;
     new_user->is_away = 0;
 

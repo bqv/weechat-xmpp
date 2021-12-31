@@ -193,7 +193,7 @@ xmpp_stanza_t *stanza__iq_pubsub_publish_item_list(xmpp_ctx_t *context, xmpp_sta
 }
 
 xmpp_stanza_t *stanza__iq_pubsub_publish_item_list_device(xmpp_ctx_t *context, xmpp_stanza_t *base,
-                                                          struct t_string *id)
+                                                          struct t_string *id, struct t_string *label)
 {
     xmpp_stanza_t *parent = base;
 
@@ -208,6 +208,13 @@ xmpp_stanza_t *stanza__iq_pubsub_publish_item_list_device(xmpp_ctx_t *context, x
         xmpp_stanza_set_id(parent, id->value);
         id->finalize(id);
         free(id);
+    }
+
+    if (label)
+    {
+        xmpp_stanza_set_attribute(parent, "label", label->value);
+        label->finalize(label);
+        free(label);
     }
 
     return parent;

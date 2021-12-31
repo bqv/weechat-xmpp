@@ -86,7 +86,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     struct t_account *account = (struct t_account *)userdata;
     struct t_user *user;
     struct t_channel *channel;
-    xmpp_stanza_t *iq__x_signed, *iq__x_muc_user, *show, *idle, *iq__x__item, *iq__c, *iq__status;
+    xmpp_stanza_t *pres__x_signed, *pres__x_muc_user, *show, *idle, *pres__x__item, *pres__c, *pres__status;
     const char *from, *from_bare, *from_res, *type, *role = NULL, *affiliation = NULL, *jid = NULL;
     const char *show__text = NULL, *idle__since = NULL, *certificate = NULL, *node = NULL, *ver = NULL;
     char *clientid = NULL, *status;
@@ -101,18 +101,18 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     show__text = show ? xmpp_stanza_get_text(show) : NULL;
     idle = xmpp_stanza_get_child_by_name_and_ns(stanza, "idle", "urn:xmpp:idle:1");
     idle__since = idle ? xmpp_stanza_get_attribute(idle, "since") : NULL;
-    iq__x_signed = xmpp_stanza_get_child_by_name_and_ns(
+    pres__x_signed = xmpp_stanza_get_child_by_name_and_ns(
         stanza, "x", "jabber:x:signed");
-    if (iq__x_signed)
+    if (pres__x_signed)
     {
-        certificate = xmpp_stanza_get_text(iq__x_signed);
+        certificate = xmpp_stanza_get_text(pres__x_signed);
     }
-    iq__c = xmpp_stanza_get_child_by_name_and_ns(
+    pres__c = xmpp_stanza_get_child_by_name_and_ns(
         stanza, "c", "http://jabber.org/protocol/caps");
-    if (iq__c)
+    if (pres__c)
     {
-        node = xmpp_stanza_get_attribute(iq__c, "node");
-        ver = xmpp_stanza_get_attribute(iq__c, "ver");
+        node = xmpp_stanza_get_attribute(pres__c, "node");
+        ver = xmpp_stanza_get_attribute(pres__c, "ver");
         if (node && ver)
         {
             int len = strlen(node)+1+strlen(ver);
@@ -120,25 +120,25 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
             snprintf(clientid, len, "%s#%s", node, ver);
         }
     }
-    iq__status = xmpp_stanza_get_child_by_name(stanza, "status");
-    status = iq__status ? xmpp_stanza_get_text(iq__status) : NULL;
-    iq__x_muc_user = xmpp_stanza_get_child_by_name_and_ns(
+    pres__status = xmpp_stanza_get_child_by_name(stanza, "status");
+    status = pres__status ? xmpp_stanza_get_text(pres__status) : NULL;
+    pres__x_muc_user = xmpp_stanza_get_child_by_name_and_ns(
         stanza, "x", "http://jabber.org/protocol/muc#user");
 
     channel = channel__search(account, from_bare);
-    if (weechat_strcasecmp(type, "unavailable") && !iq__x_muc_user && !channel)
+    if (weechat_strcasecmp(type, "unavailable") != 0 && !pres__x_muc_user && !channel)
         channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
 
-    if (iq__x_muc_user)
-    for (iq__x__item = xmpp_stanza_get_children(iq__x_muc_user);
-         iq__x__item; iq__x__item = xmpp_stanza_get_next(iq__x__item))
+    if (pres__x_muc_user)
+    for (pres__x__item = xmpp_stanza_get_children(pres__x_muc_user);
+         pres__x__item; pres__x__item = xmpp_stanza_get_next(pres__x__item))
     {
-        if (weechat_strcasecmp(xmpp_stanza_get_name(iq__x__item), "item") != 0)
+        if (weechat_strcasecmp(xmpp_stanza_get_name(pres__x__item), "item") != 0)
             continue;
 
-        role = xmpp_stanza_get_attribute(iq__x__item, "role");
-        affiliation = xmpp_stanza_get_attribute(iq__x__item, "affiliation");
-        jid = xmpp_stanza_get_attribute(iq__x__item, "jid");
+        role = xmpp_stanza_get_attribute(pres__x__item, "role");
+        affiliation = xmpp_stanza_get_attribute(pres__x__item, "affiliation");
+        jid = xmpp_stanza_get_attribute(pres__x__item, "jid");
 
         user = user__search(account, from);
         if (!user)
@@ -209,7 +209,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
     struct t_account *account = (struct t_account *)userdata;
     struct t_channel *channel;
-    xmpp_stanza_t *x, *body, *delay, *topic, *replace, *request, *markable, *composing, *sent, *received, *result, *forwarded;
+    xmpp_stanza_t *x, *body, *delay, *topic, *replace, *request, *markable, *composing, *sent, *received, *result, *forwarded, *event, *items, *item, *list, *device, *encrypted, **children;
     const char *type, *from, *nick, *from_bare, *to, *to_bare, *id, *thread, *replace_id, *timestamp;
     char *text, *intext, *difftext = NULL, *cleartext = NULL;
     struct tm time = {0};
@@ -222,6 +222,9 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
         if (topic != NULL)
         {
             intext = xmpp_stanza_get_text(topic);
+            type = xmpp_stanza_get_type(stanza);
+            if (type != NULL && strcmp(type, "error") == 0)
+                return 1;
             from = xmpp_stanza_get_from(stanza);
             if (from == NULL)
                 return 1;
@@ -229,7 +232,12 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
             from = xmpp_jid_resource(account->context, from);
             channel = channel__search(account, from_bare);
             if (!channel)
-                channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
+            {
+                if (weechat_strcasecmp(type, "groupchat") == 0)
+                    channel = channel__new(account, CHANNEL_TYPE_MUC, from_bare, from_bare);
+                else
+                    channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
+            }
             channel__update_topic(channel, intext ? intext : "", from, 0);
             if (intext != NULL)
                 xmpp_free(account->context, intext);
@@ -293,6 +301,69 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                     int ret = connection__message_handler(conn, message, userdata);
                     xmpp_stanza_release(message);
                     return ret;
+                }
+            }
+        }
+
+        event = xmpp_stanza_get_child_by_name_and_ns(
+            stanza, "event", "http://jabber.org/protocol/pubsub#event");
+        if (event)
+        {
+            items = xmpp_stanza_get_child_by_name(event, "items");
+            if (items)
+            {
+                const char *items_node = xmpp_stanza_get_attribute(items, "node");
+                from = xmpp_stanza_get_from(stanza);
+                to = xmpp_stanza_get_to(stanza);
+                if (items_node
+                    && weechat_strcasecmp(items_node,
+                                          "eu.siacs.conversations.axolotl.devicelist") == 0)
+                {
+                    item = xmpp_stanza_get_child_by_name(items, "item");
+                    if (item)
+                    {
+                        list = xmpp_stanza_get_child_by_name_and_ns(
+                            item, "list", "eu.siacs.conversations.axolotl");
+                        if (list)
+                        {
+                            if (account->omemo)
+                            {
+                                omemo__handle_devicelist(account->omemo, from,
+                                                         items);
+                            }
+
+                            children = malloc(sizeof(*children) * (3 + 1));
+
+                            for (device = xmpp_stanza_get_children(list);
+                                 device; device = xmpp_stanza_get_next(device))
+                            {
+                                const char *name = xmpp_stanza_get_name(device);
+                                if (weechat_strcasecmp(name, "device") != 0)
+                                    continue;
+
+                                const char *device_id = xmpp_stanza_get_id(device);
+
+                                char bundle_node[128] = {0};
+                                snprintf(bundle_node, sizeof(bundle_node),
+                                         "eu.siacs.conversations.axolotl.bundles:%s",
+                                         device_id);
+
+                                children[1] = NULL;
+                                children[0] =
+                                stanza__iq_pubsub_items(account->context, NULL,
+                                                        strdup(bundle_node));
+                                children[0] =
+                                stanza__iq_pubsub(account->context, NULL, children,
+                                                  with_noop("http://jabber.org/protocol/pubsub"));
+                                children[0] =
+                                stanza__iq(account->context, NULL, children, NULL, strdup("fetch1"),
+                                           strdup(to), strdup(from), strdup("get"));
+
+                                xmpp_send(conn, children[0]);
+                                xmpp_stanza_release(children[0]);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -382,6 +453,12 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
         weechat_list_add(channel->unreads, unread->id, WEECHAT_LIST_POS_END, unread);
     }
 
+    encrypted = xmpp_stanza_get_child_by_name_and_ns(stanza, "encrypted",
+                                                     "eu.siacs.conversations.axolotl");
+    if (encrypted && account->omemo)
+    {
+        omemo__decode(account->omemo, from_bare, encrypted);
+    }
     x = xmpp_stanza_get_child_by_name_and_ns(stanza, "x", "jabber:x:encrypted");
     intext = xmpp_stanza_get_text(body);
     if (x)
@@ -557,7 +634,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
         weechat_string_dyn_concat(dyn_tags, replace_id, -1);
     }
 
-    if (date != 0)
+    if (date != 0 || encrypted)
         weechat_string_dyn_concat(dyn_tags, ",notify_none", -1);
     else if (channel->type == CHANNEL_TYPE_PM
              && weechat_strcasecmp(from_bare, account_jid(account)) != 0)
@@ -609,11 +686,12 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
 {
     struct t_account *account = (struct t_account *)userdata;
     xmpp_stanza_t *reply, *query, *identity, *feature, *x, *field, *value, *text, *fin;
-    xmpp_stanza_t         *pubsub, *items, *item, *list, *device, **children;
+    xmpp_stanza_t         *pubsub, *items, *item, *list, *bundle, *device;
     xmpp_stanza_t         *storage, *conference, *nick;
     static struct utsname osinfo;
 
     const char *id = xmpp_stanza_get_id(stanza);
+    const char *from = xmpp_stanza_get_from(stanza);
     query = xmpp_stanza_get_child_by_name_and_ns(
         stanza, "query", "http://jabber.org/protocol/disco#info");
     const char *type = xmpp_stanza_get_attribute(stanza, "type");
@@ -836,7 +914,7 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
         stanza, "pubsub", "http://jabber.org/protocol/pubsub");
     if (pubsub)
     {
-        const char *items_node, *item_id, *device_id, *ns, *node;
+        const char *items_node, *item_id, *device_id;
 
         items = xmpp_stanza_get_child_by_name(pubsub, "items");
         if (items)
@@ -855,122 +933,75 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
                         item, "list", "eu.siacs.conversations.axolotl");
                     if (list && account->omemo)
                     {
-                        account__free_device_all(account);
+                        omemo__handle_devicelist(account->omemo, from, items);
 
-                        struct t_account_device *dev;
-                        char id[64] = {0};
-                        int i = 0;
-
-                        dev = malloc(sizeof(struct t_account_device));
-
-                        dev->id = account->omemo->device_id;
-                        snprintf(id, sizeof(id), "%d", dev->id);
-                        dev->name = strdup(id);
-                        account__add_device(account, dev);
-
-                        children = malloc(sizeof(xmpp_stanza_t *) * 128);
-                        children[i++] = stanza__iq_pubsub_publish_item_list_device(
-                            account->context, NULL, with_noop(dev->name));
-
-                        free(dev->name);
-                        free(dev);
-
-                        for (device = xmpp_stanza_get_children(list);
-                             device; device = xmpp_stanza_get_next(device))
+                        if (weechat_strcasecmp(account_jid(account), from) == 0)
                         {
-                            const char *name = xmpp_stanza_get_name(device);
-                            if (weechat_strcasecmp(name, "device") != 0)
-                                continue;
+                            struct t_account_device *dev;
+                            char id[64] = {0};
 
-                            device_id = xmpp_stanza_get_id(device);
+                            account__free_device_all(account);
 
                             dev = malloc(sizeof(struct t_account_device));
-                            dev->id = atoi(device_id);
-                            dev->name = strdup(device_id);
+
+                            dev->id = account->omemo->device_id;
+                            snprintf(id, sizeof(id), "%d", dev->id);
+                            dev->name = strdup(id);
+                            dev->label = strdup("weechat");
                             account__add_device(account, dev);
 
-                            children[i++] = stanza__iq_pubsub_publish_item_list_device(
-                                account->context, NULL, with_noop(dev->name));
-
+                            free(dev->label);
                             free(dev->name);
                             free(dev);
+
+                            for (device = xmpp_stanza_get_children(list);
+                                 device; device = xmpp_stanza_get_next(device))
+                            {
+                                const char *name = xmpp_stanza_get_name(device);
+                                if (weechat_strcasecmp(name, "device") != 0)
+                                    continue;
+
+                                device_id = xmpp_stanza_get_id(device);
+
+                                dev = malloc(sizeof(struct t_account_device));
+                                dev->id = atoi(device_id);
+                                dev->name = strdup(device_id);
+                                dev->label = NULL;
+                                account__add_device(account, dev);
+
+                                free(dev->label);
+                                free(dev->name);
+                                free(dev);
+                            }
+
+                            reply = account__get_devicelist(account);
+                            xmpp_send(conn, reply);
+                            xmpp_stanza_release(reply);
                         }
-
-                        children[i] = NULL;
-                        node = "eu.siacs.conversations.axolotl";
-                        children[0] = stanza__iq_pubsub_publish_item_list(
-                            account->context, NULL, children, with_noop(node));
-                        children[1] = NULL;
-                        children[0] = stanza__iq_pubsub_publish_item(
-                            account->context, NULL, children, with_noop("current"));
-                        ns = "http://jabber.org/protocol/pubsub";
-                        children[0] = stanza__iq_pubsub_publish(account->context,
-                                                                NULL, children,
-                                                                with_noop(ns));
-                        children[0] = stanza__iq_pubsub(account->context, NULL,
-                                                        children, with_noop(""));
-                        reply = stanza__iq(account->context, xmpp_stanza_reply(stanza),
-                                           children, NULL, strdup("announce1"),
-                                           NULL, NULL, strdup("set"));
-
-                        xmpp_send(conn, reply);
-                        xmpp_stanza_release(reply);
-
-                        char bundle_node[128] = {0};
-                        snprintf(bundle_node, sizeof(bundle_node),
-                                 "eu.siacs.conversations.axolotl.bundles:%d",
-                                 account->omemo->device_id);
-
-                        xmpp_stanza_t *textchild[2] = {NULL};
-                        textchild[0] = xmpp_stanza_new(account->context);
-                        xmpp_stanza_set_text(textchild[0], "b64enc1");
-                        children[0] = stanza__iq_pubsub_publish_item_bundle_signedPreKeyPublic(
-                            account->context, NULL, textchild, with_noop("1"));
-                        textchild[0] = xmpp_stanza_new(account->context);
-                        xmpp_stanza_set_text(textchild[0], "b64enc2");
-                        children[1] = stanza__iq_pubsub_publish_item_bundle_signedPreKeySignature(
-                            account->context, NULL, textchild);
-                        textchild[0] = xmpp_stanza_new(account->context);
-                        xmpp_stanza_set_text(textchild[0], "b64enc3");
-                        children[2] = stanza__iq_pubsub_publish_item_bundle_identityKey(
-                            account->context, NULL, textchild);
-                        textchild[0] = xmpp_stanza_new(account->context);
-                        xmpp_stanza_set_text(textchild[0], "b64enc4");
-                        children[3] = stanza__iq_pubsub_publish_item_bundle_prekeys_preKeyPublic(
-                            account->context, NULL, textchild, with_noop("1"));
-                        textchild[0] = xmpp_stanza_new(account->context);
-                        xmpp_stanza_set_text(textchild[0], "b64enc5");
-                        children[4] = stanza__iq_pubsub_publish_item_bundle_prekeys_preKeyPublic(
-                            account->context, NULL, textchild, with_noop("2"));
-                        textchild[0] = xmpp_stanza_new(account->context);
-                        xmpp_stanza_set_text(textchild[0], "b64enc6");
-                        children[5] = stanza__iq_pubsub_publish_item_bundle_prekeys_preKeyPublic(
-                            account->context, NULL, textchild, with_noop("3"));
-                        children[6] = NULL;
-                        children[3] = stanza__iq_pubsub_publish_item_bundle_prekeys(
-                            account->context, NULL, &children[3]);
-                        children[4] = NULL;
-                        ns = "eu.siacs.conversations.axolotl";
-                        children[0] = stanza__iq_pubsub_publish_item_bundle(
-                            account->context, NULL, children, with_noop(ns));
-                        children[1] = NULL;
-                        children[0] = stanza__iq_pubsub_publish_item(
-                            account->context, NULL, children, with_noop("current"));
-                        children[0] = stanza__iq_pubsub_publish(account->context,
-                                                                NULL, children,
-                                                                with_noop(bundle_node));
-                        children[0] =
-                            stanza__iq_pubsub(account->context, NULL, children,
-                                              with_noop("http://jabber.org/protocol/pubsub"));
-                        children[0] =
-                            stanza__iq(account->context, NULL, children, NULL, strdup("announce2"),
-                                       strdup(account_jid(account)), strdup(account_jid(account)),
-                                       strdup("set"));
-
-                        xmpp_send(conn, children[0]);
-                        xmpp_stanza_release(children[0]);
-
-                        free(children);
+                    }
+                }
+            }
+            if (items_node
+                && strncmp(items_node,
+                           "eu.siacs.conversations.axolotl.bundles",
+                           strnlen(items_node,
+                                   strlen("eu.siacs.conversations.axolotl.bundles"))) == 0)
+            {
+                item = xmpp_stanza_get_child_by_name(items, "item");
+                if (item)
+                {
+                    bundle = xmpp_stanza_get_child_by_name_and_ns(item, "bundle", "eu.siacs.conversations.axolotl");
+                    if (bundle)
+                    {
+                        size_t node_prefix =
+                            strlen("eu.siacs.conversations.axolotl.bundles:");
+                        if (account->omemo && strlen(items_node) > node_prefix)
+                        {
+                            omemo__handle_bundle(account->omemo, from, 
+                                                 strtol(items_node+node_prefix,
+                                                        NULL, 10),
+                                                 items);
+                        }
                     }
                 }
             }
@@ -1184,6 +1215,12 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         xmpp_stanza_release(children[0]);
 
         omemo__init(account->buffer, &account->omemo, account->name);
+
+        children[0] =
+        omemo__get_bundle(account->context,
+                strdup(account_jid(account)), NULL, account->omemo);
+        xmpp_send(conn, children[0]);
+        xmpp_stanza_release(children[0]);
 
         (void) weechat_hook_signal_send("xmpp_account_connected",
                                         WEECHAT_HOOK_SIGNAL_STRING, account->name);

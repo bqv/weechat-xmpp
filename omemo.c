@@ -6,9 +6,13 @@
 #include <stdint.h>
 #include <time.h>
 #include <math.h>
+#include <limits.h>
 #include <gcrypt.h>
 #include <signal_protocol.h>
 #include <key_helper.h>
+#include <session_builder.h>
+#include <session_cipher.h>
+#include <protocol.h>
 #include <curve.h>
 #include <lmdb.h>
 #include <strophe.h>
@@ -20,8 +24,10 @@ struct t_omemo_db {
 };
 
 #include "plugin.h"
+#include "xmpp/stanza.h"
 #include "account.h"
 #include "omemo.h"
+#include "util.h"
 
 #define mdb_val_str(s) { \
     .mv_data = s, .mv_size = strlen(s), \
@@ -35,7 +41,70 @@ struct t_omemo_db {
     .mv_data = NULL, .mv_size = sizeof(t), \
 }
 
+#define PRE_KEY_START 1
+#define PRE_KEY_COUNT 100
+
+#define AES_KEY_SIZE (16)
+#define AES_IV_SIZE (12)
+
 const char *OMEMO_ADVICE = "[OMEMO encrypted message (XEP-0384)]";
+
+size_t base64_decode(const char *buffer, size_t length, uint8_t **result)
+{
+    *result = malloc(sizeof(uint8_t) * length);
+    return weechat_string_base_decode(64, buffer, (char*)*result);
+}
+
+size_t base64_encode(const uint8_t *buffer, size_t length, char **result)
+{
+    *result = malloc(sizeof(char) * (length * 2));
+    return weechat_string_base_encode(64, (char*)buffer, length, *result);
+}
+
+int aes_decrypt(const uint8_t *ciphertext, size_t ciphertext_len,
+                uint8_t *key, uint8_t *iv, uint8_t *tag, size_t tag_len,
+                uint8_t **plaintext, size_t *plaintext_len)
+{
+    gcry_cipher_hd_t cipher = NULL;
+    if (gcry_cipher_open(&cipher, GCRY_CIPHER_AES192,
+                GCRY_CIPHER_MODE_GCM, GCRY_CIPHER_SECURE)) goto cleanup;
+    if (gcry_cipher_setkey(cipher, key, AES_KEY_SIZE)) goto cleanup;
+    if (gcry_cipher_setiv(cipher, iv, AES_IV_SIZE)) goto cleanup;
+    *plaintext_len = ciphertext_len;
+    *plaintext = malloc((sizeof(uint8_t) * *plaintext_len) + 1);
+    if (gcry_cipher_decrypt(cipher, *plaintext, *plaintext_len,
+                ciphertext, ciphertext_len)) goto cleanup;
+    if (gcry_cipher_checktag(cipher, tag, tag_len)) goto cleanup;
+    return 1;
+cleanup:
+    gcry_cipher_close(cipher);
+    return 0;
+}
+
+int aes_encrypt(const uint8_t *plaintext, size_t plaintext_len,
+                uint8_t **key, uint8_t **iv, uint8_t **tag, size_t *tag_len,
+                uint8_t **ciphertext, size_t *ciphertext_len)
+{
+    *tag_len = 16;
+    *tag = gcry_random_bytes(*tag_len, GCRY_STRONG_RANDOM);
+    *iv = gcry_random_bytes(AES_IV_SIZE, GCRY_STRONG_RANDOM);
+    *key = gcry_random_bytes(AES_KEY_SIZE + *tag_len, GCRY_STRONG_RANDOM);
+
+    gcry_cipher_hd_t cipher = NULL;
+    if (gcry_cipher_open(&cipher, GCRY_CIPHER_AES192,
+                GCRY_CIPHER_MODE_GCM, GCRY_CIPHER_SECURE)) goto cleanup;
+    if (gcry_cipher_setkey(cipher, key, AES_KEY_SIZE)) goto cleanup;
+    if (gcry_cipher_setiv(cipher, iv, AES_IV_SIZE)) goto cleanup;
+    *ciphertext_len = plaintext_len;
+    *ciphertext = malloc((sizeof(uint8_t) * *ciphertext_len) + 1);
+    if (gcry_cipher_encrypt(cipher, *ciphertext, *ciphertext_len,
+                plaintext, plaintext_len)) goto cleanup;
+    if (gcry_cipher_gettag(cipher, *tag, *tag_len)) goto cleanup;
+    return 1;
+cleanup:
+    gcry_cipher_close(cipher);
+    return 0;
+}
 
 void signal_protocol_address_free(signal_protocol_address* ptr) {
     if (!ptr)
@@ -413,16 +482,16 @@ int iks_get_identity_key_pair(signal_buffer **public_data, signal_buffer **priva
     MDB_val k_local_public_key = mdb_val_str("local_public_key");
     MDB_val v_local_private_key, v_local_public_key;
 
-    // Get the local client's identity key pair
-    if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
+    if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
         weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
                        weechat_prefix("error"));
+        goto cleanup;
     }
 
-    if (mdb_get(transaction, omemo->db->dbi_omemo,
-                &k_local_private_key, &v_local_private_key) &&
-        mdb_get(transaction, omemo->db->dbi_omemo,
-                &k_local_public_key, &v_local_public_key))
+    if (!mdb_get(transaction, omemo->db->dbi_omemo,
+                 &k_local_private_key, &v_local_private_key) &&
+        !mdb_get(transaction, omemo->db->dbi_omemo,
+                 &k_local_public_key, &v_local_public_key))
     {
         *private_data = signal_buffer_create(v_local_private_key.mv_data, v_local_private_key.mv_size);
         *public_data = signal_buffer_create(v_local_public_key.mv_data, v_local_public_key.mv_size);
@@ -430,20 +499,12 @@ int iks_get_identity_key_pair(signal_buffer **public_data, signal_buffer **priva
         if (mdb_txn_commit(transaction)) {
             weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
                            weechat_prefix("error"));
-            return -1;
+            goto cleanup;
         };
     }
     else
     {
         struct ratchet_identity_key_pair *identity;
-
-        mdb_txn_abort(transaction);
-
-        if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
-            weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
-                           weechat_prefix("error"));
-            return -1;
-        }
 
         signal_protocol_key_helper_generate_identity_key_pair(
             &identity, omemo->context);
@@ -465,17 +526,25 @@ int iks_get_identity_key_pair(signal_buffer **public_data, signal_buffer **priva
         {
             weechat_printf(NULL, "%sxmpp: failed to write lmdb value",
                            weechat_prefix("error"));
-            return -1;
+            goto cleanup;
         };
 
         if (mdb_txn_commit(transaction)) {
             weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
                            weechat_prefix("error"));
-            return -1;
+            goto cleanup;
         };
+
+        *private_data = signal_buffer_create(v_local_private_key.mv_data,
+                v_local_private_key.mv_size);
+        *public_data = signal_buffer_create(v_local_public_key.mv_data,
+                v_local_public_key.mv_size);
     }
 
     return 0;
+cleanup:
+    mdb_txn_abort(transaction);
+    return -1;
 }
 
 int iks_get_local_registration_id(void *user_data, uint32_t *registration_id)
@@ -486,36 +555,30 @@ int iks_get_local_registration_id(void *user_data, uint32_t *registration_id)
     MDB_val v_local_registration_id = mdb_val_sizeof(uint32_t);
 
     // Return the local client's registration ID
-    if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
+    if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
         weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
                        weechat_prefix("error"));
-        return -1;
+        goto cleanup;
     }
 
-    if (mdb_get(transaction, omemo->db->dbi_omemo,
-                &k_local_registration_id,
-                &v_local_registration_id))
+    if (!mdb_get(transaction, omemo->db->dbi_omemo,
+                 &k_local_registration_id,
+                 &v_local_registration_id))
     {
         *registration_id = *(uint32_t*)v_local_registration_id.mv_data;
 
         if (mdb_txn_commit(transaction)) {
-            weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
+            weechat_printf(NULL, "%sxmpp: failed to read lmdb transaction",
                            weechat_prefix("error"));
-            return -1;
+            goto cleanup;
         };
     }
     else
     {
-        mdb_txn_abort(transaction);
-
-        if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
-            weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
-                           weechat_prefix("error"));
-            return -1;
-        }
-
+        uint32_t generated_id;
         signal_protocol_key_helper_generate_registration_id(
-            (uint32_t*)&v_local_registration_id.mv_data, 0, omemo->context);
+            &generated_id, 0, omemo->context);
+        v_local_registration_id.mv_data = &generated_id;
 
         if (mdb_put(transaction, omemo->db->dbi_omemo,
                     &k_local_registration_id,
@@ -523,17 +586,22 @@ int iks_get_local_registration_id(void *user_data, uint32_t *registration_id)
         {
             weechat_printf(NULL, "%sxmpp: failed to write lmdb value",
                            weechat_prefix("error"));
-            return -1;
+            goto cleanup;
         };
 
         if (mdb_txn_commit(transaction)) {
             weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
                            weechat_prefix("error"));
-            return -1;
+            goto cleanup;
         };
+
+        *registration_id = generated_id;
     }
 
     return 0;
+cleanup:
+    mdb_txn_abort(transaction);
+    return -1;
 }
 
 int iks_save_identity(const signal_protocol_address *address, uint8_t *key_data, size_t key_len, void *user_data)
@@ -560,7 +628,6 @@ int iks_save_identity(const signal_protocol_address *address, uint8_t *key_data,
     snprintf(k_identity_key.mv_data, k_identity_key.mv_size,
              "identity_key_%s", address->name);
 
-    // Save a remote client's identity key
     if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
         weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
                        weechat_prefix("error"));
@@ -610,7 +677,6 @@ int iks_is_trusted_identity(const signal_protocol_address *address, uint8_t *key
     snprintf(k_identity_key.mv_data, k_identity_key.mv_size,
              "identity_key_%s", address->name);
 
-    // Verify a remote client's identity key
     if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
         weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
                        weechat_prefix("error"));
@@ -621,7 +687,7 @@ int iks_is_trusted_identity(const signal_protocol_address *address, uint8_t *key
                 &v_registration_id) ||
         mdb_get(transaction, omemo->db->dbi_omemo, &k_identity_key,
                 &v_identity_key)) {
-      weechat_printf(NULL, "%sxmpp: failed to write lmdb value",
+      weechat_printf(NULL, "%sxmpp: failed to read lmdb value",
                      weechat_prefix("error"));
       return -1;
     };
@@ -648,289 +714,893 @@ void iks_destroy_func(void *user_data)
     // Function called to perform cleanup when the data store context is being destroyed
 }
 
-int pks_load_pre_key(signal_buffer **record, uint32_t pre_key_id, void *user_data)
-{
-    struct t_omemo *omemo = (struct t_omemo *)user_data;
-    MDB_txn *transaction;
-    MDB_val k_pre_key = mdb_val_str("pre_key");
-    MDB_val v_pre_key;
-
-    if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
-        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
-                       weechat_prefix("error"));
-    }
-
-    if (mdb_get(transaction, omemo->db->dbi_omemo,
-                &k_pre_key, &v_pre_key))
-    {
-        *record = signal_buffer_create(v_pre_key.mv_data, v_pre_key.mv_size);
-
-        if (mdb_txn_commit(transaction)) {
-            weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
-                           weechat_prefix("error"));
-            return -1;
-        };
-    }
-    else
-    {
-        signal_protocol_key_helper_pre_key_list_node *pre_keys_list;
-        session_pre_key *pre_key = NULL;
-
-        mdb_txn_abort(transaction);
-
-        /*
-        signal_protocol_key_helper_generate_pre_keys(
-            &pre_keys_list, 0, 100, omemo->context);
-        pre_key = signal_protocol_key_helper_key_list_element(pre_keys_list);
-        signal_protocol_key_helper_key_list_next(pre_keys_list);
-
-        uint32_t id = session_pre_key_get_id(pre_key);
-        session_pre_key_serialize(&record, pre_key);
-
-        signal_protocol_key_helper_key_list_free(pre_keys_list);
-
-        if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
-            weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
-                           weechat_prefix("error"));
-            return -1;
-        }
-
-        v_pre_key.mv_data = signal_buffer_data(*record);
-        v_pre_key.mv_size = signal_buffer_len(*record);
-
-        if (mdb_put(transaction, omemo->db->dbi_omemo,
-                    &k_pre_key, &v_pre_key, MDB_NOOVERWRITE))
-        {
-            weechat_printf(NULL, "%sxmpp: failed to write lmdb value",
-                           weechat_prefix("error"));
-            return -1;
-        };
-
-        if (mdb_txn_commit(transaction)) {
-            weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
-                           weechat_prefix("error"));
-            return -1;
-        };
-        */
-        return -1;
-    }
-
-    return 0;
-}
-
 int pks_store_pre_key(uint32_t pre_key_id, uint8_t *record, size_t record_len, void *user_data)
 {
-    (void) pre_key_id;
-    (void) record;
-    (void) record_len;
-    (void) user_data;
-    return -1;
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction;
-    MDB_val k_pre_key = mdb_val_str("pre_key");
-    MDB_val v_pre_key;
+    MDB_val k_pre_key = {
+        .mv_data = NULL,
+        .mv_size = strlen("pre_key_") + 10, // strlen(UINT32_MAX)
+    };
+    MDB_val v_pre_key = {.mv_data = record, .mv_size = record_len};
 
-    if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
+    k_pre_key.mv_data = malloc(sizeof(char) * (
+                                           k_pre_key.mv_size + 1));
+    k_pre_key.mv_size =
+    snprintf(k_pre_key.mv_data, k_pre_key.mv_size,
+             "pre_key_%-10u", pre_key_id);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
         weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
                        weechat_prefix("error"));
-    }
-
-    if (mdb_get(transaction, omemo->db->dbi_omemo,
-                &k_pre_key, &v_pre_key))
-    {
-        *record = signal_buffer_create(v_pre_key.mv_data, v_pre_key.mv_size);
-
-        if (mdb_txn_commit(transaction)) {
-            weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
-                           weechat_prefix("error"));
-            return -1;
-        };
-    }
-    else
-    {
-        signal_protocol_key_helper_pre_key_list_node *pre_keys_list;
-        session_pre_key *pre_key = NULL;
-
-        mdb_txn_abort(transaction);
-
-        /*
-        signal_protocol_key_helper_generate_pre_keys(
-            &pre_keys_list, 0, 100, omemo->context);
-        pre_key = signal_protocol_key_helper_key_list_element(pre_keys_list);
-        signal_protocol_key_helper_key_list_next(pre_keys_list);
-
-        uint32_t id = session_pre_key_get_id(pre_key);
-        session_pre_key_serialize(&record, pre_key);
-
-        signal_protocol_key_helper_key_list_free(pre_keys_list);
-
-        if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
-            weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
-                           weechat_prefix("error"));
-            return -1;
-        }
-
-        v_pre_key.mv_data = signal_buffer_data(*record);
-        v_pre_key.mv_size = signal_buffer_len(*record);
-
-        if (mdb_put(transaction, omemo->db->dbi_omemo,
-                    &k_pre_key, &v_pre_key, MDB_NOOVERWRITE))
-        {
-            weechat_printf(NULL, "%sxmpp: failed to write lmdb value",
-                           weechat_prefix("error"));
-            return -1;
-        };
-
-        if (mdb_txn_commit(transaction)) {
-            weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
-                           weechat_prefix("error"));
-            return -1;
-        };
-        */
         return -1;
     }
+
+    if (mdb_put(transaction, omemo->db->dbi_omemo, &k_pre_key,
+                &v_pre_key, 0)) {
+      weechat_printf(NULL, "%sxmpp: failed to write lmdb value",
+                     weechat_prefix("error"));
+      return -1;
+    };
+
+    if (mdb_txn_commit(transaction)) {
+      weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
+                     weechat_prefix("error"));
+      return -1;
+    };
 
     return 0;
 }
 
 int pks_contains_pre_key(uint32_t pre_key_id, void *user_data)
 {
-    (void) pre_key_id;
-    (void) user_data;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    MDB_txn *transaction;
+    MDB_val k_pre_key = {
+        .mv_data = NULL,
+        .mv_size = strlen("pre_key_") + 10, // strlen(UINT32_MAX)
+    };
+    MDB_val v_pre_key;
+
+    k_pre_key.mv_data = malloc(sizeof(char) * (
+                                           k_pre_key.mv_size + 1));
+    k_pre_key.mv_size =
+    snprintf(k_pre_key.mv_data, k_pre_key.mv_size,
+             "pre_key_%-10u", pre_key_id);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+        return 0;
+    }
+
+    if (mdb_get(transaction, omemo->db->dbi_omemo, &k_pre_key,
+                &v_pre_key)) {
+        weechat_printf(NULL, "%sxmpp: failed to read lmdb value",
+                       weechat_prefix("error"));
+        mdb_txn_abort(transaction);
+        return 0;
+    };
+
+    mdb_txn_abort(transaction);
+
+    return 1;
+}
+
+uint32_t pks_get_count(struct t_omemo *omemo, int increment)
+{
+    uint32_t count = PRE_KEY_START;
+    MDB_txn *transaction;
+    MDB_val k_pre_key_idx = {
+        .mv_data = "pre_key_idx",
+        .mv_size = strlen("pre_key_idx"),
+    };
+    MDB_val v_pre_key_idx = mdb_val_intptr(&count);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+        goto cleanup;
+    }
+
+    if (!mdb_get(transaction, omemo->db->dbi_omemo,
+                 &k_pre_key_idx, &v_pre_key_idx))
+    {
+        if (increment)
+            count += PRE_KEY_COUNT;
+    }
+
+    if (mdb_put(transaction, omemo->db->dbi_omemo,
+                &k_pre_key_idx, &v_pre_key_idx, 0))
+    {
+        weechat_printf(NULL, "%sxmpp: failed to read lmdb value",
+                       weechat_prefix("error"));
+        goto cleanup;
+    };
+
+    if (mdb_txn_commit(transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
+                       weechat_prefix("error"));
+        goto cleanup;
+    };
+
+    return count;
+cleanup:
+    mdb_txn_abort(transaction);
+    return 0;
+}
+
+int pks_load_pre_key(signal_buffer **record, uint32_t pre_key_id, void *user_data)
+{
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    MDB_txn *transaction;
+    MDB_val k_pre_key = {
+        .mv_data = NULL,
+        .mv_size = strlen("pre_key_") + 10, // strlen(UINT32_MAX)
+    };
+    MDB_val v_pre_key;
+
+    k_pre_key.mv_data = malloc(sizeof(char) * (
+                                           k_pre_key.mv_size + 1));
+    k_pre_key.mv_size =
+    snprintf(k_pre_key.mv_data, k_pre_key.mv_size,
+             "pre_key_%-10u", pre_key_id);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+        goto cleanup;
+    }
+
+    if (!mdb_get(transaction, omemo->db->dbi_omemo,
+                 &k_pre_key, &v_pre_key))
+    {
+        *record = signal_buffer_create(v_pre_key.mv_data, v_pre_key.mv_size);
+
+        if (mdb_txn_commit(transaction)) {
+            weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
+                           weechat_prefix("error"));
+            goto cleanup;
+        };
+    }
+    else
+    {
+        mdb_txn_abort(transaction);
+
+        signal_protocol_key_helper_pre_key_list_node *pre_keys_list;
+        session_pre_key *pre_key = NULL;
+
+        for (signal_protocol_key_helper_generate_pre_keys(&pre_keys_list,
+                    pks_get_count(omemo, 1), PRE_KEY_COUNT,
+                    omemo->context); pre_keys_list;
+             pre_keys_list = signal_protocol_key_helper_key_list_next(pre_keys_list))
+        {
+            pre_key = signal_protocol_key_helper_key_list_element(pre_keys_list);
+            uint32_t id = session_pre_key_get_id(pre_key);
+            session_pre_key_serialize(record, pre_key);
+            pks_store_pre_key(id, signal_buffer_data(*record),
+                    signal_buffer_len(*record), user_data);
+        }
+        signal_protocol_key_helper_key_list_free(pre_keys_list);
+    }
+
+    return 0;
+cleanup:
+    mdb_txn_abort(transaction);
     return -1;
 }
 
 int pks_remove_pre_key(uint32_t pre_key_id, void *user_data)
 {
-    (void) pre_key_id;
-    (void) user_data;
-    return -1;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    MDB_txn *transaction;
+    MDB_val k_pre_key = {
+        .mv_data = NULL,
+        .mv_size = strlen("pre_key_") + 10, // strlen(UINT32_MAX)
+    };
+    MDB_val v_pre_key;
+
+    k_pre_key.mv_data = malloc(sizeof(char) * (
+                                           k_pre_key.mv_size + 1));
+    k_pre_key.mv_size =
+    snprintf(k_pre_key.mv_data, k_pre_key.mv_size,
+             "pre_key_%-10u", pre_key_id);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+        return -1;
+    }
+
+    if (mdb_del(transaction, omemo->db->dbi_omemo, &k_pre_key,
+                &v_pre_key)) {
+      weechat_printf(NULL, "%sxmpp: failed to erase lmdb value",
+                     weechat_prefix("error"));
+      return -1;
+    };
+
+    if (mdb_txn_commit(transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
+                       weechat_prefix("error"));
+        return -1;
+    };
+
+    return 0;
 }
 
 void pks_destroy_func(void *user_data)
 {
-    (void) user_data;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    (void) omemo;
+    // Function called to perform cleanup when the data store context is being destroyed
 }
 
 int spks_load_signed_pre_key(signal_buffer **record, uint32_t signed_pre_key_id, void *user_data)
 {
-    (void) record;
-    (void) signed_pre_key_id;
-    (void) user_data;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    MDB_txn *transaction;
+    MDB_val k_signed_pre_key = {
+        .mv_data = NULL,
+        .mv_size = strlen("signed_pre_key_") + 10, // strlen(UINT32_MAX)
+    };
+    MDB_val v_signed_pre_key;
+
+    k_signed_pre_key.mv_data = malloc(sizeof(char) * (
+                                           k_signed_pre_key.mv_size + 1));
+    k_signed_pre_key.mv_size =
+    snprintf(k_signed_pre_key.mv_data, k_signed_pre_key.mv_size,
+             "signed_pre_key_%-10u", signed_pre_key_id);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+        goto cleanup;
+    }
+
+    if (!mdb_get(transaction, omemo->db->dbi_omemo,
+                 &k_signed_pre_key, &v_signed_pre_key))
+    {
+        *record = signal_buffer_create(v_signed_pre_key.mv_data, v_signed_pre_key.mv_size);
+
+        if (mdb_txn_commit(transaction)) {
+            weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
+                           weechat_prefix("error"));
+            goto cleanup;
+        };
+    }
+    else
+    {
+        session_signed_pre_key *signed_pre_key = NULL;
+        signal_buffer *serialized_key = NULL;
+
+        signal_protocol_key_helper_generate_signed_pre_key(&signed_pre_key, omemo->identity, signed_pre_key_id, time(NULL), omemo->context);
+        session_signed_pre_key_serialize(&serialized_key, signed_pre_key);
+
+        v_signed_pre_key.mv_data = signal_buffer_data(serialized_key);
+        v_signed_pre_key.mv_size = signal_buffer_len(serialized_key);
+
+        if (mdb_put(transaction, omemo->db->dbi_omemo,
+                    &k_signed_pre_key, &v_signed_pre_key, MDB_NOOVERWRITE))
+        {
+            weechat_printf(NULL, "%sxmpp: failed to read lmdb value",
+                           weechat_prefix("error"));
+            goto cleanup;
+        };
+
+        if (mdb_txn_commit(transaction)) {
+            weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
+                           weechat_prefix("error"));
+            goto cleanup;
+        };
+
+        *record = serialized_key;
+    }
+
+    return 0;
+cleanup:
+    mdb_txn_abort(transaction);
     return -1;
-  //session_signed_pre_key *signed_pre_key;
-  //int start_id = 0;
-  //time_t timestamp = time(NULL);
-  //signal_protocol_key_helper_generate_signed_pre_key(&signed_pre_key, new_omemo->identity, 5, timestamp, new_omemo->context);
 }
 
 int spks_store_signed_pre_key(uint32_t signed_pre_key_id, uint8_t *record, size_t record_len, void *user_data)
 {
-    (void) signed_pre_key_id;
-    (void) record;
-    (void) record_len;
-    (void) user_data;
-    return -1;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    MDB_txn *transaction;
+    MDB_val k_signed_pre_key = {
+        .mv_data = NULL,
+        .mv_size = strlen("signed_pre_key_") + 10, // strlen(UINT32_MAX)
+    };
+    MDB_val v_signed_pre_key = {.mv_data = record, .mv_size = record_len};
+
+    k_signed_pre_key.mv_data = malloc(sizeof(char) * (
+                                           k_signed_pre_key.mv_size + 1));
+    k_signed_pre_key.mv_size =
+    snprintf(k_signed_pre_key.mv_data, k_signed_pre_key.mv_size,
+             "signed_pre_key_%-10u", signed_pre_key_id);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+        return -1;
+    }
+
+    if (mdb_put(transaction, omemo->db->dbi_omemo, &k_signed_pre_key,
+                &v_signed_pre_key, 0)) {
+      weechat_printf(NULL, "%sxmpp: failed to write lmdb value",
+                     weechat_prefix("error"));
+      return -1;
+    };
+
+    if (mdb_txn_commit(transaction)) {
+      weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
+                     weechat_prefix("error"));
+      return -1;
+    };
+
+    return 0;
 }
 
 int spks_contains_signed_pre_key(uint32_t signed_pre_key_id, void *user_data)
 {
-    (void) signed_pre_key_id;
-    (void) user_data;
-    return -1;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    MDB_txn *transaction;
+    MDB_val k_signed_pre_key = {
+        .mv_data = NULL,
+        .mv_size = strlen("signed_pre_key_") + 10, // strlen(UINT32_MAX)
+    };
+    MDB_val v_signed_pre_key;
+
+    k_signed_pre_key.mv_data = malloc(sizeof(char) * (
+                                           k_signed_pre_key.mv_size + 1));
+    k_signed_pre_key.mv_size =
+    snprintf(k_signed_pre_key.mv_data, k_signed_pre_key.mv_size,
+             "signed_pre_key_%-10u", signed_pre_key_id);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+        return 0;
+    }
+
+    if (mdb_get(transaction, omemo->db->dbi_omemo, &k_signed_pre_key,
+                &v_signed_pre_key)) {
+        mdb_txn_abort(transaction);
+        return 0;
+    };
+
+    mdb_txn_abort(transaction);
+
+    return 1;
 }
 
 int spks_remove_signed_pre_key(uint32_t signed_pre_key_id, void *user_data)
 {
-    (void) signed_pre_key_id;
-    (void) user_data;
-    return -1;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    MDB_txn *transaction;
+    MDB_val k_signed_pre_key = {
+        .mv_data = NULL,
+        .mv_size = strlen("signed_pre_key_") + 10, // strlen(UINT32_MAX)
+    };
+    MDB_val v_signed_pre_key;
+
+    k_signed_pre_key.mv_data = malloc(sizeof(char) * (
+                                           k_signed_pre_key.mv_size + 1));
+    k_signed_pre_key.mv_size =
+    snprintf(k_signed_pre_key.mv_data, k_signed_pre_key.mv_size,
+             "signed_pre_key_%-10u", signed_pre_key_id);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+        return -1;
+    }
+
+    if (mdb_del(transaction, omemo->db->dbi_omemo, &k_signed_pre_key,
+                &v_signed_pre_key)) {
+      weechat_printf(NULL, "%sxmpp: failed to erase lmdb value",
+                     weechat_prefix("error"));
+      return -1;
+    };
+
+    if (mdb_txn_commit(transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
+                       weechat_prefix("error"));
+        return -1;
+    };
+
+    return 0;
 }
 
 void spks_destroy_func(void *user_data)
 {
-    (void) user_data;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    (void) omemo;
+    // Function called to perform cleanup when the data store context is being destroyed
 }
 
 int ss_load_session_func(signal_buffer **record, signal_buffer **user_record, const signal_protocol_address *address, void *user_data)
 {
-    (void) record;
-    (void) user_record;
-    (void) address;
-    (void) user_data;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    MDB_txn *transaction;
+    MDB_val k_session = {
+        .mv_data = NULL,
+        .mv_size = strlen("session_") + 10 + //strlen(address->device_id) +
+             1 + strlen(address->name),
+    };
+    MDB_val v_session;
+    MDB_val k_user = {
+        .mv_data = NULL,
+        .mv_size = strlen("user_") + 10 + //strlen(address->device_id) +
+             1 + strlen(address->name),
+    };
+    MDB_val v_user;
+
+    k_session.mv_data = malloc(sizeof(char) * (
+                                           k_session.mv_size + 1));
+    k_session.mv_size =
+    snprintf(k_session.mv_data, k_session.mv_size,
+             "session_%u_%s", address->device_id, address->name);
+    k_user.mv_data = malloc(sizeof(char) * (
+                                           k_user.mv_size + 1));
+    k_user.mv_size =
+    snprintf(k_user.mv_data, k_user.mv_size,
+             "user_%u_%s", address->device_id, address->name);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+        goto cleanup;
+    }
+
+    if (!mdb_get(transaction, omemo->db->dbi_omemo,
+                 &k_session, &v_session)/* &&
+        !mdb_get(transaction, omemo->db->dbi_omemo,
+                 &k_user, &v_user)*/)
+    {
+        *record = signal_buffer_create(v_session.mv_data, v_session.mv_size);
+      //*user_record = signal_buffer_create(v_user.mv_data, v_user.mv_size);
+
+        if (mdb_txn_commit(transaction)) {
+            weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
+                           weechat_prefix("error"));
+            goto cleanup;
+        };
+    }
+    else
+    {
+        /*
+        v_session.mv_data = signal_buffer_data(*record);
+        v_session.mv_size = signal_buffer_len(*record);
+
+        if (mdb_put(transaction, omemo->db->dbi_omemo,
+                    &k_session, &v_session, MDB_NOOVERWRITE))
+        {
+            weechat_printf(NULL, "%sxmpp: failed to read lmdb value",
+                           weechat_prefix("error"));
+            goto cleanup;
+        };
+
+        if (mdb_txn_commit(transaction)) {
+            weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
+                           weechat_prefix("error"));
+            goto cleanup;
+        };
+        */
+    }
+
+    return 0;
+cleanup:
+    mdb_txn_abort(transaction);
     return -1;
 }
 
 int ss_get_sub_device_sessions_func(signal_int_list **sessions, const char *name, size_t name_len, void *user_data)
 {
-    (void) sessions;
-    (void) name;
-    (void) name_len;
-    (void) user_data;
-    return -1;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    MDB_txn *transaction;
+    MDB_val k_device_ids = {
+        .mv_data = NULL,
+        .mv_size = strlen("device_ids_") + name_len,
+    };
+    MDB_val v_device_ids;
+
+    k_device_ids.mv_data = malloc(sizeof(char) * (
+                                           k_device_ids.mv_size + 1));
+    snprintf(k_device_ids.mv_data, k_device_ids.mv_size,
+             "device_ids_%s", name);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+    }
+
+    if (!mdb_get(transaction, omemo->db->dbi_omemo,
+                 &k_device_ids, &v_device_ids))
+    {
+        char **argv;
+        int argc, i;
+        signal_int_list *list = signal_int_list_alloc();
+
+        if (!list) {
+            mdb_txn_abort(transaction);
+            return -1;
+        }
+
+        argv = weechat_string_split(v_device_ids.mv_data, " ", NULL, 0, 0, &argc);
+        if (mdb_txn_commit(transaction)) {
+            weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
+                           weechat_prefix("error"));
+            return -1;
+        };
+
+        for (i = 0; i < argc; i++)
+        {
+            char* device_id = argv[i];
+
+            signal_int_list_push_back(list, strtol(device_id, NULL, 10));
+        }
+
+        weechat_string_free_split(argv);
+
+        *sessions = list;
+        return argc;
+    }
+    else
+    {
+        mdb_txn_abort(transaction);
+        return 0;
+    }
 }
 
 int ss_store_session_func(const signal_protocol_address *address, uint8_t *record, size_t record_len, uint8_t *user_record, size_t user_record_len, void *user_data)
 {
-    (void) address;
-    (void) record;
-    (void) record_len;
-    (void) user_record;
-    (void) user_record_len;
-    (void) user_data;
-    return -1;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    MDB_txn *transaction;
+    MDB_val k_session = {
+        .mv_data = NULL,
+        .mv_size = strlen("session_") + 10 + //strlen(address->device_id) +
+             1 + strlen(address->name),
+    };
+    MDB_val v_session = {.mv_data = record, .mv_size = record_len};
+    MDB_val k_user = {
+        .mv_data = NULL,
+        .mv_size = strlen("user_") + 10 + //strlen(address->device_id) +
+             1 + strlen(address->name),
+    };
+    MDB_val v_user = {.mv_data = user_record, .mv_size = user_record_len};
+
+    k_session.mv_data = malloc(sizeof(char) * (
+                                           k_session.mv_size + 1));
+    k_session.mv_size =
+    snprintf(k_session.mv_data, k_session.mv_size,
+             "session_%u_%s", address->device_id, address->name);
+    k_user.mv_data = malloc(sizeof(char) * (
+                                           k_user.mv_size + 1));
+    k_user.mv_size =
+    snprintf(k_user.mv_data, k_user.mv_size,
+             "user_%u_%s", address->device_id, address->name);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+        return -1;
+    }
+
+    if (mdb_put(transaction, omemo->db->dbi_omemo,
+                &k_session, &v_session, 0)/* ||
+        mdb_put(transaction, omemo->db->dbi_omemo,
+                &k_user, &v_user, 0)*/) {
+      weechat_printf(NULL, "%sxmpp: failed to write lmdb value",
+                     weechat_prefix("error"));
+      return -1;
+    };
+
+    if (mdb_txn_commit(transaction)) {
+      weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
+                     weechat_prefix("error"));
+      return -1;
+    };
+
+    return 0;
 }
 
 int ss_contains_session_func(const signal_protocol_address *address, void *user_data)
 {
-    (void) address;
-    (void) user_data;
-    return -1;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    MDB_txn *transaction;
+    MDB_val k_session = {
+        .mv_data = NULL,
+        .mv_size = strlen("session_") + 10 + //strlen(address->device_id) +
+             1 + strlen(address->name),
+    };
+    MDB_val v_session;
+
+    k_session.mv_data = malloc(sizeof(char) * (
+                                           k_session.mv_size + 1));
+    k_session.mv_size =
+        snprintf(k_session.mv_data, k_session.mv_size,
+                 "session_%u_%s", address->device_id, address->name);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+        return -1;
+    }
+
+    if (mdb_get(transaction, omemo->db->dbi_omemo, &k_session, &v_session)) {
+        mdb_txn_abort(transaction);
+        return 1;
+    };
+
+    mdb_txn_abort(transaction);
+
+    return 0;
 }
 
 int ss_delete_session_func(const signal_protocol_address *address, void *user_data)
 {
-    (void) address;
-    (void) user_data;
-    return -1;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    MDB_txn *transaction;
+    MDB_val k_session = {
+        .mv_data = NULL,
+        .mv_size = strlen("session_") + 10 + //strlen(address->device_id) +
+             1 + strlen(address->name),
+    };
+    MDB_val v_session;
+
+    k_session.mv_data = malloc(sizeof(char) * (
+                                           k_session.mv_size + 1));
+    k_session.mv_size =
+        snprintf(k_session.mv_data, k_session.mv_size,
+                 "session_%u_%s", address->device_id, address->name);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+        return -1;
+    }
+
+    if (mdb_del(transaction, omemo->db->dbi_omemo, &k_session, &v_session)) {
+        weechat_printf(NULL, "%sxmpp: failed to erase lmdb value",
+                       weechat_prefix("error"));
+        return -1;
+    };
+
+    if (mdb_txn_commit(transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
+                       weechat_prefix("error"));
+        return -1;
+    };
+
+    return 1;
 }
 
 int ss_delete_all_sessions_func(const char *name, size_t name_len, void *user_data)
 {
-    (void) name;
-    (void) name_len;
-    (void) user_data;
+    signal_int_list *sessions;
+    ss_get_sub_device_sessions_func(&sessions, name, name_len, user_data);
+
+    int n = signal_int_list_size(sessions);
+    for (int i = 0; i < n; i++)
+    {
+        signal_protocol_address address = {.name = name, .name_len = name_len,
+            .device_id = signal_int_list_at(sessions, i)};
+        ss_delete_session_func(&address, user_data);
+    }
+    signal_int_list_free(sessions);
     return -1;
 }
 
 void ss_destroy_func(void *user_data)
 {
-    (void) user_data;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    (void) omemo;
+    // Function called to perform cleanup when the data store context is being destroyed
 }
 
 int sks_store_sender_key(const signal_protocol_sender_key_name *sender_key_name, uint8_t *record, size_t record_len, uint8_t *user_record, size_t user_record_len, void *user_data)
 {
-    (void) sender_key_name;
-    (void) record;
-    (void) record_len;
-    (void) user_record;
-    (void) user_record_len;
-    (void) user_data;
-    return -1;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    char *device_list = NULL;
+    MDB_txn *transaction;
+    MDB_val k_sender_key = {
+        .mv_data = NULL,
+        .mv_size = strlen("sender_key_") + strlen(sender_key_name->group_id) +
+             1 + 10 + //strlen(sender_key_name->sender.device_id) +
+             1 + strlen(sender_key_name->sender.name),
+    };
+    MDB_val v_sender_key = {.mv_data = record, .mv_size = record_len};
+    MDB_val k_user = {
+        .mv_data = NULL,
+        .mv_size = strlen("user_") + strlen(sender_key_name->group_id) +
+             1 + 10 + //strlen(sender_key_name->sender.device_id) +
+             1 + strlen(sender_key_name->sender.name),
+    };
+    MDB_val v_user = {.mv_data = user_record, .mv_size = user_record_len};
+    MDB_val k_device_ids = {
+        .mv_data = NULL,
+        .mv_size = strlen("device_ids_") + strlen(sender_key_name->sender.name),
+    };
+    MDB_val v_device_ids;
+
+    k_sender_key.mv_data = malloc(sizeof(char) * (
+                                           k_sender_key.mv_size + 1));
+    k_sender_key.mv_size =
+    snprintf(k_sender_key.mv_data, k_sender_key.mv_size,
+             "sender_key_%s_%u_%s", sender_key_name->group_id,
+             sender_key_name->sender.device_id,
+             sender_key_name->sender.name);
+    k_user.mv_data = malloc(sizeof(char) * (
+                                           k_user.mv_size + 1));
+    k_user.mv_size =
+    snprintf(k_user.mv_data, k_user.mv_size,
+             "user_%s_%u_%s", sender_key_name->group_id,
+             sender_key_name->sender.device_id,
+             sender_key_name->sender.name);
+    k_device_ids.mv_data = malloc(sizeof(char) * (
+                                           k_device_ids.mv_size + 1));
+    snprintf(k_device_ids.mv_data, k_device_ids.mv_size,
+             "device_ids_%s", sender_key_name->sender.name);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+        return -1;
+    }
+
+    if (!mdb_get(transaction, omemo->db->dbi_omemo,
+                 &k_device_ids, &v_device_ids))
+    {
+        char **argv;
+        int argc, i;
+
+        argv = weechat_string_split(v_device_ids.mv_data, " ", NULL, 0, 0, &argc);
+        for (i = 0; i < argc; i++)
+        {
+            char* device_id = argv[i];
+            if (strtol(device_id, NULL, 10) == sender_key_name->sender.device_id) break;
+        }
+
+        weechat_string_free_split(argv);
+        
+        if (i == argc)
+        {
+            size_t device_list_len = strlen(v_device_ids.mv_data) + 1 + 10 + 1;
+            device_list = malloc(sizeof(char) * device_list_len);
+            snprintf(device_list, device_list_len, "%s %u",
+                     (char*)v_device_ids.mv_data, sender_key_name->sender.device_id);
+            v_device_ids.mv_data = device_list;
+            v_device_ids.mv_size = strlen(device_list) + 1;
+        }
+    }
+    else
+    {
+        device_list = malloc(sizeof(char) * (10 + 1));
+        snprintf(device_list, 10 + 1, "%u", sender_key_name->sender.device_id);
+        v_device_ids.mv_data = device_list;
+        v_device_ids.mv_size = strlen(device_list) + 1;
+    }
+
+    if (mdb_put(transaction, omemo->db->dbi_omemo,
+                &k_sender_key, &v_sender_key, 0)/* ||
+        mdb_put(transaction, omemo->db->dbi_omemo,
+                &k_user, &v_user, 0)*/ ||
+        mdb_put(transaction, omemo->db->dbi_omemo,
+                &k_device_ids, &v_device_ids, 0)) {
+      weechat_printf(NULL, "%sxmpp: failed to write lmdb value",
+                     weechat_prefix("error"));
+      free(device_list);
+      return -1;
+    };
+
+    if (mdb_txn_commit(transaction)) {
+      weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
+                     weechat_prefix("error"));
+      free(device_list);
+      return -1;
+    };
+    free(device_list);
+
+    return 0;
 }
 
 int sks_load_sender_key(signal_buffer **record, signal_buffer **user_record, const signal_protocol_sender_key_name *sender_key_name, void *user_data)
 {
-    (void) record;
-    (void) user_record;
-    (void) sender_key_name;
-    (void) user_data;
-    return -1;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    MDB_txn *transaction;
+    MDB_val k_sender_key = {
+        .mv_data = NULL,
+        .mv_size = strlen("sender_key_") + strlen(sender_key_name->group_id) +
+             1 + 10 + //strlen(sender_key_name->sender.device_id) +
+             1 + strlen(sender_key_name->sender.name),
+    };
+    MDB_val v_sender_key;
+    MDB_val k_user = {
+        .mv_data = NULL,
+        .mv_size = strlen("user_") + strlen(sender_key_name->group_id) +
+             1 + 10 + //strlen(sender_key_name->sender.device_id) +
+             1 + strlen(sender_key_name->sender.name),
+    };
+    MDB_val v_user;
+
+    k_sender_key.mv_data = malloc(sizeof(char) * (
+                                           k_sender_key.mv_size + 1));
+    k_sender_key.mv_size =
+    snprintf(k_sender_key.mv_data, k_sender_key.mv_size,
+             "sender_key_%s_%u_%s", sender_key_name->group_id,
+             sender_key_name->sender.device_id,
+             sender_key_name->sender.name);
+    k_user.mv_data = malloc(sizeof(char) * (
+                                           k_user.mv_size + 1));
+    k_user.mv_size =
+    snprintf(k_user.mv_data, k_user.mv_size,
+             "user_%s_%u_%s", sender_key_name->group_id,
+             sender_key_name->sender.device_id,
+             sender_key_name->sender.name);
+
+    if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
+                       weechat_prefix("error"));
+    }
+
+    if (mdb_get(transaction, omemo->db->dbi_omemo,
+                &k_sender_key, &v_sender_key)/* &&
+        mdb_get(transaction, omemo->db->dbi_omemo,
+                &k_user, &v_user)*/)
+    {
+        *record = signal_buffer_create(v_sender_key.mv_data, v_sender_key.mv_size);
+      //*user_record = signal_buffer_create(v_user.mv_data, v_user.mv_size);
+
+        if (mdb_txn_commit(transaction)) {
+            weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
+                           weechat_prefix("error"));
+            return -1;
+        };
+    }
+    else
+    {
+        /*
+        signal_protocol_key_helper_sender_key_list_node *sender_keys_list;
+        session_sender_key *sender_key = NULL;
+
+        signal_protocol_key_helper_generate_sender_keys(
+            &sender_keys_list, 0, 100, omemo->context);
+        sender_key = signal_protocol_key_helper_key_list_element(sender_keys_list);
+        signal_protocol_key_helper_key_list_next(sender_keys_list);
+
+        uint32_t id = session_sender_key_get_id(sender_key); (void) id;
+        session_sender_key_serialize(record, sender_key);
+
+        signal_protocol_key_helper_key_list_free(sender_keys_list);
+
+        v_sender_key.mv_data = signal_buffer_data(*record);
+        v_sender_key.mv_size = signal_buffer_len(*record);
+
+        if (mdb_put(transaction, omemo->db->dbi_omemo,
+                    &k_sender_key, &v_sender_key, MDB_NOOVERWRITE))
+        {
+            weechat_printf(NULL, "%sxmpp: failed to read lmdb value",
+                           weechat_prefix("error"));
+            return -1;
+        };
+
+        if (mdb_txn_commit(transaction)) {
+            weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
+                           weechat_prefix("error"));
+            return -1;
+        };
+        */
+        return -1;
+    }
+
+    return 0;
 }
 
 void sks_destroy_func(void *user_data)
 {
-    (void) user_data;
+    struct t_omemo *omemo = (struct t_omemo *)user_data;
+    (void) omemo;
+    // Function called to perform cleanup when the data store context is being destroyed
 }
 
 void omemo__log_emit_weechat(int level, const char *message, size_t len, void *user_data)
@@ -946,6 +1616,109 @@ void omemo__log_emit_weechat(int level, const char *message, size_t len, void *u
         _("%somemo (%s): %.*s"),
         weechat_prefix("network"),
         log_level_name[level], len, message);
+}
+
+xmpp_stanza_t *omemo__get_bundle(xmpp_ctx_t *context, char *from, char *to,
+                                 struct t_omemo *omemo)
+{
+    xmpp_stanza_t **children = malloc(sizeof(*children) * (100 + 1));
+    xmpp_stanza_t *parent = NULL;
+    signal_buffer *record = NULL;
+    ec_key_pair *keypair = NULL;
+    ec_public_key *public_key = NULL;
+
+    int num_keys = 0;
+    for (uint32_t id = PRE_KEY_START;
+            id < INT_MAX && num_keys < 100; id++)
+    {
+        if (pks_load_pre_key(&record, id, omemo) != 0) continue;
+        else num_keys++;
+        session_pre_key *pre_key = NULL;
+        session_pre_key_deserialize(&pre_key, signal_buffer_data(record),
+                signal_buffer_len(record), omemo->context);
+        if (pre_key == 0) (*((int*)0))++;
+        signal_buffer_free(record);
+        keypair = session_pre_key_get_key_pair(pre_key);
+        public_key = ec_key_pair_get_public(keypair);
+        ec_public_key_serialize(&record, public_key);
+        char *data = NULL;
+        base64_encode(signal_buffer_data(record),
+                signal_buffer_len(record), &data);
+        signal_buffer_free(record);
+        if (pre_key) session_pre_key_destroy((signal_type_base*)pre_key);
+      //SIGNAL_UNREF(pre_key);
+        char *id_str = malloc(sizeof(char) * (10 + 1));
+        snprintf(id_str, 10+1, "%u", id);
+        children[num_keys-1] = stanza__iq_pubsub_publish_item_bundle_prekeys_preKeyPublic(
+                context, NULL, NULL, with_free(id_str));
+        stanza__set_text(context, children[num_keys-1], with_free(data));
+    }
+    children[100] = NULL;
+
+    children[3] = stanza__iq_pubsub_publish_item_bundle_prekeys(
+            context, NULL, children);
+    children[4] = NULL;
+
+    spks_load_signed_pre_key(&record, 1, omemo);
+    session_signed_pre_key *signed_pre_key;
+    session_signed_pre_key_deserialize(&signed_pre_key,
+            signal_buffer_data(record), signal_buffer_len(record),
+            omemo->context);
+    signal_buffer_free(record);
+    uint32_t signed_pre_key_id = session_signed_pre_key_get_id(signed_pre_key);
+    keypair = session_signed_pre_key_get_key_pair(signed_pre_key);
+    public_key = ec_key_pair_get_public(keypair);
+    ec_public_key_serialize(&record, public_key);
+    char *signed_pre_key_public = NULL;
+    base64_encode(signal_buffer_data(record), signal_buffer_len(record),
+            &signed_pre_key_public);
+    signal_buffer_free(record);
+    char *signed_pre_key_id_str = malloc(sizeof(char) * (10 + 1));
+    snprintf(signed_pre_key_id_str, 10+1, "%u", signed_pre_key_id);
+    children[0] = stanza__iq_pubsub_publish_item_bundle_signedPreKeyPublic(
+            context, NULL, NULL, with_free(signed_pre_key_id_str));
+    stanza__set_text(context, children[0], with_free(signed_pre_key_public));
+
+    const uint8_t *keysig = session_signed_pre_key_get_signature(signed_pre_key);
+    size_t keysig_len = session_signed_pre_key_get_signature_len(signed_pre_key);
+    session_pre_key_destroy((signal_type_base*)signed_pre_key);
+    char *signed_pre_key_signature = NULL;
+    base64_encode(keysig, keysig_len, &signed_pre_key_signature);
+    children[1] = stanza__iq_pubsub_publish_item_bundle_signedPreKeySignature(
+            context, NULL, NULL);
+    stanza__set_text(context, children[1], with_free(signed_pre_key_signature));
+
+    iks_get_identity_key_pair(&record, (signal_buffer**)&signed_pre_key, omemo);
+    char *identity_key = NULL;
+    base64_encode(signal_buffer_data(record), signal_buffer_len(record),
+            &identity_key);
+    signal_buffer_free(record);
+    children[2] = stanza__iq_pubsub_publish_item_bundle_identityKey(
+            context, NULL, NULL);
+    stanza__set_text(context, children[2], with_free(identity_key));
+
+    children[0] = stanza__iq_pubsub_publish_item_bundle(
+            context, NULL, children, with_noop("eu.siacs.conversations.axolotl"));
+    children[1] = NULL;
+
+    children[0] = stanza__iq_pubsub_publish_item(
+            context, NULL, children, NULL);
+
+    size_t bundle_node_len = strlen("eu.siacs.conversations.axolotl.bundles:") + 10;
+    char *bundle_node = malloc(sizeof(char) * (bundle_node_len + 1));
+    snprintf(bundle_node, bundle_node_len+1,
+            "eu.siacs.conversations.axolotl.bundles:%u", omemo->device_id);
+    children[0] = stanza__iq_pubsub_publish(
+            context, NULL, children, with_free(bundle_node));
+
+    children[0] = stanza__iq_pubsub(
+            context, NULL, children, with_noop("http://jabber.org/protocol/pubsub"));
+
+    parent = stanza__iq(
+            context, NULL, children, NULL, "announce2", from, to, "set");
+    free(children);
+
+    return parent;
 }
 
 void omemo__init(struct t_gui_buffer *buffer, struct t_omemo **omemo,
@@ -965,30 +1738,35 @@ void omemo__init(struct t_gui_buffer *buffer, struct t_omemo **omemo,
     mdb_env_create(&new_omemo->db->env);
     mdb_env_set_maxdbs(new_omemo->db->env, 50);
     mdb_env_set_mapsize(new_omemo->db->env, (size_t)1048576 * 100000); // 1MB * 100000
-    char *path = weechat_string_eval_expression("${weechat_data_dir}/xmpp.omemo.db",
+    new_omemo->db_path = weechat_string_eval_expression("${weechat_data_dir}/xmpp.omemo.db",
                                                 NULL, NULL, NULL);
-    if (mdb_env_open(new_omemo->db->env, path, MDB_NOSUBDIR, 0664) != 0)
+    if (mdb_env_open(new_omemo->db->env, new_omemo->db_path, MDB_NOSUBDIR, 0664) != 0)
     {
         return;
     }
-    free(path);
 
     MDB_txn *parentTransaction = NULL;
     MDB_txn *transaction;
     if (mdb_txn_begin(new_omemo->db->env, parentTransaction, 0 ? MDB_RDONLY : 0, &transaction)) {
         weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
                        weechat_prefix("error"));
+        return;
     }
 
     size_t db_name_len = strlen("omemo_") + strlen(account_name);
     char *db_name = malloc(sizeof(char) * (db_name_len + 1));
-    snprintf(db_name, db_name_len+1, "identity_key_%s", account_name);
+    snprintf(db_name, db_name_len+1, "omemo_%s", account_name);
     if (mdb_dbi_open(transaction, db_name, MDB_DUPSORT | MDB_CREATE, &new_omemo->db->dbi_omemo)) {
         weechat_printf(NULL, "%sxmpp: failed to open lmdb database",
                        weechat_prefix("error"));
+        return;
     }
 
-    mdb_txn_abort(transaction);
+    if (mdb_txn_commit(transaction)) {
+        weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
+                       weechat_prefix("error"));
+        return;
+    };
 
     struct signal_crypto_provider crypto_provider = {
         .random_func = &cp_random_generator,
@@ -1070,64 +1848,247 @@ void omemo__init(struct t_gui_buffer *buffer, struct t_omemo **omemo,
     signal_protocol_store_context_set_sender_key_store(
         new_omemo->store_context, &sender_key_store);
 
+    signal_buffer *public_data, *private_data;
+    iks_get_local_registration_id(new_omemo, &new_omemo->device_id);
+    if (!iks_get_identity_key_pair(&public_data, &private_data, new_omemo))
+    {
+        ec_public_key *public_key = NULL;
+        ec_private_key *private_key = NULL;
+        curve_decode_point(&public_key, signal_buffer_data(public_data),
+                signal_buffer_len(public_data), new_omemo->context);
+        curve_decode_private_point(&private_key, signal_buffer_data(private_data),
+                signal_buffer_len(private_data), new_omemo->context);
+        ratchet_identity_key_pair_create(&new_omemo->identity, public_key, private_key);
+    }
+
     *omemo = new_omemo;
 }
 
-void omemo__serialize(struct t_omemo *omemo, char **device,
-                      char **identity, size_t *identity_len)
+void omemo__handle_devicelist(struct t_omemo *omemo, const char *jid,
+                              xmpp_stanza_t *items)
 {
-    if (device)
+    (void) omemo;
+
+    xmpp_stanza_t *item = xmpp_stanza_get_child_by_name(items, "item");
+    if (!item) return;
+    xmpp_stanza_t *list = xmpp_stanza_get_child_by_name(item, "list");
+    if (!list) return;
+    for (xmpp_stanza_t *device = xmpp_stanza_get_children(list);
+         device; device = xmpp_stanza_get_next(device))
     {
-        size_t id_slen = log10(omemo->device_id) * 2;
-        char *id = malloc(sizeof(char) * id_slen);
-        snprintf(id, id_slen, "%d", omemo->device_id);
+        const char *name = xmpp_stanza_get_name(device);
+        if (weechat_strcasecmp(name, "device") != 0)
+            continue;
 
-        *device = id;
-    }
-    if (identity)
-    {
-        signal_buffer *buffer;
-        ratchet_identity_key_pair_serialize(&buffer, omemo->identity);
+        const char *device_id = xmpp_stanza_get_id(device);
+        if (!device_id)
+            continue;
 
-        size_t key_slen = signal_buffer_len(buffer) * 2;
-        char *key = malloc(sizeof(char) * key_slen);
-        size_t length = weechat_string_base_encode(64, (char*)signal_buffer_data(buffer),
-                                                   signal_buffer_len(buffer), key);
-
-        *identity = key;
-        if (identity_len)
-            *identity_len = length;
+      //weechat_printf(NULL, "omemo devicelist %s: %s%u",
+      //               jid, weechat_color("yellow"), strtol(device_id, NULL, 10));
     }
 }
 
-void omemo__deserialize(struct t_omemo *omemo, const char *device,
-                        const char *identity, size_t identity_len)
+void omemo__handle_bundle(struct t_omemo *omemo, const char *jid,
+                          uint32_t device_id, xmpp_stanza_t *items)
 {
-    if (device)
-    {
-        uint32_t id = device[0] ? atoi(device) : 0;
+    (void) omemo;
 
-        omemo->device_id = id;
-    }
-    if (identity)
-    {
-        uint8_t *key = malloc(sizeof(uint8_t) * identity_len);
-        size_t length = weechat_string_base_decode(64, identity, (char*)key);
+    xmpp_stanza_t *item = xmpp_stanza_get_child_by_name(items, "item");
+    if (!item) return;
+    xmpp_stanza_t *bundle = xmpp_stanza_get_child_by_name(item, "bundle");
+    if (!bundle) return;
+    xmpp_stanza_t *signedprekey = xmpp_stanza_get_child_by_name(bundle, "signedPreKeyPublic");
+    if (!signedprekey) return;
+    const char *signed_pre_key = xmpp_stanza_get_text(signedprekey);
+    if (!signed_pre_key) return;
+    const char *signed_pre_key_id = xmpp_stanza_get_attribute(signedprekey, "signedPreKeyId");
+    if (!signed_pre_key_id) return;
+    xmpp_stanza_t *signature = xmpp_stanza_get_child_by_name(bundle, "signedPreKeySignature");
+    if (!signature) return;
+    const char *key_signature = xmpp_stanza_get_text(signature);
+    if (!key_signature) return;
+    xmpp_stanza_t *identitykey = xmpp_stanza_get_child_by_name(bundle, "identityKey");
+    if (!identitykey) return;
+    const char *identity_key = xmpp_stanza_get_text(identitykey);
+    if (!identity_key) return;
+    xmpp_stanza_t *prekeys = xmpp_stanza_get_child_by_name(bundle, "prekeys");
+    if (!prekeys) return;
 
-        ratchet_identity_key_pair_deserialize(&omemo->identity,
-                                              key, length, omemo->context);
+    char **format = weechat_string_dyn_alloc(256);
+    weechat_string_dyn_concat(format, "omemo bundle %s/%u:\n%s..SPK %u: %s\n%3$s..SKS: %s\n%3$s..IK: %s", -1);
+    for (xmpp_stanza_t *prekey = xmpp_stanza_get_children(prekeys);
+         prekey; prekey = xmpp_stanza_get_next(prekey))
+    {
+        const char *name = xmpp_stanza_get_name(prekey);
+        if (weechat_strcasecmp(name, "preKeyPublic") != 0)
+            continue;
+
+        const char *pre_key_id = xmpp_stanza_get_attribute(prekey, "preKeyId");
+        if (!pre_key_id)
+            continue;
+        const char *pre_key = xmpp_stanza_get_text(prekey);
+        if (!pre_key)
+            continue;
+
+        weechat_string_dyn_concat(format, "\n%3$s..PK ", -1);
+        weechat_string_dyn_concat(format, pre_key_id, -1);
+        weechat_string_dyn_concat(format, ": ", -1);
+        weechat_string_dyn_concat(format, pre_key, -1);
     }
+  //weechat_printf(NULL, *format, jid, device_id, weechat_color("green"),
+  //               signed_pre_key_id, signed_pre_key,
+  //               key_signature, identity_key);
+    weechat_string_dyn_free(format, 1);
+}
+
+char *omemo__decode(struct t_omemo *omemo, const char *jid,
+                             xmpp_stanza_t *encrypted)
+{
+    uint8_t *key_data = NULL, *iv_data = NULL, *payload_data = NULL;
+    size_t key_len = 0, iv_len = 0, payload_len = 0;
+
+    xmpp_stanza_t *header = xmpp_stanza_get_child_by_name(encrypted, "header");
+    if (!header) return NULL;
+    xmpp_stanza_t *iv = xmpp_stanza_get_child_by_name(header, "iv");
+    if (!iv) return NULL;
+    const char *iv__text = xmpp_stanza_get_text(iv);
+    if (!iv__text) return NULL;
+    iv_len = base64_decode(iv__text, strlen(iv__text), &iv_data);
+
+    char **format = weechat_string_dyn_alloc(256);
+    weechat_string_dyn_concat(format, "omemo msg %s:\n%s..IV: %s", -1);
+    for (xmpp_stanza_t *key = xmpp_stanza_get_children(header);
+         key; key = xmpp_stanza_get_next(key))
+    {
+        const char *name = xmpp_stanza_get_name(key);
+        if (weechat_strcasecmp(name, "key") != 0)
+            continue;
+
+        const char *key_prekey = xmpp_stanza_get_attribute(key, "prekey");
+        const char *key_id = xmpp_stanza_get_attribute(key, "rid");
+        if (!key_id)
+            continue;
+        uint32_t id = strtol(key_id, NULL, 10);
+        if (id != omemo->device_id)
+            continue;
+        const char *data = xmpp_stanza_get_text(key);
+        if (!data)
+            continue;
+        key_len = base64_decode(data, strlen(data), &key_data);
+
+        // signal decrypt key for id
+
+        weechat_string_dyn_concat(format, "\n%2$s..K ", -1);
+        if (key_prekey)
+            weechat_string_dyn_concat(format, "*", -1);
+        weechat_string_dyn_concat(format, key_id, -1);
+        weechat_string_dyn_concat(format, ": ", -1);
+        weechat_string_dyn_concat(format, data, -1);
+    }
+
+    xmpp_stanza_t *payload = xmpp_stanza_get_child_by_name(encrypted, "payload");
+    if (payload)
+    {
+        const char *payload__text = xmpp_stanza_get_text(payload);
+        if (!payload__text) return NULL;
+        payload_len = base64_decode(payload__text, strlen(payload__text), &payload_data);
+        weechat_string_dyn_concat(format, "\n%2$s..PL: ", -1);
+        weechat_string_dyn_concat(format, payload__text, -1);
+    }
+    weechat_printf(NULL, *format, jid, weechat_color("red"), iv__text);
+    weechat_string_dyn_free(format, 1);
+
+    if (!(payload_data && iv_data && key_data) || key_len <= 16) return NULL;
+    char *plaintext = NULL; size_t plaintext_len = 0;
+    if (aes_decrypt(payload_data, payload_len, key_data, iv_data,
+                    key_data+AES_KEY_SIZE, key_len-AES_KEY_SIZE,
+                    (uint8_t**)&plaintext, &plaintext_len) && plaintext)
+    {
+        plaintext[plaintext_len] = '\0';
+        return plaintext;
+    }
+    return NULL;
+}
+
+xmpp_stanza_t *omemo__encode(struct t_omemo *omemo, const char *jid,
+                             uint32_t device_id, const char *unencrypted)
+{
+    uint8_t *key = NULL; uint8_t *iv = NULL;
+    uint8_t *tag = NULL; size_t tag_len = 0;
+    uint8_t *ciphertext = NULL; size_t ciphertext_len = 0;
+    aes_encrypt((uint8_t*)unencrypted, strlen(unencrypted),
+                &key, &iv, &tag, &tag_len,
+                &ciphertext, &ciphertext_len);
+
+    uint8_t *key_and_tag = malloc(sizeof(uint8_t) * (AES_KEY_SIZE+tag_len));
+    memcpy(key_and_tag, key, AES_KEY_SIZE);
+    free(key);
+    memcpy(key_and_tag+AES_KEY_SIZE, tag, tag_len);
+    free(tag);
+    char *key64 = NULL;
+    base64_encode(key_and_tag, AES_KEY_SIZE+tag_len, &key64);
+    char *iv64 = NULL;
+    base64_encode(iv, AES_IV_SIZE, &iv64);
+    free(iv);
+    char *ciphertext64 = NULL;
+    base64_encode(ciphertext, ciphertext_len, &ciphertext64);
+    free(ciphertext);
+
+    signal_buffer *record;
+    signal_protocol_address address = {
+        .name = jid, .name_len = strlen(jid), .device_id = device_id};
+
+    /*
+    session_builder *builder;
+    session_builder_create(&builder, omemo->store_context, &address, omemo->context);
+  //session_builder_process_pre_key_bundle(builder, pre_key);
+
+    session_cipher *cipher;
+    session_cipher_create(&cipher, omemo->store_context, &address, omemo->context);
+
+    ciphertext_message *encrypted_message;
+    session_cipher_encrypt(cipher, key_and_tag, AES_KEY_SIZE+tag_len, &encrypted_message);
+    signal_buffer *serialized = ciphertext_message_get_serialized(encrypted_message);
+    int prekey = ciphertext_message_get_type(encrypted_message) == CIPHERTEXT_PREKEY_TYPE
+        ? 1 : 0;
+
+    char *payload = NULL;
+    base64_encode(signal_buffer_data(serialized), signal_buffer_len(serialized),
+            &payload);
+    weechat_printf(NULL, "signal send %s/%u: %s%s\n..%sMessage: %s",
+                   jid, device_id, weechat_color("blue"), key64,
+                   prekey ? "PreKey" : "", payload);
+
+    signal_buffer_free(serialized);
+    SIGNAL_UNREF(encrypted_message);
+    session_cipher_free(cipher);
+    session_builder_free(builder);
+    */
+    free(key_and_tag);
+
+    // ...
+    weechat_printf(NULL, "omemo send %s/%u: %s%s\n..Key: %s\n..IV: %s\n..Payload: %s",
+                   jid, device_id, weechat_color("blue"), unencrypted,
+                   key64, iv64, ciphertext64);
+    free(iv64);
+    free(key64);
+    free(ciphertext64);
+    return NULL;
 }
 
 void omemo__free(struct t_omemo *omemo)
 {
     if (omemo)
     {
-        if (omemo->context)
+        if (omemo->context) {
             signal_context_destroy(omemo->context);
+            signal_protocol_store_context_destroy(omemo->store_context);
+        }
         if (omemo->identity)
             ratchet_identity_key_pair_destroy(
                 (signal_type_base *)omemo->identity);
+        free(omemo->db_path);
         free(omemo);
     }
 }

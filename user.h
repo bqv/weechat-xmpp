@@ -16,6 +16,7 @@ struct t_user_profile
     char *role;
     char *affiliation;
     char *pgp_id;
+    int omemo;
 };
 
 struct t_user

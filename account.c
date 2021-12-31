@@ -12,6 +12,7 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
+#include "xmpp/stanza.h"
 #include "config.h"
 #include "input.h"
 #include "omemo.h"
@@ -90,7 +91,7 @@ int account__search_option(const char *option_name)
     return -1;
 }
 
-struct t_account_device *account__search_device(struct t_account *account, int id)
+struct t_account_device *account__search_device(struct t_account *account, uint32_t id)
 {
     struct t_account_device *ptr_device;
 
@@ -118,6 +119,7 @@ void account__add_device(struct t_account *account,
         new_device = malloc(sizeof(*new_device));
         new_device->id = device->id;
         new_device->name = strdup(device->name);
+        new_device->label = device->label ? strdup(device->label) : NULL;
 
         new_device->prev_device = account->last_device;
         new_device->next_device = NULL;
@@ -151,6 +153,8 @@ void account__free_device(struct t_account *account, struct t_account_device *de
         (device->next_device)->prev_device = device->prev_device;
 
     /* free device data */
+    if (device->label)
+        free(device->label);
     if (device->name)
         free(device->name);
 
@@ -163,6 +167,60 @@ void account__free_device_all(struct t_account *account)
 {
     while (account->devices)
         account__free_device(account, account->devices);
+}
+
+xmpp_stanza_t *account__get_devicelist(struct t_account *account)
+{
+    xmpp_stanza_t *parent, **children;
+    struct t_account_device *device;
+    const char *ns, *node;
+    char id[64] = {0};
+    int i = 0;
+
+    device = malloc(sizeof(struct t_account_device));
+
+    device->id = account->omemo->device_id;
+    snprintf(id, sizeof(id), "%u", device->id);
+    device->name = strdup(id);
+    device->label = strdup("weechat");
+
+    children = malloc(sizeof(xmpp_stanza_t *) * 128);
+    children[i++] = stanza__iq_pubsub_publish_item_list_device(
+        account->context, NULL, with_noop(device->name),
+        with_noop("weechat"));
+
+    free(device->label);
+    free(device->name);
+    free(device);
+
+    for (device = account->devices; device;
+         device = device->next_device)
+    {
+        if (device->id != account->omemo->device_id)
+            children[i++] = stanza__iq_pubsub_publish_item_list_device(
+                account->context, NULL, with_noop(device->name), NULL);
+    }
+
+    children[i] = NULL;
+    node = "eu.siacs.conversations.axolotl";
+    children[0] = stanza__iq_pubsub_publish_item_list(
+        account->context, NULL, children, with_noop(node));
+    children[1] = NULL;
+    children[0] = stanza__iq_pubsub_publish_item(
+        account->context, NULL, children, NULL);
+    node = "eu.siacs.conversations.axolotl.devicelist";
+    children[0] = stanza__iq_pubsub_publish(account->context,
+                                            NULL, children,
+                                            with_noop(node));
+    ns = "http://jabber.org/protocol/pubsub";
+    children[0] = stanza__iq_pubsub(account->context, NULL,
+                                    children, with_noop(ns));
+    parent = stanza__iq(account->context, NULL,
+                        children, NULL, strdup("announce1"),
+                        NULL, NULL, strdup("set"));
+    free(children);
+
+    return parent;
 }
 
 struct t_account_mam_query *account__add_mam_query(struct t_account *account,

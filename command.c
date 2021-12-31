@@ -4,13 +4,13 @@
 
 #include <strophe.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
-//#include "oauth.h"
 #include "account.h"
 #include "user.h"
 #include "channel.h"

@@ -18,6 +18,7 @@
 #include "input.h"
 #include "buffer.h"
 #include "pgp.h"
+#include "util.h"
 
 const char *channel__transport_name(enum t_channel_transport transport)
 {
@@ -276,6 +277,11 @@ struct t_channel *channel__new(struct t_account *account,
     new_channel->name = strdup(name);
     new_channel->transport = CHANNEL_TRANSPORT_PLAINTEXT;
     new_channel->pgp_id = NULL;
+    new_channel->omemo.session = 0;
+    new_channel->omemo.devicelist_requests = weechat_hashtable_new(64,
+            WEECHAT_HASHTABLE_STRING, WEECHAT_HASHTABLE_POINTER, NULL, NULL);
+    new_channel->omemo.bundle_requests = weechat_hashtable_new(64,
+            WEECHAT_HASHTABLE_STRING, WEECHAT_HASHTABLE_POINTER, NULL, NULL);
 
     new_channel->topic.value = NULL;
     new_channel->topic.creator = NULL;
@@ -916,10 +922,13 @@ struct t_channel_member *channel__add_member(struct t_account *account,
                                  user->profile.status_text ? " [" : "",
                                  user->profile.status_text ? user->profile.status_text : "",
                                  user->profile.status_text ? "]" : "",
-                                 user->profile.pgp_id ? weechat_color("gray") : "",
-                                 user->profile.pgp_id ? " with PGP:" : "",
+                                 user->profile.pgp_id || user->profile.omemo ? weechat_color("gray") : "",
+                                 user->profile.pgp_id || user->profile.omemo ? " with " : "",
+                                 user->profile.pgp_id ? "PGP:" : "",
                                  user->profile.pgp_id ? user->profile.pgp_id : "",
-                                 user->profile.pgp_id ? weechat_color("reset") : "");
+                                 user->profile.omemo && user->profile.pgp_id ? " and " : "",
+                                 user->profile.omemo ? "OMEMO" : "",
+                                 user->profile.pgp_id || user->profile.omemo ? weechat_color("reset") : "");
 
     return member;
 }
@@ -999,8 +1008,21 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
     xmpp_stanza_set_id(message, id);
     xmpp_free(account->context, id);
 
-    char *url = strstr(body, "http");
-    if (channel->pgp_id)
+    if (account->omemo && channel->omemo.session >= 0)
+    {
+        xmpp_message_set_body(message, body);
+
+        if (channel->transport != CHANNEL_TRANSPORT_OMEMO)
+        {
+            channel->transport = CHANNEL_TRANSPORT_OMEMO;
+            weechat_printf_date_tags(channel->buffer, 0, NULL, "%s%sTransport: %s",
+                                     weechat_prefix("network"), weechat_color("gray"),
+                                     channel__transport_name(channel->transport));
+        }
+
+        omemo__encode(account->omemo, to, 0, body);
+    }
+    else if (channel->pgp_id)
     {
         xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
         xmpp_stanza_set_name(message__x, "x");
@@ -1049,6 +1071,7 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
         }
     }
 
+    char *url = strstr(body, "http");
     if (url)
     {
         xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);

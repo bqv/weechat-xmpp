@@ -64,6 +64,11 @@ struct t_channel
     char *name;
     enum t_channel_transport transport;
     char *pgp_id;
+    struct {
+        int session;
+        struct t_hashtable *devicelist_requests;
+        struct t_hashtable *bundle_requests;
+    } omemo;
 
     struct t_channel_topic topic;
 
