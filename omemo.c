@@ -77,11 +77,10 @@ int aes_decrypt(const uint8_t *ciphertext, size_t ciphertext_len,
                 GCRY_CIPHER_MODE_GCM, GCRY_CIPHER_SECURE)) goto cleanup;
     if (gcry_cipher_setkey(cipher, key, AES_KEY_SIZE)) goto cleanup;
     if (gcry_cipher_setiv(cipher, iv, AES_IV_SIZE)) goto cleanup;
-    *plaintext_len = 0;
+    *plaintext_len = ciphertext_len;
     *plaintext = malloc((sizeof(uint8_t) * *plaintext_len) + 1);
     if (gcry_cipher_decrypt(cipher, *plaintext, *plaintext_len,
-                ciphertext, ciphertext_len)) goto cleanup;
-    *plaintext_len = ciphertext_len;
+                            ciphertext, ciphertext_len)) goto cleanup;
     if (gcry_cipher_checktag(cipher, tag, tag_len)) goto cleanup;
     gcry_cipher_close(cipher);
     return 1;
@@ -95,20 +94,19 @@ int aes_encrypt(const uint8_t *plaintext, size_t plaintext_len,
                 uint8_t **ciphertext, size_t *ciphertext_len)
 {
     *tag_len = 16;
-    *tag = gcry_random_bytes(*tag_len, GCRY_STRONG_RANDOM);
+    *tag = calloc(*tag_len, sizeof(uint8_t));
     *iv = gcry_random_bytes(AES_IV_SIZE, GCRY_STRONG_RANDOM);
-    *key = gcry_random_bytes(AES_KEY_SIZE + *tag_len, GCRY_STRONG_RANDOM);
+    *key = gcry_random_bytes(AES_KEY_SIZE, GCRY_STRONG_RANDOM);
 
     gcry_cipher_hd_t cipher = NULL;
     if (gcry_cipher_open(&cipher, GCRY_CIPHER_AES128,
                 GCRY_CIPHER_MODE_GCM, GCRY_CIPHER_SECURE)) goto cleanup;
-    if (gcry_cipher_setkey(cipher, key, AES_KEY_SIZE)) goto cleanup;
-    if (gcry_cipher_setiv(cipher, iv, AES_IV_SIZE)) goto cleanup;
-    *ciphertext_len = 0;
+    if (gcry_cipher_setkey(cipher, *key, AES_KEY_SIZE)) goto cleanup;
+    if (gcry_cipher_setiv(cipher, *iv, AES_IV_SIZE)) goto cleanup;
+    *ciphertext_len = plaintext_len;
     *ciphertext = malloc((sizeof(uint8_t) * *ciphertext_len) + 1);
     if (gcry_cipher_encrypt(cipher, *ciphertext, *ciphertext_len,
-                plaintext, plaintext_len)) goto cleanup;
-    *ciphertext_len = plaintext_len;
+                            plaintext, plaintext_len)) goto cleanup;
     if (gcry_cipher_gettag(cipher, *tag, *tag_len)) goto cleanup;
     gcry_cipher_close(cipher);
     return 1;
