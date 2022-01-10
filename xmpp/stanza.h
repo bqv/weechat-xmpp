@@ -78,6 +78,9 @@ xmpp_stanza_t *stanza__iq_pubsub(xmpp_ctx_t *context, xmpp_stanza_t *base,
 
 xmpp_stanza_t *stanza__iq_pubsub_items(xmpp_ctx_t *context, xmpp_stanza_t *base, char *node);
 
+xmpp_stanza_t *stanza__iq_pubsub_subscribe(xmpp_ctx_t *context, xmpp_stanza_t *base,
+                                           struct t_string *node, struct t_string *jid);
+
 xmpp_stanza_t *stanza__iq_pubsub_publish(xmpp_ctx_t *context, xmpp_stanza_t *base,
                                          xmpp_stanza_t **children, struct t_string *node);
 
@@ -113,5 +116,8 @@ xmpp_stanza_t *stanza__iq_enable(xmpp_ctx_t *context, xmpp_stanza_t *base,
 
 xmpp_stanza_t *stanza__iq_ping(xmpp_ctx_t *context, xmpp_stanza_t *base,
                                struct t_string *ns);
+
+xmpp_stanza_t *stanza__iq_query(xmpp_ctx_t *context, xmpp_stanza_t *base,
+                                struct t_string *ns, struct t_string *node);
 
 #endif /*WEECHAT_XMPP_STANZA_H*/

@@ -1,4 +1,4 @@
-(define-module (gnu packages messaging)
+(define-module (libomemo)
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages aidc)

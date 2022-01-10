@@ -186,8 +186,7 @@ xmpp_stanza_t *account__get_devicelist(struct t_account *account)
 
     children = malloc(sizeof(xmpp_stanza_t *) * 128);
     children[i++] = stanza__iq_pubsub_publish_item_list_device(
-        account->context, NULL, with_noop(device->name),
-        with_noop("weechat"));
+        account->context, NULL, with_noop(device->name), NULL);
 
     free(device->label);
     free(device->name);
@@ -207,7 +206,7 @@ xmpp_stanza_t *account__get_devicelist(struct t_account *account)
         account->context, NULL, children, with_noop(node));
     children[1] = NULL;
     children[0] = stanza__iq_pubsub_publish_item(
-        account->context, NULL, children, NULL);
+        account->context, NULL, children, with_noop("current"));
     node = "eu.siacs.conversations.axolotl.devicelist";
     children[0] = stanza__iq_pubsub_publish(account->context,
                                             NULL, children,

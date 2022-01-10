@@ -15,9 +15,11 @@ enum t_channel_type
 
 enum t_channel_transport
 {
-    CHANNEL_TRANSPORT_PLAINTEXT,
+    CHANNEL_TRANSPORT_PLAIN,
     CHANNEL_TRANSPORT_OMEMO,
     CHANNEL_TRANSPORT_PGP,
+    CHANNEL_TRANSPORT_OTR,
+    CHANNEL_TRANSPORT_OX,
 };
 
 struct t_channel_typing
@@ -63,12 +65,18 @@ struct t_channel
     char *id;
     char *name;
     enum t_channel_transport transport;
-    char *pgp_id;
     struct {
-        int session;
+        int enabled;
         struct t_hashtable *devicelist_requests;
         struct t_hashtable *bundle_requests;
     } omemo;
+    struct {
+        int enabled;
+        char *id;
+    } pgp;
+    struct {
+        int enabled;
+    } otr;
 
     struct t_channel_topic topic;
 
@@ -96,6 +104,9 @@ struct t_channel
 };
 
 const char *channel__transport_name(enum t_channel_transport transport);
+
+void channel__set_transport(struct t_channel *channel,
+                            enum t_channel_transport transport, int force);
 
 struct t_account *channel__account(struct t_channel *channel);
 
@@ -184,8 +195,8 @@ struct t_channel_member *channel__remove_member(struct t_account *account,
                                                 struct t_channel *channel,
                                                 const char *id, const char *reason);
 
-void channel__send_message(struct t_account *account, struct t_channel *channel,
-                           const char *to, const char *body);
+int channel__send_message(struct t_account *account, struct t_channel *channel,
+                          const char *to, const char *body);
 
 void channel__send_reads(struct t_account *account, struct t_channel *channel);
 

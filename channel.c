@@ -11,8 +11,8 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.h"
-#include "omemo.h"
 #include "account.h"
+#include "omemo.h"
 #include "user.h"
 #include "channel.h"
 #include "input.h"
@@ -24,14 +24,45 @@ const char *channel__transport_name(enum t_channel_transport transport)
 {
     switch (transport)
     {
-        case CHANNEL_TRANSPORT_PLAINTEXT:
+        case CHANNEL_TRANSPORT_PLAIN:
             return "PLAINTEXT";
         case CHANNEL_TRANSPORT_OMEMO:
             return "OMEMO";
         case CHANNEL_TRANSPORT_PGP:
             return "PGP";
+        case CHANNEL_TRANSPORT_OTR:
+            return "OTR";
         default:
             return NULL;
+    }
+}
+
+void channel__set_transport(struct t_channel *channel, enum t_channel_transport transport, int force)
+{
+    if (force)
+        switch (transport)
+        {
+            case CHANNEL_TRANSPORT_PLAIN:
+                channel->omemo.enabled = 0;
+                channel->pgp.enabled = 0;
+                break;
+            case CHANNEL_TRANSPORT_OMEMO:
+                channel->omemo.enabled = 1;
+                channel->pgp.enabled = 0;
+                break;
+            case CHANNEL_TRANSPORT_PGP:
+                channel->omemo.enabled = 0;
+                channel->pgp.enabled = 1;
+                break;
+            default:
+                break;
+        }
+    if (channel->transport != transport)
+    {
+        channel->transport = transport;
+        weechat_printf_date_tags(channel->buffer, 0, NULL, "%s%sTransport: %s",
+                                 weechat_prefix("network"), weechat_color("gray"),
+                                 channel__transport_name(channel->transport));
     }
 }
 
@@ -82,7 +113,7 @@ struct t_gui_buffer *channel__search_buffer(struct t_account *account,
 {
     struct t_hdata *hdata_buffer;
     struct t_gui_buffer *ptr_buffer;
-    const char *ptr_type, *ptr_account_name, *ptr_channel_name;
+    const char *ptr_type, *ptr_account_name, *ptr_remote_jid;
 
     hdata_buffer = weechat_hdata_get("buffer");
     ptr_buffer = weechat_hdata_get_list(hdata_buffer, "gui_buffers");
@@ -93,18 +124,18 @@ struct t_gui_buffer *channel__search_buffer(struct t_account *account,
         {
             ptr_type = weechat_buffer_get_string(ptr_buffer, "localvar_type");
             ptr_account_name = weechat_buffer_get_string(ptr_buffer,
-                                                           "localvar_server");
-            ptr_channel_name = weechat_buffer_get_string(ptr_buffer,
-                                                         "localvar_channel");
+                                                           "localvar_account");
+            ptr_remote_jid = weechat_buffer_get_string(ptr_buffer,
+                                                         "localvar_remote_jid");
             if (ptr_type && ptr_type[0]
                 && ptr_account_name && ptr_account_name[0]
-                && ptr_channel_name && ptr_channel_name[0]
+                && ptr_remote_jid && ptr_remote_jid[0]
                 && (   ((  (type == CHANNEL_TYPE_MUC))
-                        && (strcmp(ptr_type, "channel") == 0))
+                        && (strcmp(ptr_type, "room") == 0))
                     || ((  (type == CHANNEL_TYPE_PM))
                         && (strcmp(ptr_type, "private") == 0)))
                 && (strcmp(ptr_account_name, account->name) == 0)
-                && (weechat_strcasecmp(ptr_channel_name, name) == 0))
+                && (weechat_strcasecmp(ptr_remote_jid, name) == 0))
             {
                 return ptr_buffer;
             }
@@ -121,13 +152,13 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
 {
     struct t_gui_buffer *ptr_buffer;
     int buffer_created;
-    const char *short_name, *localvar_channel;
-    char buffer_name[256];
+    const char *short_name, *localvar_remote_jid;
+    char buffer_name[1024];
 
     buffer_created = 0;
 
     snprintf(buffer_name, sizeof(buffer_name),
-             "xmpp.%s.%s", account->name, name);
+             "%s.%s", account->name, name);
 
     ptr_buffer = channel__search_buffer(account, type, name);
     if (ptr_buffer)
@@ -152,12 +183,12 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
     }
     else
     {
-        short_name = weechat_buffer_get_string (ptr_buffer, "short_name");
-        localvar_channel = weechat_buffer_get_string(ptr_buffer,
-                                                     "localvar_channel");
+        short_name = weechat_buffer_get_string(ptr_buffer, "short_name");
+        localvar_remote_jid = weechat_buffer_get_string(ptr_buffer,
+                                                     "localvar_remote_jid");
 
         if (!short_name ||
-            (localvar_channel && (strcmp(localvar_channel, short_name) == 0)))
+            (localvar_remote_jid && (strcmp(localvar_remote_jid, short_name) == 0)))
         {
             weechat_buffer_set(ptr_buffer, "short_name",
                                xmpp_jid_node(account->context, name));
@@ -167,22 +198,21 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
         account_option_set(account, ACCOUNT_OPTION_NICKNAME,
                            xmpp_jid_node(account->context, account_jid(account)));
 
-    weechat_buffer_set(ptr_buffer, "name", name);
     weechat_buffer_set(ptr_buffer, "notify",
                        (type == CHANNEL_TYPE_PM) ? "3" : "1");
     weechat_buffer_set(ptr_buffer, "localvar_set_type",
                        (type == CHANNEL_TYPE_PM) ? "private" : "channel");
     weechat_buffer_set(ptr_buffer, "localvar_set_nick",
                        account_nickname(account));
-    weechat_buffer_set(ptr_buffer, "localvar_set_server", account->name);
-    weechat_buffer_set(ptr_buffer, "localvar_set_channel", name);
+    weechat_buffer_set(ptr_buffer, "localvar_set_account", account->name);
+    weechat_buffer_set(ptr_buffer, "localvar_set_remote_jid", name);
     weechat_buffer_set(ptr_buffer, "input_multiline", "1");
 
     if (buffer_created)
     {
-        (void) weechat_hook_signal_send ("logger_backlog",
-                                         WEECHAT_HOOK_SIGNAL_POINTER,
-                                         ptr_buffer);
+        (void) weechat_hook_signal_send("logger_backlog",
+                                        WEECHAT_HOOK_SIGNAL_POINTER,
+                                        ptr_buffer);
         weechat_buffer_set(ptr_buffer, "input_get_unknown_commands", "1");
         if (type != CHANNEL_TYPE_PM)
         {
@@ -275,13 +305,15 @@ struct t_channel *channel__new(struct t_account *account,
     new_channel->type = type;
     new_channel->id = strdup(id);
     new_channel->name = strdup(name);
-    new_channel->transport = CHANNEL_TRANSPORT_PLAINTEXT;
-    new_channel->pgp_id = NULL;
-    new_channel->omemo.session = 0;
+    new_channel->transport = CHANNEL_TRANSPORT_PLAIN;
+    new_channel->omemo.enabled = type == CHANNEL_TYPE_PM ? 1 : 0;
     new_channel->omemo.devicelist_requests = weechat_hashtable_new(64,
             WEECHAT_HASHTABLE_STRING, WEECHAT_HASHTABLE_POINTER, NULL, NULL);
     new_channel->omemo.bundle_requests = weechat_hashtable_new(64,
             WEECHAT_HASHTABLE_STRING, WEECHAT_HASHTABLE_POINTER, NULL, NULL);
+    new_channel->pgp.enabled = 1;
+    new_channel->pgp.id = NULL;
+    new_channel->otr.enabled = 0;
 
     new_channel->topic.value = NULL;
     new_channel->topic.creator = NULL;
@@ -797,8 +829,8 @@ void channel__free(struct t_account *account,
         free(channel->id);
     if (channel->name)
         free(channel->name);
-    if (channel->pgp_id)
-        free(channel->pgp_id);
+    if (channel->pgp.id)
+        free(channel->pgp.id);
     if (channel->topic.value)
         free(channel->topic.value);
     if (channel->topic.creator)
@@ -994,8 +1026,8 @@ struct t_channel_member *channel__remove_member(struct t_account *account,
     return member;
 }
 
-void channel__send_message(struct t_account *account, struct t_channel *channel,
-                           const char *to, const char *body)
+int channel__send_message(struct t_account *account, struct t_channel *channel,
+                          const char *to, const char *body)
 {
     channel__send_reads(account, channel);
 
@@ -1008,30 +1040,51 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
     xmpp_stanza_set_id(message, id);
     xmpp_free(account->context, id);
 
-    if (account->omemo && channel->omemo.session >= 0)
+    if (account->omemo && channel->omemo.enabled)
     {
-        xmpp_message_set_body(message, body);
-
-        if (channel->transport != CHANNEL_TRANSPORT_OMEMO)
+        xmpp_stanza_t *encrypted = omemo__encode(account, to, body);
+        if (!encrypted)
         {
-            channel->transport = CHANNEL_TRANSPORT_OMEMO;
-            weechat_printf_date_tags(channel->buffer, 0, NULL, "%s%sTransport: %s",
-                                     weechat_prefix("network"), weechat_color("gray"),
-                                     channel__transport_name(channel->transport));
+            weechat_printf_date_tags(channel->buffer, 0, "notify_none", "%s%s",
+                                     weechat_prefix("error"), "OMEMO Error");
+            channel__set_transport(channel, CHANNEL_TRANSPORT_PLAIN, 1);
+            xmpp_stanza_release(message);
+            return WEECHAT_RC_ERROR;
         }
+        xmpp_stanza_add_child(message, encrypted);
+        xmpp_stanza_release(encrypted);
 
-        omemo__encode(account->omemo, to, 0, body);
+        xmpp_stanza_t *message__encryption = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(message__encryption, "encryption");
+        xmpp_stanza_set_ns(message__encryption, "urn:xmpp:eme:0");
+        xmpp_stanza_set_attribute(message__encryption, "namespace",
+                "eu.siacs.conversations.axolotl");
+        xmpp_stanza_set_attribute(message__encryption, "name", "OMEMO");
+        xmpp_stanza_add_child(message, message__encryption);
+        xmpp_stanza_release(message__encryption);
+
+        xmpp_message_set_body(message, OMEMO_ADVICE);
+
+        channel__set_transport(channel, CHANNEL_TRANSPORT_OMEMO, 0);
     }
-    else if (channel->pgp_id)
+    else if (channel->pgp.enabled && channel->pgp.id)
     {
         xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
         xmpp_stanza_set_name(message__x, "x");
         xmpp_stanza_set_ns(message__x, "jabber:x:encrypted");
 
         xmpp_stanza_t *message__x__text = xmpp_stanza_new(account->context);
-        char *ciphertext = pgp__encrypt(channel->buffer, account->pgp, account_pgp_keyid(account), channel->pgp_id, body);
+        char *ciphertext = pgp__encrypt(channel->buffer, account->pgp, account_pgp_keyid(account), channel->pgp.id, body);
         if (ciphertext)
             xmpp_stanza_set_text(message__x__text, ciphertext);
+        else
+        {
+            weechat_printf_date_tags(channel->buffer, 0, "notify_none", "%s%s",
+                                     weechat_prefix("error"), "PGP Error");
+            channel__set_transport(channel, CHANNEL_TRANSPORT_PLAIN, 1);
+            xmpp_stanza_release(message);
+            return WEECHAT_RC_ERROR;
+        }
         free(ciphertext);
 
         xmpp_stanza_add_child(message__x, message__x__text);
@@ -1050,29 +1103,17 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
 
         xmpp_message_set_body(message, PGP_ADVICE);
 
-        if (ciphertext && channel->transport != CHANNEL_TRANSPORT_PGP)
-        {
-            channel->transport = CHANNEL_TRANSPORT_PGP;
-            weechat_printf_date_tags(channel->buffer, 0, NULL, "%s%sTransport: %s",
-                                 weechat_prefix("network"), weechat_color("gray"),
-                                 channel__transport_name(channel->transport));
-        }
+        channel__set_transport(channel, CHANNEL_TRANSPORT_PGP, 0);
     }
     else
     {
         xmpp_message_set_body(message, body);
 
-        if (channel->transport != CHANNEL_TRANSPORT_PLAINTEXT)
-        {
-            channel->transport = CHANNEL_TRANSPORT_PLAINTEXT;
-            weechat_printf_date_tags(channel->buffer, 0, NULL, "%s%sTransport: %s",
-                                     weechat_prefix("network"), weechat_color("gray"),
-                                     channel__transport_name(channel->transport));
-        }
+        channel__set_transport(channel, CHANNEL_TRANSPORT_PLAIN, 0);
     }
 
     char *url = strstr(body, "http");
-    if (url)
+    if (url && channel->transport == CHANNEL_TRANSPORT_PLAIN)
     {
         xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
         xmpp_stanza_set_name(message__x, "x");
@@ -1095,10 +1136,27 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
 
     xmpp_stanza_t *message__active = xmpp_stanza_new(account->context);
     xmpp_stanza_set_name(message__active, "active");
-    xmpp_stanza_set_ns(message__active, "http://jabber./org/protocol/chatstates");
-
+    xmpp_stanza_set_ns(message__active, "http://jabber.org/protocol/chatstates");
     xmpp_stanza_add_child(message, message__active);
     xmpp_stanza_release(message__active);
+
+    xmpp_stanza_t *message__request = xmpp_stanza_new(account->context);
+    xmpp_stanza_set_name(message__request, "request");
+    xmpp_stanza_set_ns(message__request, "urn:xmpp:receipts");
+    xmpp_stanza_add_child(message, message__request);
+    xmpp_stanza_release(message__request);
+
+    xmpp_stanza_t *message__markable = xmpp_stanza_new(account->context);
+    xmpp_stanza_set_name(message__markable, "markable");
+    xmpp_stanza_set_ns(message__markable, "urn:xmpp:chat-markers:0");
+    xmpp_stanza_add_child(message, message__markable);
+    xmpp_stanza_release(message__markable);
+
+    xmpp_stanza_t *message__store = xmpp_stanza_new(account->context);
+    xmpp_stanza_set_name(message__store, "store");
+    xmpp_stanza_set_ns(message__store, "urn:xmpp:hints");
+    xmpp_stanza_add_child(message, message__store);
+    xmpp_stanza_release(message__store);
 
     xmpp_send(account->connection, message);
     xmpp_stanza_release(message);
@@ -1108,6 +1166,8 @@ void channel__send_message(struct t_account *account, struct t_channel *channel,
                                  "%s\t%s",
                                  user__as_prefix_raw(account, account_jid(account)),
                                  body);
+
+    return WEECHAT_RC_OK;
 }
 
 void channel__send_reads(struct t_account *account, struct t_channel *channel)

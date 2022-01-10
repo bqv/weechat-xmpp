@@ -502,7 +502,7 @@ int command__enter(const void *pointer, void *data,
     }
     else
     {
-        const char *buffer_jid = weechat_buffer_get_string(buffer, "localvar_channel");
+        const char *buffer_jid = weechat_buffer_get_string(buffer, "localvar_remote_jid");
 
         pres_jid = xmpp_jid_new(
             ptr_account->context,
@@ -757,6 +757,41 @@ int command__mam(const void *pointer, void *data,
     return WEECHAT_RC_OK;
 }
 
+int command__omemo(const void *pointer, void *data,
+                   struct t_gui_buffer *buffer, int argc,
+                   char **argv, char **argv_eol)
+{
+    struct t_account *ptr_account = NULL;
+    struct t_channel *ptr_channel = NULL;
+
+    (void) pointer;
+    (void) data;
+    (void) argc;
+    (void) argv;
+    (void) argv_eol;
+
+    buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);
+
+    if (!ptr_account)
+        return WEECHAT_RC_ERROR;
+
+    if (!ptr_channel)
+    {
+        weechat_printf(
+            ptr_account->buffer,
+            _("%s%s: \"%s\" command can not be executed on a account buffer"),
+            weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME, "omemo");
+        return WEECHAT_RC_OK;
+    }
+
+    ptr_channel->omemo.enabled = 1;
+    ptr_channel->pgp.enabled = 0;
+
+    channel__set_transport(ptr_channel, CHANNEL_TRANSPORT_OMEMO, 0);
+
+    return WEECHAT_RC_OK;
+}
+
 int command__pgp(const void *pointer, void *data,
                  struct t_gui_buffer *buffer, int argc,
                  char **argv, char **argv_eol)
@@ -787,12 +822,47 @@ int command__pgp(const void *pointer, void *data,
     {
         keyid = argv_eol[1];
 
-        ptr_channel->pgp_id = strdup(keyid);
+        ptr_channel->pgp.id = strdup(keyid);
     }
-    else
+    ptr_channel->omemo.enabled = 0;
+    ptr_channel->pgp.enabled = 1;
+
+    channel__set_transport(ptr_channel, CHANNEL_TRANSPORT_PGP, 0);
+
+    return WEECHAT_RC_OK;
+}
+
+int command__plain(const void *pointer, void *data,
+                   struct t_gui_buffer *buffer, int argc,
+                   char **argv, char **argv_eol)
+{
+    struct t_account *ptr_account = NULL;
+    struct t_channel *ptr_channel = NULL;
+
+    (void) pointer;
+    (void) data;
+    (void) argc;
+    (void) argv;
+    (void) argv_eol;
+
+    buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);
+
+    if (!ptr_account)
+        return WEECHAT_RC_ERROR;
+
+    if (!ptr_channel)
     {
-        ptr_channel->pgp_id = NULL;
+        weechat_printf(
+            ptr_account->buffer,
+            _("%s%s: \"%s\" command can not be executed on a account buffer"),
+            weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME, "plain");
+        return WEECHAT_RC_OK;
     }
+
+    ptr_channel->omemo.enabled = 0;
+    ptr_channel->pgp.enabled = 0;
+
+    channel__set_transport(ptr_channel, CHANNEL_TRANSPORT_PLAIN, 0);
 
     return WEECHAT_RC_OK;
 }
@@ -811,6 +881,9 @@ int command__xml(const void *pointer, void *data,
 
     buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);
 
+    if (!ptr_account)
+        return WEECHAT_RC_ERROR;
+
     if (!ptr_account->is_connected)
     {
         weechat_printf(buffer,
@@ -822,7 +895,7 @@ int command__xml(const void *pointer, void *data,
     if (argc > 1)
     {
         stanza = xmpp_stanza_new_from_string(ptr_account->context,
-                                             argv_eol[0]);
+                                             argv_eol[1]);
         if (!stanza)
             return WEECHAT_RC_ERROR;
 
@@ -908,13 +981,31 @@ void command__init()
         weechat_printf(NULL, "Failed to setup command /mam");
 
     hook = weechat_hook_command(
+        "omemo",
+        N_("set the current buffer to use omemo encryption"),
+        N_(""),
+        N_(""),
+        NULL, &command__omemo, NULL, NULL);
+    if (!hook)
+        weechat_printf(NULL, "Failed to setup command /omemo");
+
+    hook = weechat_hook_command(
         "pgp",
-        N_("set the target pgp key for the current channel"),
+        N_("set the current buffer to use pgp encryption (with a given target pgp key)"),
         N_("<keyid>"),
         N_("keyid: recipient keyid"),
         NULL, &command__pgp, NULL, NULL);
     if (!hook)
         weechat_printf(NULL, "Failed to setup command /pgp");
+
+    hook = weechat_hook_command(
+        "plain",
+        N_("set the current buffer to use no encryption"),
+        N_(""),
+        N_(""),
+        NULL, &command__plain, NULL, NULL);
+    if (!hook)
+        weechat_printf(NULL, "Failed to setup command /plain");
 
     hook = weechat_hook_command(
         "xml",

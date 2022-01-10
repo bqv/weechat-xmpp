@@ -34,16 +34,20 @@ int input__data(struct t_gui_buffer *buffer, const char *text)
             return WEECHAT_RC_OK;
         }
 
-        channel__send_message(account, channel, channel->id, text);
+        if (channel__send_message(account, channel, channel->id, text) == WEECHAT_RC_OK)
+            return WEECHAT_RC_OK;
+        else
+        {
+            return WEECHAT_RC_OK_EAT;
+        }
     }
     else
     {
         weechat_printf(buffer,
                        _("%s%s: this buffer is not a channel!"),
                        weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME);
+        return WEECHAT_RC_OK;
     }
-
-    return WEECHAT_RC_OK;
 }
 
 int input__data_cb(const void *pointer, void *data,

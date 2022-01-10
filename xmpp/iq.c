@@ -98,7 +98,34 @@ xmpp_stanza_t *stanza__iq_pubsub_items(xmpp_ctx_t *context, xmpp_stanza_t *base,
     if (node)
     {
         xmpp_stanza_set_attribute(parent, "node", node);
+    }
+
+    return parent;
+}
+
+xmpp_stanza_t *stanza__iq_pubsub_subscribe(xmpp_ctx_t *context, xmpp_stanza_t *base,
+                                           struct t_string *node, struct t_string *jid)
+{
+    xmpp_stanza_t *parent = base;
+
+    if (!parent)
+    {
+        parent = xmpp_stanza_new(context);
+        xmpp_stanza_set_name(parent, "subscribe");
+    }
+
+    if (node)
+    {
+        xmpp_stanza_set_attribute(parent, "node", node->value);
+        node->finalize(node);
         free(node);
+    }
+
+    if (jid)
+    {
+        xmpp_stanza_set_attribute(parent, "jid", jid->value);
+        jid->finalize(jid);
+        free(jid);
     }
 
     return parent;
@@ -404,6 +431,34 @@ xmpp_stanza_t *stanza__iq_ping(xmpp_ctx_t *context, xmpp_stanza_t *base,
         xmpp_stanza_set_ns(parent, ns->value);
         ns->finalize(ns);
         free(ns);
+    }
+
+    return parent;
+}
+
+xmpp_stanza_t *stanza__iq_query(xmpp_ctx_t *context, xmpp_stanza_t *base,
+                                struct t_string *ns, struct t_string *node)
+{
+    xmpp_stanza_t *parent = base;
+
+    if (!parent)
+    {
+        parent = xmpp_stanza_new(context);
+        xmpp_stanza_set_name(parent, "query");
+    }
+
+    if (ns)
+    {
+        xmpp_stanza_set_ns(parent, ns->value);
+        ns->finalize(ns);
+        free(ns);
+    }
+
+    if (node)
+    {
+        xmpp_stanza_set_attribute(parent, "node", node->value);
+        node->finalize(node);
+        free(node);
     }
 
     return parent;

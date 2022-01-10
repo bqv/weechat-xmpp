@@ -46,11 +46,11 @@ void omemo__handle_devicelist(struct t_omemo *omemo, const char *jid,
 void omemo__handle_bundle(struct t_omemo *omemo, const char *jid,
                           uint32_t device_id, xmpp_stanza_t *items);
 
-char *omemo__decode(struct t_omemo *omemo, const char *jid,
+char *omemo__decode(struct t_account *account, const char *jid,
                     xmpp_stanza_t *encrypted);
 
-xmpp_stanza_t *omemo__encode(struct t_omemo *omemo, const char *jid,
-                             uint32_t device_id, const char *unencrypted);
+xmpp_stanza_t *omemo__encode(struct t_account *account, const char *jid,
+                             const char *unencrypted);
 
 void omemo__free(struct t_omemo *omemo);
 
