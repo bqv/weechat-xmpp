@@ -49,6 +49,22 @@ static inline struct t_string *with_xmpp_free(char *value, xmpp_ctx_t *pointer)
     return string;
 }
 
+static inline void stanza__set_text(xmpp_ctx_t *context, xmpp_stanza_t *parent,
+                                    struct t_string *value)
+{
+    xmpp_stanza_t *text = xmpp_stanza_new(context);
+
+    if (value)
+    {
+        xmpp_stanza_set_text(text, value->value);
+        xmpp_stanza_add_child(parent, text);
+        value->finalize(value);
+        free(value);
+    }
+
+    xmpp_stanza_release(text);
+}
+
 xmpp_stanza_t *stanza__presence(xmpp_ctx_t *context, xmpp_stanza_t *base,
                                 xmpp_stanza_t **children, const char *ns,
                                 char *from, char *to, const char *type);
@@ -62,6 +78,9 @@ xmpp_stanza_t *stanza__iq_pubsub(xmpp_ctx_t *context, xmpp_stanza_t *base,
 
 xmpp_stanza_t *stanza__iq_pubsub_items(xmpp_ctx_t *context, xmpp_stanza_t *base, char *node);
 
+xmpp_stanza_t *stanza__iq_pubsub_subscribe(xmpp_ctx_t *context, xmpp_stanza_t *base,
+                                           struct t_string *node, struct t_string *jid);
+
 xmpp_stanza_t *stanza__iq_pubsub_publish(xmpp_ctx_t *context, xmpp_stanza_t *base,
                                          xmpp_stanza_t **children, struct t_string *node);
 
@@ -72,7 +91,7 @@ xmpp_stanza_t *stanza__iq_pubsub_publish_item_list(xmpp_ctx_t *context, xmpp_sta
                                                    xmpp_stanza_t **children, struct t_string *ns);
 
 xmpp_stanza_t *stanza__iq_pubsub_publish_item_list_device(xmpp_ctx_t *context, xmpp_stanza_t *base,
-                                                          struct t_string *id);
+                                                          struct t_string *id, struct t_string *label);
 
 xmpp_stanza_t *stanza__iq_pubsub_publish_item_bundle(xmpp_ctx_t *context, xmpp_stanza_t *base,
                                                      xmpp_stanza_t **children, struct t_string *ns);
@@ -97,5 +116,8 @@ xmpp_stanza_t *stanza__iq_enable(xmpp_ctx_t *context, xmpp_stanza_t *base,
 
 xmpp_stanza_t *stanza__iq_ping(xmpp_ctx_t *context, xmpp_stanza_t *base,
                                struct t_string *ns);
+
+xmpp_stanza_t *stanza__iq_query(xmpp_ctx_t *context, xmpp_stanza_t *base,
+                                struct t_string *ns, struct t_string *node);
 
 #endif /*WEECHAT_XMPP_STANZA_H*/

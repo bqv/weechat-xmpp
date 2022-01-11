@@ -16,7 +16,7 @@
 [[https://github.com/bqv/weechat-xmpp/issues?q=is:issue+is:closed][file:https://img.shields.io/github/issues-closed/bqv/weechat-xmpp.svg]]
 [[https://github.com/bqv/weechat-xmpp/blob/master/LICENSE][file:https://img.shields.io/github/license/bqv/weechat-xmpp.svg]]
 [[https://github.com/bqv/weechat-extras/][file:https://img.shields.io/badge/weechat--extras-xmpp-blue.svg]]
-[[https://github.com/bqv/weechat-extras/][file:https://inverse.chat/badge.svg?room=weechat@muc.xa0.uk]]
+[[https://inverse.chat/#converse/room?jid=weechat@muc.xa0.uk][file:https://inverse.chat/badge.svg?room=weechat@muc.xa0.uk]]
 
  | Status:     | XMPP for power users and digital masochists |
  | Location:   | [[http://github.com/bqv/weechat-xmpp]]          |
@@ -31,14 +31,14 @@
   My priority here is to have an android-available XMPP client
   that hides as little as possible from the user. To use this with
   android, set up a relay (`/relay`) and see weechat-android.
-  I'm gonna rewrite this in C++ at some point when I have a feel
-  for the full behaviour of an average client.
+  I might rewrite this in C++ at some point when I feel like I
+  can do it without burning out.
 
 * Usage
 
-  1. Start with =/xmpp add=, use =/help xmpp= for instructions.
+  1. Start with =/account add=, use =/help account= for instructions.
 
-  2. Use =/xmpp connect <account-name>= with the name set at
+  2. Use =/account connect <account-name>= with the name set at
      add-time.
 
 * Installing
@@ -49,7 +49,8 @@
 
   - libstrophe (dynamic, dependency)
   - libxml2 (dynamic, dependency)
-  - libsignal-protocol-c (dynamic, dependency)
+  - lmdb (dynamic, dependency)
+  - libomemo-c (libsignal-protocol-c) (dynamic, dependency)
   - rnp (dynamic, dependency)
   - weechat (>= v3.0)
 
@@ -95,6 +96,7 @@
    * [-] OOB messages
      * [X] Single media on a line
      * [ ] Multiple media inline (protocol?)
+     * [ ] Encrypted (pgp/omemo)
    * [X] Buffer autoswitch on enter/open
    * [X] Handle open/enter jids with a resource without breaking
    * [X] Allow /close without crashing
@@ -119,18 +121,18 @@
        * [X] [#B] Leaves
        * [X] [#B] Tracking
      * [X] [#B] Set/show topic
-   * [-] OMEMO (libsignal-protocol-c)
-     * [-] Presence
+   * [X] OMEMO (libomemo-c)
+     * [X] Presence
        * [X] Disco
        * [X] Disco response
-       * [-] Key Generation / storage (lmdb)
+       * [X] Key Generation / storage (lmdb)
          * [X] Generation
-         * [?] Storage
-         * [-] Announce
+         * [X] Storage
+         * [X] Announce
            * [X] Device ID
-           * [ ] Bundles
-     * [ ] Messages
-   * [ ] [#C] MUC PMs
+           * [X] Bundles
+     * [X] Messages
+   * [X] [#C] MUC PMs
    * [X] [#A] Send typing notifications
    * [X] [#A] Recv typing notifications
    * [X] [#C] Read receipts
@@ -156,7 +158,6 @@
      * [X] Decryption
      * [X] Encryption
      * [X] Custom set/clear key (/pgp)
-     * [ ] OOB data and media
    * [ ] Room Explorer (https://search.jabber.network/docs/api)
 ** TODO [#C] Implement completion engine (milestone v0.3)
 ** TODO [#D] Close all issues (milestone v1.0)
@@ -167,7 +168,7 @@
   Please submit a pull request or create an issue
   to add a new or missing feature.
 
-* Testemonials
+* Testimonials
 
   "Weechat-Strophe - for the discerning dual IRCer XMPPer" -- [[github.com/janicez][Ellenor et al Bjornsdottir]]
 

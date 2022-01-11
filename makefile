@@ -9,7 +9,7 @@ FIND=find
 INCLUDES=-Ilibstrophe \
 	 $(shell xml2-config --cflags) \
 	 $(shell pkg-config --cflags librnp-0) \
-	 $(shell pkg-config --cflags libsignal-protocol-c)
+	 $(shell pkg-config --cflags libomemo-c)
 CFLAGS+=$(DBGCFLAGS) \
 	-fno-omit-frame-pointer -fPIC \
 	-std=gnu99 -gdwarf-4 \
@@ -32,7 +32,7 @@ LDLIBS=-lstrophe \
 	   -lpthread \
 	   $(shell xml2-config --libs) \
 	   $(shell pkg-config --libs librnp-0) \
-	   $(shell pkg-config --libs libsignal-protocol-c) \
+	   $(shell pkg-config --libs libomemo-c) \
 	   -lgcrypt \
 	   -llmdb
 

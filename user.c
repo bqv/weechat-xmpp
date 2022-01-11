@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <strophe.h>
@@ -140,7 +141,7 @@ void user__nicklist_remove(struct t_account *account,
 
     ptr_buffer = channel ? channel->buffer : account->buffer;
 
-    if ((ptr_nick = weechat_nicklist_search_nick(ptr_buffer, NULL, name)))
+    if (name && (ptr_nick = weechat_nicklist_search_nick(ptr_buffer, NULL, name)))
         weechat_nicklist_remove_nick(ptr_buffer, ptr_nick);
 }
 
@@ -190,6 +191,7 @@ struct t_user *user__new(struct t_account *account,
     new_user->profile.email = NULL;
     new_user->profile.role = NULL;
     new_user->profile.pgp_id = NULL;
+    new_user->profile.omemo = 0;
     new_user->updated = 0;
     new_user->is_away = 0;
 

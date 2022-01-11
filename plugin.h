@@ -5,15 +5,11 @@
 #ifndef _WEECHAT_XMPP_PLUGIN_H_
 #define _WEECHAT_XMPP_PLUGIN_H_
 
-#ifndef __cplusplus
-#include <weechat/weechat-plugin.h>
-#define weechat_plugin weechat_xmpp_plugin()
-#define WEECHAT_XMPP_PLUGIN_NAME weechat_xmpp_plugin_name()
-#define WEECHAT_XMPP_PLUGIN_VERSION weechat_xmpp_plugin_version()
-#endif//__cplusplus
+#define weechat_plugin weechat_xmpp_plugin
+#define WEECHAT_XMPP_PLUGIN_NAME "xmpp"
+#define WEECHAT_XMPP_PLUGIN_VERSION "0.1.1"
+#define TIMER_INTERVAL_SEC 0.01
 
-struct t_weechat_plugin *weechat_xmpp_plugin();
-const char *weechat_xmpp_plugin_name();
-const char *weechat_xmpp_plugin_version();
+extern struct t_weechat_plugin *weechat_xmpp_plugin;
 
 #endif /*WEECHAT_XMPP_PLUGIN_H*/

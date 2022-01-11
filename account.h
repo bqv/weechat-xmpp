@@ -66,8 +66,9 @@ enum t_account_option
 
 struct t_account_device
 {
-    int id;
+    uint32_t id;
     char *name;
+    char *label;
 
     struct t_account_device *prev_device;
     struct t_account_device *next_device;
@@ -128,10 +129,11 @@ extern char *account_options[][2];
 struct t_account *account__search(const char *account_name);
 struct t_account *account__casesearch (const char *account_name);
 int account__search_option(const char *option_name);
-struct t_account_device *account__search_device(struct t_account *account, int id);
+struct t_account_device *account__search_device(struct t_account *account, uint32_t id);
 void account__add_device(struct t_account *account, struct t_account_device *device);
 void account__free_device(struct t_account *account, struct t_account_device *device);
 void account__free_device_all(struct t_account *account);
+xmpp_stanza_t *account__get_devicelist(struct t_account *account);
 struct t_account_mam_query *account__add_mam_query(struct t_account *account,
                                                    struct t_channel *channel,
                                                    const char *id,
