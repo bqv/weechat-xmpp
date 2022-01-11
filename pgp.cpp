@@ -10,7 +10,7 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
-#include "pgp.h"
+#include "pgp.hh"
 
 #define RNP_SUCCESS 0
 
@@ -26,7 +26,7 @@ void pgp__init(struct t_pgp **pgp, const char *pub, const char *sec)
     struct t_pgp *new_pgp;
     rnp_input_t keyring;
 
-    new_pgp = calloc(1, sizeof(**pgp));
+    new_pgp = (struct t_pgp*)calloc(1, sizeof(**pgp));
 
     if (rnp_ffi_create(&new_pgp->context,
                        RNP_KEYSTORE_GPG, RNP_KEYSTORE_GPG) != RNP_SUCCESS) {
@@ -164,7 +164,7 @@ char *pgp__decrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *c
     rnp_result_t ret;
 
     buf_len = strlen(PGP_MESSAGE_HEADER) + strlen(ciphertext) + strlen(PGP_MESSAGE_FOOTER) + 1;
-    buf = malloc(sizeof(char) * buf_len);
+    buf = (uint8_t*)malloc(sizeof(char) * buf_len);
     buf_len = snprintf((char *)buf, buf_len, PGP_MESSAGE_HEADER "%s" PGP_MESSAGE_FOOTER, ciphertext);
 
     /* create file input and memory output objects for the encrypted message and decrypted
@@ -213,7 +213,7 @@ char *pgp__verify(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *ce
     rnp_result_t ret;
 
     buf_len = strlen(PGP_SIGNATURE_HEADER) + strlen(certificate) + strlen(PGP_SIGNATURE_FOOTER) + 1;
-    buf = malloc(sizeof(char) * buf_len);
+    buf = (uint8_t*)malloc(sizeof(char) * buf_len);
     buf_len = snprintf((char *)buf, buf_len, PGP_SIGNATURE_HEADER "%s" PGP_SIGNATURE_FOOTER, certificate);
 
     /* create file input memory objects for the signed message and verified message */

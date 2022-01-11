@@ -2,6 +2,7 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include <memory>
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/param.h>
@@ -33,19 +34,19 @@ struct t_pre_key {
 #include "plugin.hh"
 #include "xmpp/stanza.hh"
 #include "account.hh"
-#include "omemo.h"
-#include "util.h"
+#include "omemo.hh"
+#include "util.hh"
 
 #define mdb_val_str(s) { \
-    .mv_data = s, .mv_size = strlen(s), \
+    .mv_size = strlen(s), .mv_data = (char*)s \
 }
 
 #define mdb_val_intptr(i) { \
-    .mv_data = i, .mv_size = sizeof(*i), \
+    .mv_size = sizeof(*i), .mv_data = i \
 }
 
 #define mdb_val_sizeof(t) { \
-    .mv_data = NULL, .mv_size = sizeof(t), \
+    .mv_size = sizeof(t), .mv_data = NULL \
 }
 
 #define PRE_KEY_START 1
@@ -58,13 +59,13 @@ const char *OMEMO_ADVICE = "[OMEMO encrypted message (XEP-0384)]";
 
 size_t base64_decode(const char *buffer, size_t length, uint8_t **result)
 {
-    *result = calloc(length + 1, sizeof(uint8_t));
+    *result = (uint8_t*)calloc(length + 1, sizeof(uint8_t));
     return weechat_string_base_decode(64, buffer, (char*)*result);
 }
 
 size_t base64_encode(const uint8_t *buffer, size_t length, char **result)
 {
-    *result = calloc(length * 2, sizeof(char));
+    *result = (char*)calloc(length * 2, sizeof(char));
     return weechat_string_base_encode(64, (char*)buffer, length, *result);
 }
 
@@ -78,7 +79,7 @@ int aes_decrypt(const uint8_t *ciphertext, size_t ciphertext_len,
     if (gcry_cipher_setkey(cipher, key, AES_KEY_SIZE)) goto cleanup;
     if (gcry_cipher_setiv(cipher, iv, AES_IV_SIZE)) goto cleanup;
     *plaintext_len = ciphertext_len;
-    *plaintext = malloc((sizeof(uint8_t) * *plaintext_len) + 1);
+    *plaintext = (uint8_t*)malloc((sizeof(uint8_t) * *plaintext_len) + 1);
     if (gcry_cipher_decrypt(cipher, *plaintext, *plaintext_len,
                             ciphertext, ciphertext_len)) goto cleanup;
     if (gcry_cipher_checktag(cipher, tag, tag_len)) goto cleanup;
@@ -94,9 +95,9 @@ int aes_encrypt(const uint8_t *plaintext, size_t plaintext_len,
                 uint8_t **ciphertext, size_t *ciphertext_len)
 {
     *tag_len = 16;
-    *tag = calloc(*tag_len, sizeof(uint8_t));
-    *iv = gcry_random_bytes(AES_IV_SIZE, GCRY_STRONG_RANDOM);
-    *key = gcry_random_bytes(AES_KEY_SIZE, GCRY_STRONG_RANDOM);
+    *tag = (uint8_t*)calloc(*tag_len, sizeof(uint8_t));
+    *iv = (uint8_t*)gcry_random_bytes(AES_IV_SIZE, GCRY_STRONG_RANDOM);
+    *key = (uint8_t*)gcry_random_bytes(AES_KEY_SIZE, GCRY_STRONG_RANDOM);
 
     gcry_cipher_hd_t cipher = NULL;
     if (gcry_cipher_open(&cipher, GCRY_CIPHER_AES128,
@@ -104,7 +105,7 @@ int aes_encrypt(const uint8_t *plaintext, size_t plaintext_len,
     if (gcry_cipher_setkey(cipher, *key, AES_KEY_SIZE)) goto cleanup;
     if (gcry_cipher_setiv(cipher, *iv, AES_IV_SIZE)) goto cleanup;
     *ciphertext_len = plaintext_len;
-    *ciphertext = malloc((sizeof(uint8_t) * *ciphertext_len) + 1);
+    *ciphertext = (uint8_t*)malloc((sizeof(uint8_t) * *ciphertext_len) + 1);
     if (gcry_cipher_encrypt(cipher, *ciphertext, *ciphertext_len,
                             plaintext, plaintext_len)) goto cleanup;
     if (gcry_cipher_gettag(cipher, *tag, *tag_len)) goto cleanup;
@@ -129,7 +130,7 @@ void signal_protocol_address_set_name(signal_protocol_address* self, const char*
         return;
     if (!name)
         return;
-    char* n = malloc(strlen(name)+1);
+    char* n = (char*)malloc(strlen(name)+1);
     memcpy(n, name, strlen(name));
     n[strlen(name)] = 0;
     if (self->name) {
@@ -144,7 +145,7 @@ char* signal_protocol_address_get_name(signal_protocol_address* self) {
         return NULL;
     if (!self->name)
         return 0;
-    char* res = malloc(sizeof(char) * (self->name_len + 1));
+    char* res = (char*)malloc(sizeof(char) * (self->name_len + 1));
     memcpy(res, self->name, self->name_len);
     res[self->name_len] = 0;
     return res;
@@ -165,7 +166,7 @@ void signal_protocol_address_set_device_id(signal_protocol_address* self, int32_
 signal_protocol_address* signal_protocol_address_new(const char* name, int32_t device_id) {
     if (!name)
         return NULL;
-    signal_protocol_address* address = malloc(sizeof(signal_protocol_address));
+    signal_protocol_address* address = (signal_protocol_address*)malloc(sizeof(signal_protocol_address));
     address->device_id = -1;
     address->name = NULL;
     signal_protocol_address_set_name(address, name);
@@ -225,7 +226,7 @@ int cp_random_generator(uint8_t *data, size_t len, void *user_data) {
 int cp_hmac_sha256_init(void **hmac_context, const uint8_t *key, size_t key_len, void *user_data) {
     (void) user_data;
 
-    gcry_mac_hd_t* ctx = malloc(sizeof(gcry_mac_hd_t));
+    gcry_mac_hd_t* ctx = (gcry_mac_hd_t*)malloc(sizeof(gcry_mac_hd_t));
     if (!ctx) return SG_ERR_NOMEM;
 
     if (gcry_mac_open(ctx, GCRY_MAC_HMAC_SHA256, 0, 0)) {
@@ -246,7 +247,7 @@ int cp_hmac_sha256_init(void **hmac_context, const uint8_t *key, size_t key_len,
 int cp_hmac_sha256_update(void *hmac_context, const uint8_t *data, size_t data_len, void *user_data) {
     (void) user_data;
 
-    gcry_mac_hd_t* ctx = hmac_context;
+    gcry_mac_hd_t* ctx = (gcry_mac_hd_t*)hmac_context;
 
     if (gcry_mac_write(*ctx, data, data_len)) return SG_ERR_UNKNOWN;
 
@@ -257,12 +258,12 @@ int cp_hmac_sha256_final(void *hmac_context, signal_buffer **output, void *user_
     (void) user_data;
 
     size_t len = gcry_mac_get_algo_maclen(GCRY_MAC_HMAC_SHA256);
-    uint8_t md[len];
-    gcry_mac_hd_t* ctx = hmac_context;
+    auto md = std::unique_ptr<uint8_t[]>(new uint8_t[len]);
+    gcry_mac_hd_t* ctx = (gcry_mac_hd_t*)hmac_context;
 
-    if (gcry_mac_read(*ctx, md, &len)) return SG_ERR_UNKNOWN;
+    if (gcry_mac_read(*ctx, md.get(), &len)) return SG_ERR_UNKNOWN;
 
-    signal_buffer *output_buffer = signal_buffer_create(md, len);
+    signal_buffer *output_buffer = signal_buffer_create(md.get(), len);
     if (!output_buffer) return SG_ERR_NOMEM;
 
     *output = output_buffer;
@@ -273,7 +274,7 @@ int cp_hmac_sha256_final(void *hmac_context, signal_buffer **output, void *user_
 void cp_hmac_sha256_cleanup(void *hmac_context, void *user_data) {
     (void) user_data;
 
-    gcry_mac_hd_t* ctx = hmac_context;
+    gcry_mac_hd_t* ctx = (gcry_mac_hd_t*)hmac_context;
     if (ctx) {
         gcry_mac_close(*ctx);
         free(ctx);
@@ -283,7 +284,7 @@ void cp_hmac_sha256_cleanup(void *hmac_context, void *user_data) {
 int cp_sha512_digest_init(void **digest_context, void *user_data) {
     (void) user_data;
 
-    gcry_md_hd_t* ctx = malloc(sizeof(gcry_mac_hd_t));
+    gcry_md_hd_t* ctx = (gcry_md_hd_t*)malloc(sizeof(gcry_mac_hd_t));
     if (!ctx) return SG_ERR_NOMEM;
 
     if (gcry_md_open(ctx, GCRY_MD_SHA512, 0)) {
@@ -299,7 +300,7 @@ int cp_sha512_digest_init(void **digest_context, void *user_data) {
 int cp_sha512_digest_update(void *digest_context, const uint8_t *data, size_t data_len, void *user_data) {
     (void) user_data;
 
-    gcry_md_hd_t* ctx = digest_context;
+    gcry_md_hd_t* ctx = (gcry_md_hd_t*)digest_context;
 
     gcry_md_write(*ctx, data, data_len);
 
@@ -310,7 +311,7 @@ int cp_sha512_digest_final(void *digest_context, signal_buffer **output, void *u
     (void) user_data;
 
     size_t len = gcry_md_get_algo_dlen(GCRY_MD_SHA512);
-    gcry_md_hd_t* ctx = digest_context;
+    gcry_md_hd_t* ctx = (gcry_md_hd_t*)digest_context;
 
     uint8_t* md = gcry_md_read(*ctx, GCRY_MD_SHA512);
     if (!md) return SG_ERR_UNKNOWN;
@@ -329,7 +330,7 @@ int cp_sha512_digest_final(void *digest_context, signal_buffer **output, void *u
 void cp_sha512_digest_cleanup(void *digest_context, void *user_data) {
     (void) user_data;
 
-    gcry_md_hd_t* ctx = digest_context;
+    gcry_md_hd_t* ctx = (gcry_md_hd_t*)digest_context;
     if (ctx) {
         gcry_md_close(*ctx);
         free(ctx);
@@ -502,8 +503,8 @@ int iks_get_identity_key_pair(signal_buffer **public_data, signal_buffer **priva
         !mdb_get(transaction, omemo->db->dbi_omemo,
                  &k_local_public_key, &v_local_public_key))
     {
-        *private_data = signal_buffer_create(v_local_private_key.mv_data, v_local_private_key.mv_size);
-        *public_data = signal_buffer_create(v_local_public_key.mv_data, v_local_public_key.mv_size);
+        *private_data = signal_buffer_create((const uint8_t*)v_local_private_key.mv_data, v_local_private_key.mv_size);
+        *public_data = signal_buffer_create((const uint8_t*)v_local_public_key.mv_data, v_local_public_key.mv_size);
 
         if (mdb_txn_commit(transaction)) {
             weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
@@ -551,9 +552,9 @@ int iks_get_identity_key_pair(signal_buffer **public_data, signal_buffer **priva
             goto cleanup;
         };
 
-        *private_data = signal_buffer_create(v_local_private_key.mv_data,
+        *private_data = signal_buffer_create((const uint8_t*)v_local_private_key.mv_data,
                 v_local_private_key.mv_size);
-        *public_data = signal_buffer_create(v_local_public_key.mv_data,
+        *public_data = signal_buffer_create((const uint8_t*)v_local_public_key.mv_data,
                 v_local_public_key.mv_size);
         omemo->identity = identity;
     }
@@ -633,16 +634,16 @@ int iks_save_identity(const signal_protocol_address *address, uint8_t *key_data,
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_identity_key = {
-        .mv_data = NULL,
         .mv_size = strlen("identity_key_") + address->name_len
             + 1 + 10,
+        .mv_data = NULL,
     };
-    MDB_val v_identity_key = {.mv_data = key_data, .mv_size = key_len};
+    MDB_val v_identity_key = {.mv_size = key_len, .mv_data = key_data};
 
     k_identity_key.mv_data = malloc(sizeof(char) * (
                                            k_identity_key.mv_size + 1));
     k_identity_key.mv_size =
-    snprintf(k_identity_key.mv_data, k_identity_key.mv_size + 1,
+    snprintf((char*)k_identity_key.mv_data, k_identity_key.mv_size + 1,
              "identity_key_%s_%u", address->name, address->device_id);
 
     if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
@@ -675,17 +676,17 @@ int iks_is_trusted_identity(const signal_protocol_address *address, uint8_t *key
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_identity_key = {
-        .mv_data = NULL,
         .mv_size = strlen("identity_key_") + address->name_len
             + 1 + 10,
+        .mv_data = NULL,
     };
-    MDB_val v_identity_key = {.mv_data = key_data, .mv_size = key_len};
+    MDB_val v_identity_key = {.mv_size = key_len, .mv_data = key_data};
     int trusted = 1;
 
     k_identity_key.mv_data = malloc(sizeof(char) * (
                                            k_identity_key.mv_size + 1));
     k_identity_key.mv_size =
-    snprintf(k_identity_key.mv_data, k_identity_key.mv_size + 1,
+    snprintf((char*)k_identity_key.mv_data, k_identity_key.mv_size + 1,
              "identity_key_%s_%u", address->name, address->device_id);
 
     if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
@@ -729,15 +730,15 @@ int pks_store_pre_key(uint32_t pre_key_id, uint8_t *record, size_t record_len, v
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_pre_key = {
-        .mv_data = NULL,
         .mv_size = strlen("pre_key_") + 10, // strlen(UINT32_MAX)
+        .mv_data = NULL,
     };
-    MDB_val v_pre_key = {.mv_data = record, .mv_size = record_len};
+    MDB_val v_pre_key = {.mv_size = record_len, .mv_data = record};
 
     k_pre_key.mv_data = malloc(sizeof(char) * (
                                            k_pre_key.mv_size + 1));
     k_pre_key.mv_size =
-    snprintf(k_pre_key.mv_data, k_pre_key.mv_size + 1,
+    snprintf((char*)k_pre_key.mv_data, k_pre_key.mv_size + 1,
              "pre_key_%-10u", pre_key_id);
 
     if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
@@ -770,15 +771,15 @@ int pks_contains_pre_key(uint32_t pre_key_id, void *user_data)
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_pre_key = {
-        .mv_data = NULL,
         .mv_size = strlen("pre_key_") + 10, // strlen(UINT32_MAX)
+        .mv_data = NULL,
     };
     MDB_val v_pre_key;
 
     k_pre_key.mv_data = malloc(sizeof(char) * (
                                            k_pre_key.mv_size + 1));
     k_pre_key.mv_size =
-    snprintf(k_pre_key.mv_data, k_pre_key.mv_size + 1,
+    snprintf((char*)k_pre_key.mv_data, k_pre_key.mv_size + 1,
              "pre_key_%-10u", pre_key_id);
 
     if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
@@ -807,10 +808,7 @@ uint32_t pks_get_count(struct t_omemo *omemo, int increment)
 {
     uint32_t count = PRE_KEY_START;
     MDB_txn *transaction = NULL;
-    MDB_val k_pre_key_idx = {
-        .mv_data = "pre_key_idx",
-        .mv_size = strlen("pre_key_idx"),
-    };
+    MDB_val k_pre_key_idx = mdb_val_str("pre_key_idx");
     MDB_val v_pre_key_idx = mdb_val_intptr(&count);
 
     if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
@@ -851,15 +849,15 @@ int pks_load_pre_key(signal_buffer **record, uint32_t pre_key_id, void *user_dat
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_pre_key = {
-        .mv_data = NULL,
         .mv_size = strlen("pre_key_") + 10, // strlen(UINT32_MAX)
+        .mv_data = NULL,
     };
     MDB_val v_pre_key;
 
     k_pre_key.mv_data = malloc(sizeof(char) * (
                                            k_pre_key.mv_size + 1));
     k_pre_key.mv_size =
-    snprintf(k_pre_key.mv_data, k_pre_key.mv_size + 1,
+    snprintf((char*)k_pre_key.mv_data, k_pre_key.mv_size + 1,
              "pre_key_%-10u", pre_key_id);
 
     if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
@@ -871,7 +869,7 @@ int pks_load_pre_key(signal_buffer **record, uint32_t pre_key_id, void *user_dat
     if (!mdb_get(transaction, omemo->db->dbi_omemo,
                  &k_pre_key, &v_pre_key))
     {
-        *record = signal_buffer_create(v_pre_key.mv_data, v_pre_key.mv_size);
+        *record = signal_buffer_create((const uint8_t*)v_pre_key.mv_data, v_pre_key.mv_size);
 
         if (mdb_txn_commit(transaction)) {
             weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
@@ -911,15 +909,15 @@ int pks_remove_pre_key(uint32_t pre_key_id, void *user_data)
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_pre_key = {
-        .mv_data = NULL,
         .mv_size = strlen("pre_key_") + 10, // strlen(UINT32_MAX)
+        .mv_data = NULL,
     };
     MDB_val v_pre_key;
 
     k_pre_key.mv_data = malloc(sizeof(char) * (
                                            k_pre_key.mv_size + 1));
     k_pre_key.mv_size =
-    snprintf(k_pre_key.mv_data, k_pre_key.mv_size + 1,
+    snprintf((char*)k_pre_key.mv_data, k_pre_key.mv_size + 1,
              "pre_key_%-10u", pre_key_id);
 
     if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
@@ -959,15 +957,15 @@ int spks_load_signed_pre_key(signal_buffer **record, uint32_t signed_pre_key_id,
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_signed_pre_key = {
-        .mv_data = NULL,
         .mv_size = strlen("signed_pre_key_") + 10, // strlen(UINT32_MAX)
+        .mv_data = NULL,
     };
     MDB_val v_signed_pre_key;
 
     k_signed_pre_key.mv_data = malloc(sizeof(char) * (
                                            k_signed_pre_key.mv_size + 1));
     k_signed_pre_key.mv_size =
-    snprintf(k_signed_pre_key.mv_data, k_signed_pre_key.mv_size + 1,
+    snprintf((char*)k_signed_pre_key.mv_data, k_signed_pre_key.mv_size + 1,
              "signed_pre_key_%-10u", signed_pre_key_id);
 
     if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
@@ -979,7 +977,7 @@ int spks_load_signed_pre_key(signal_buffer **record, uint32_t signed_pre_key_id,
     if (!mdb_get(transaction, omemo->db->dbi_omemo,
                  &k_signed_pre_key, &v_signed_pre_key))
     {
-        *record = signal_buffer_create(v_signed_pre_key.mv_data, v_signed_pre_key.mv_size);
+        *record = signal_buffer_create((const uint8_t*)v_signed_pre_key.mv_data, v_signed_pre_key.mv_size);
 
         if (mdb_txn_commit(transaction)) {
             weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
@@ -1026,15 +1024,15 @@ int spks_store_signed_pre_key(uint32_t signed_pre_key_id, uint8_t *record, size_
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_signed_pre_key = {
-        .mv_data = NULL,
         .mv_size = strlen("signed_pre_key_") + 10, // strlen(UINT32_MAX)
+        .mv_data = NULL,
     };
-    MDB_val v_signed_pre_key = {.mv_data = record, .mv_size = record_len};
+    MDB_val v_signed_pre_key = {.mv_size = record_len, .mv_data = record};
 
     k_signed_pre_key.mv_data = malloc(sizeof(char) * (
                                            k_signed_pre_key.mv_size + 1));
     k_signed_pre_key.mv_size =
-    snprintf(k_signed_pre_key.mv_data, k_signed_pre_key.mv_size + 1,
+    snprintf((char*)k_signed_pre_key.mv_data, k_signed_pre_key.mv_size + 1,
              "signed_pre_key_%-10u", signed_pre_key_id);
 
     if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
@@ -1067,15 +1065,15 @@ int spks_contains_signed_pre_key(uint32_t signed_pre_key_id, void *user_data)
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_signed_pre_key = {
-        .mv_data = NULL,
         .mv_size = strlen("signed_pre_key_") + 10, // strlen(UINT32_MAX)
+        .mv_data = NULL,
     };
     MDB_val v_signed_pre_key;
 
     k_signed_pre_key.mv_data = malloc(sizeof(char) * (
                                            k_signed_pre_key.mv_size + 1));
     k_signed_pre_key.mv_size =
-    snprintf(k_signed_pre_key.mv_data, k_signed_pre_key.mv_size + 1,
+    snprintf((char*)k_signed_pre_key.mv_data, k_signed_pre_key.mv_size + 1,
              "signed_pre_key_%-10u", signed_pre_key_id);
 
     if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
@@ -1103,15 +1101,15 @@ int spks_remove_signed_pre_key(uint32_t signed_pre_key_id, void *user_data)
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_signed_pre_key = {
-        .mv_data = NULL,
         .mv_size = strlen("signed_pre_key_") + 10, // strlen(UINT32_MAX)
+        .mv_data = NULL,
     };
     MDB_val v_signed_pre_key;
 
     k_signed_pre_key.mv_data = malloc(sizeof(char) * (
                                            k_signed_pre_key.mv_size + 1));
     k_signed_pre_key.mv_size =
-    snprintf(k_signed_pre_key.mv_data, k_signed_pre_key.mv_size + 1,
+    snprintf((char*)k_signed_pre_key.mv_data, k_signed_pre_key.mv_size + 1,
              "signed_pre_key_%-10u", signed_pre_key_id);
 
     if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
@@ -1151,25 +1149,25 @@ int ss_load_session_func(signal_buffer **record, signal_buffer **user_record, co
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_session = {
-        .mv_data = NULL,
         .mv_size = strlen("session_") + 10 + //strlen(address->device_id) +
              1 + strlen(address->name),
+        .mv_data = NULL,
     };
     MDB_val v_session;
     MDB_val k_user = {
-        .mv_data = NULL,
         .mv_size = strlen("user_") + 10 + //strlen(address->device_id) +
              1 + strlen(address->name),
+        .mv_data = NULL,
     };
     MDB_val v_user; (void) v_user; (void) user_record;
 
     k_session.mv_data = malloc(sizeof(char) * (k_session.mv_size + 1));
     k_session.mv_size =
-    snprintf(k_session.mv_data, k_session.mv_size + 1,
+    snprintf((char*)k_session.mv_data, k_session.mv_size + 1,
              "session_%u_%s", address->device_id, address->name);
     k_user.mv_data = malloc(sizeof(char) * (k_user.mv_size + 1));
     k_user.mv_size =
-    snprintf(k_user.mv_data, k_user.mv_size + 1,
+    snprintf((char*)k_user.mv_data, k_user.mv_size + 1,
              "user_%u_%s", address->device_id, address->name);
 
     if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
@@ -1187,7 +1185,7 @@ int ss_load_session_func(signal_buffer **record, signal_buffer **user_record, co
         return 0;
     }
 
-    *record = signal_buffer_create(v_session.mv_data, v_session.mv_size);
+    *record = signal_buffer_create((const uint8_t*)v_session.mv_data, v_session.mv_size);
   //*user_record = signal_buffer_create(v_user.mv_data, v_user.mv_size);
 
     if (mdb_txn_commit(transaction)) {
@@ -1207,14 +1205,14 @@ int ss_get_sub_device_sessions_func(signal_int_list **sessions, const char *name
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_device_ids = {
-        .mv_data = NULL,
         .mv_size = strlen("device_ids_") + name_len,
+        .mv_data = NULL,
     };
     MDB_val v_device_ids;
 
     k_device_ids.mv_data = malloc(sizeof(char) * (
                                            k_device_ids.mv_size + 1));
-    snprintf(k_device_ids.mv_data, k_device_ids.mv_size + 1,
+    snprintf((char*)k_device_ids.mv_data, k_device_ids.mv_size + 1,
              "device_ids_%s", name);
 
     if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
@@ -1234,7 +1232,7 @@ int ss_get_sub_device_sessions_func(signal_int_list **sessions, const char *name
             goto cleanup;
         }
 
-        argv = weechat_string_split(v_device_ids.mv_data, " ", NULL, 0, 0, &argc);
+        argv = weechat_string_split((const char*)v_device_ids.mv_data, " ", NULL, 0, 0, &argc);
         if (mdb_txn_commit(transaction)) {
             weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
                            weechat_prefix("error"));
@@ -1268,27 +1266,27 @@ int ss_store_session_func(const signal_protocol_address *address, uint8_t *recor
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_session = {
-        .mv_data = NULL,
         .mv_size = strlen("session_") + 10 + //strlen(address->device_id) +
              1 + strlen(address->name),
-    };
-    MDB_val v_session = {.mv_data = record, .mv_size = record_len};
-    MDB_val k_user = {
         .mv_data = NULL,
+    };
+    MDB_val v_session = {.mv_size = record_len, .mv_data = record};
+    MDB_val k_user = {
         .mv_size = strlen("user_") + 10 + //strlen(address->device_id) +
              1 + strlen(address->name),
+        .mv_data = NULL,
     };
-    MDB_val v_user = {.mv_data = user_record, .mv_size = user_record_len}; (void) v_user;
+    MDB_val v_user = {.mv_size = user_record_len, .mv_data = user_record}; (void) v_user;
 
     k_session.mv_data = malloc(sizeof(char) * (
                                            k_session.mv_size + 1));
     k_session.mv_size =
-    snprintf(k_session.mv_data, k_session.mv_size + 1,
+    snprintf((char*)k_session.mv_data, k_session.mv_size + 1,
              "session_%u_%s", address->device_id, address->name);
     k_user.mv_data = malloc(sizeof(char) * (
                                            k_user.mv_size + 1));
     k_user.mv_size =
-    snprintf(k_user.mv_data, k_user.mv_size + 1,
+    snprintf((char*)k_user.mv_data, k_user.mv_size + 1,
              "user_%u_%s", address->device_id, address->name);
 
     if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
@@ -1323,16 +1321,16 @@ int ss_contains_session_func(const signal_protocol_address *address, void *user_
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_session = {
-        .mv_data = NULL,
         .mv_size = strlen("session_") + 10 + //strlen(address->device_id) +
              1 + strlen(address->name),
+        .mv_data = NULL,
     };
     MDB_val v_session;
 
     k_session.mv_data = malloc(sizeof(char) * (
                                            k_session.mv_size + 1));
     k_session.mv_size =
-        snprintf(k_session.mv_data, k_session.mv_size + 1,
+        snprintf((char*)k_session.mv_data, k_session.mv_size + 1,
                  "session_%u_%s", address->device_id, address->name);
 
     if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
@@ -1355,16 +1353,16 @@ int ss_delete_session_func(const signal_protocol_address *address, void *user_da
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_session = {
-        .mv_data = NULL,
         .mv_size = strlen("session_") + 10 + //strlen(address->device_id) +
              1 + strlen(address->name),
+        .mv_data = NULL,
     };
     MDB_val v_session;
 
     k_session.mv_data = malloc(sizeof(char) * (
                                            k_session.mv_size + 1));
     k_session.mv_size =
-        snprintf(k_session.mv_data, k_session.mv_size + 1,
+        snprintf((char*)k_session.mv_data, k_session.mv_size + 1,
                  "session_%u_%s", address->device_id, address->name);
 
     if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
@@ -1420,42 +1418,42 @@ int sks_store_sender_key(const signal_protocol_sender_key_name *sender_key_name,
     char *device_list = NULL;
     MDB_txn *transaction = NULL;
     MDB_val k_sender_key = {
-        .mv_data = NULL,
         .mv_size = strlen("sender_key_") + strlen(sender_key_name->group_id) +
              1 + 10 + //strlen(sender_key_name->sender.device_id) +
              1 + strlen(sender_key_name->sender.name),
-    };
-    MDB_val v_sender_key = {.mv_data = record, .mv_size = record_len};
-    MDB_val k_user = {
         .mv_data = NULL,
+    };
+    MDB_val v_sender_key = {.mv_size = record_len, .mv_data = record};
+    MDB_val k_user = {
         .mv_size = strlen("user_") + strlen(sender_key_name->group_id) +
              1 + 10 + //strlen(sender_key_name->sender.device_id) +
              1 + strlen(sender_key_name->sender.name),
-    };
-    MDB_val v_user = {.mv_data = user_record, .mv_size = user_record_len}; (void) v_user;
-    MDB_val k_device_ids = {
         .mv_data = NULL,
+    };
+    MDB_val v_user = {.mv_size = user_record_len, .mv_data = user_record}; (void) v_user;
+    MDB_val k_device_ids = {
         .mv_size = strlen("device_ids_") + strlen(sender_key_name->sender.name),
+        .mv_data = NULL,
     };
     MDB_val v_device_ids;
 
     k_sender_key.mv_data = malloc(sizeof(char) * (
                                            k_sender_key.mv_size + 1));
     k_sender_key.mv_size =
-    snprintf(k_sender_key.mv_data, k_sender_key.mv_size + 1,
+    snprintf((char*)k_sender_key.mv_data, k_sender_key.mv_size + 1,
              "sender_key_%s_%u_%s", sender_key_name->group_id,
              sender_key_name->sender.device_id,
              sender_key_name->sender.name);
     k_user.mv_data = malloc(sizeof(char) * (
                                            k_user.mv_size + 1));
     k_user.mv_size =
-    snprintf(k_user.mv_data, k_user.mv_size + 1,
+    snprintf((char*)k_user.mv_data, k_user.mv_size + 1,
              "user_%s_%u_%s", sender_key_name->group_id,
              sender_key_name->sender.device_id,
              sender_key_name->sender.name);
     k_device_ids.mv_data = malloc(sizeof(char) * (
                                            k_device_ids.mv_size + 1));
-    snprintf(k_device_ids.mv_data, k_device_ids.mv_size + 1,
+    snprintf((char*)k_device_ids.mv_data, k_device_ids.mv_size + 1,
              "device_ids_%s", sender_key_name->sender.name);
 
     if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
@@ -1470,7 +1468,7 @@ int sks_store_sender_key(const signal_protocol_sender_key_name *sender_key_name,
         char **argv;
         int argc, i;
 
-        argv = weechat_string_split(v_device_ids.mv_data, " ", NULL, 0, 0, &argc);
+        argv = weechat_string_split((const char*)v_device_ids.mv_data, " ", NULL, 0, 0, &argc);
         for (i = 0; i < argc; i++)
         {
             char* device_id = argv[i];
@@ -1481,8 +1479,8 @@ int sks_store_sender_key(const signal_protocol_sender_key_name *sender_key_name,
 
         if (i == argc)
         {
-            size_t device_list_len = strlen(v_device_ids.mv_data) + 1 + 10 + 1;
-            device_list = malloc(sizeof(char) * device_list_len);
+            size_t device_list_len = strlen((const char*)v_device_ids.mv_data) + 1 + 10 + 1;
+            device_list = (char*)malloc(sizeof(char) * device_list_len);
             snprintf(device_list, device_list_len, "%s %u",
                      (char*)v_device_ids.mv_data, sender_key_name->sender.device_id);
             v_device_ids.mv_data = device_list;
@@ -1491,7 +1489,7 @@ int sks_store_sender_key(const signal_protocol_sender_key_name *sender_key_name,
     }
     else
     {
-        device_list = malloc(sizeof(char) * (10 + 1));
+        device_list = (char*)malloc(sizeof(char) * (10 + 1));
         snprintf(device_list, 10 + 1, "%u", sender_key_name->sender.device_id);
         v_device_ids.mv_data = device_list;
         v_device_ids.mv_size = strlen(device_list) + 1;
@@ -1527,31 +1525,31 @@ int sks_load_sender_key(signal_buffer **record, signal_buffer **user_record, con
     struct t_omemo *omemo = (struct t_omemo *)user_data;
     MDB_txn *transaction = NULL;
     MDB_val k_sender_key = {
-        .mv_data = NULL,
         .mv_size = strlen("sender_key_") + strlen(sender_key_name->group_id) +
              1 + 10 + //strlen(sender_key_name->sender.device_id) +
              1 + strlen(sender_key_name->sender.name),
+        .mv_data = NULL,
     };
     MDB_val v_sender_key;
     MDB_val k_user = {
-        .mv_data = NULL,
         .mv_size = strlen("user_") + strlen(sender_key_name->group_id) +
              1 + 10 + //strlen(sender_key_name->sender.device_id) +
              1 + strlen(sender_key_name->sender.name),
+        .mv_data = NULL,
     };
     MDB_val v_user; (void) v_user; (void) user_record;
 
     k_sender_key.mv_data = malloc(sizeof(char) * (
                                            k_sender_key.mv_size + 1));
     k_sender_key.mv_size =
-    snprintf(k_sender_key.mv_data, k_sender_key.mv_size + 1,
+    snprintf((char*)k_sender_key.mv_data, k_sender_key.mv_size + 1,
              "sender_key_%s_%u_%s", sender_key_name->group_id,
              sender_key_name->sender.device_id,
              sender_key_name->sender.name);
     k_user.mv_data = malloc(sizeof(char) * (
                                            k_user.mv_size + 1));
     k_user.mv_size =
-    snprintf(k_user.mv_data, k_user.mv_size + 1,
+    snprintf((char*)k_user.mv_data, k_user.mv_size + 1,
              "user_%s_%u_%s", sender_key_name->group_id,
              sender_key_name->sender.device_id,
              sender_key_name->sender.name);
@@ -1567,7 +1565,7 @@ int sks_load_sender_key(signal_buffer **record, signal_buffer **user_record, con
         mdb_get(transaction, omemo->db->dbi_omemo,
                 &k_user, &v_user)*/)
     {
-        *record = signal_buffer_create(v_sender_key.mv_data, v_sender_key.mv_size);
+        *record = signal_buffer_create((const uint8_t*)v_sender_key.mv_data, v_sender_key.mv_size);
       //*user_record = signal_buffer_create(v_user.mv_data, v_user.mv_size);
 
         if (mdb_txn_commit(transaction)) {
@@ -1598,27 +1596,27 @@ int dls_store_devicelist(const char *jid, signal_int_list *devicelist, struct t_
 {
     MDB_txn *transaction = NULL;
     MDB_val k_devicelist = {
-        .mv_data = NULL,
         .mv_size = strlen("devicelist_") + strlen(jid),
+        .mv_data = NULL,
     };
     MDB_val v_devicelist;
 
     k_devicelist.mv_data = malloc(sizeof(char) * (
                                            k_devicelist.mv_size + 1));
     k_devicelist.mv_size =
-    snprintf(k_devicelist.mv_data, k_devicelist.mv_size + 1,
+    snprintf((char*)k_devicelist.mv_data, k_devicelist.mv_size + 1,
              "devicelist_%s", jid);
     char *devices[128] = {0};
     for (size_t i = 0; i < signal_int_list_size(devicelist); i++)
     {
         int device = signal_int_list_at(devicelist, i);
-        devices[i] = malloc(sizeof(*devices) * (10 + 1));
+        devices[i] = (char*)malloc(sizeof(*devices) * (10 + 1));
         devices[i+1] = NULL;
         snprintf(devices[i], 10 + 1, "%u", device);
     }
     v_devicelist.mv_data = weechat_string_build_with_split_string(
             (const char **)devices, ";");
-    v_devicelist.mv_size = strlen(v_devicelist.mv_data);
+    v_devicelist.mv_size = strlen((const char*)v_devicelist.mv_data);
     for (char **device = (char **)devices; *device; device++) free(*device);
 
     if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
@@ -1650,16 +1648,19 @@ int dls_load_devicelist(signal_int_list **devicelist, const char *jid, struct t_
 {
     MDB_txn *transaction = NULL;
     MDB_val k_devicelist = {
-        .mv_data = NULL,
         .mv_size = strlen("devicelist_") + strlen(jid),
+        .mv_data = NULL,
     };
     MDB_val v_devicelist;
 
     k_devicelist.mv_data = malloc(sizeof(char) * (
                                            k_devicelist.mv_size + 1));
     k_devicelist.mv_size =
-    snprintf(k_devicelist.mv_data, k_devicelist.mv_size + 1,
+    snprintf((char*)k_devicelist.mv_data, k_devicelist.mv_size + 1,
              "devicelist_%s", jid);
+
+    int devices_len = 0;
+    char **devices = weechat_string_split((const char*)v_devicelist.mv_data, ";", NULL, 0, 0, &devices_len);
 
     if (mdb_txn_begin(omemo->db->env, NULL, MDB_RDONLY, &transaction)) {
         weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
@@ -1674,8 +1675,6 @@ int dls_load_devicelist(signal_int_list **devicelist, const char *jid, struct t_
     }
 
     *devicelist = signal_int_list_alloc();
-    int devices_len = 0;
-    char **devices = weechat_string_split(v_devicelist.mv_data, ";", NULL, 0, 0, &devices_len);
     for (int i = 0; i < devices_len; i++)
     {
         char* device_id = devices[i];
@@ -1701,12 +1700,12 @@ int bks_store_bundle(signal_protocol_address *address,
 {
     size_t n_pre_keys = -1;
     while (pre_keys[++n_pre_keys] != NULL);
-    char **pre_key_buffers = malloc(sizeof(char*) * (n_pre_keys + 1));
+    char **pre_key_buffers = (char**)malloc(sizeof(char*) * (n_pre_keys + 1));
     for (size_t i = 0; i < n_pre_keys; i++)
     {
         struct t_pre_key *pre_key = pre_keys[i];
         size_t keylen = 10 + strlen(pre_key->public_key) + 1;
-        pre_key_buffers[i] = malloc(sizeof(char) * keylen);
+        pre_key_buffers[i] = (char*)malloc(sizeof(char) * keylen);
         pre_key_buffers[i+1] = NULL;
         snprintf(pre_key_buffers[i], keylen,
              "%s.%s", pre_key->id, pre_key->public_key);
@@ -1714,12 +1713,12 @@ int bks_store_bundle(signal_protocol_address *address,
 
     size_t n_signed_pre_keys = -1;
     while (signed_pre_keys[++n_signed_pre_keys] != NULL);
-    char **signed_pre_key_buffers = malloc(sizeof(char*) * (n_signed_pre_keys + 1));
+    char **signed_pre_key_buffers = (char**)malloc(sizeof(char*) * (n_signed_pre_keys + 1));
     for (size_t i = 0; i < n_signed_pre_keys; i++)
     {
         struct t_pre_key *signed_pre_key = signed_pre_keys[i];
         size_t keylen = 10 + 1 + strlen(signed_pre_key->public_key);
-        signed_pre_key_buffers[i] = malloc(sizeof(char) * (keylen + 1));
+        signed_pre_key_buffers[i] = (char*)malloc(sizeof(char) * (keylen + 1));
         signed_pre_key_buffers[i+1] = NULL;
         snprintf(signed_pre_key_buffers[i], keylen + 1,
              "%s.%s", signed_pre_key->id, signed_pre_key->public_key);
@@ -1733,7 +1732,7 @@ int bks_store_bundle(signal_protocol_address *address,
                         signing_key_len, omemo->context))) {
             weechat_printf(NULL, "%sxmpp: failed to decode ED25519 prekey",
                            weechat_prefix("error"));
-            goto cleanup;
+            return -1;
         };
         uint8_t *signed_key_buf;
         size_t signed_key_len = base64_decode(signed_pre_key->public_key,
@@ -1755,49 +1754,49 @@ int bks_store_bundle(signal_protocol_address *address,
     uint32_t device_id = address->device_id;
     size_t keylen = strlen("bundle_??_") + strlen(jid) + 1 + 10 + 1;
     MDB_val k_bundle_pk = {
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
         .mv_size = 0,
+        .mv_data = malloc(sizeof(char) * (keylen + 1)),
     };
-    k_bundle_pk.mv_size = snprintf(k_bundle_pk.mv_data, keylen,
+    k_bundle_pk.mv_size = snprintf((char*)k_bundle_pk.mv_data, keylen,
              "bundle_pk_%s_%u", jid, device_id);
     MDB_val k_bundle_sk = {
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
         .mv_size = 0,
+        .mv_data = malloc(sizeof(char) * (keylen + 1)),
     };
-    k_bundle_sk.mv_size = snprintf(k_bundle_sk.mv_data, keylen,
+    k_bundle_sk.mv_size = snprintf((char*)k_bundle_sk.mv_data, keylen,
              "bundle_sk_%s_%u", jid, device_id);
     MDB_val k_bundle_sg = {
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
         .mv_size = 0,
+        .mv_data = malloc(sizeof(char) * (keylen + 1)),
     };
-    k_bundle_sg.mv_size = snprintf(k_bundle_sg.mv_data, keylen,
+    k_bundle_sg.mv_size = snprintf((char*)k_bundle_sg.mv_data, keylen,
              "bundle_sg_%s_%u", jid, device_id);
     MDB_val k_bundle_ik = {
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
         .mv_size = 0,
+        .mv_data = malloc(sizeof(char) * (keylen + 1)),
     };
-    k_bundle_ik.mv_size = snprintf(k_bundle_ik.mv_data, keylen,
+    k_bundle_ik.mv_size = snprintf((char*)k_bundle_ik.mv_data, keylen,
              "bundle_ik_%s_%u", jid, device_id);
 
     MDB_val v_bundle_pk = {
+        .mv_size = 0,
         .mv_data = weechat_string_build_with_split_string(
             (const char **)pre_key_buffers, ";"),
-        .mv_size = 0,
     };
-    v_bundle_pk.mv_size = strlen(v_bundle_pk.mv_data) + 1;
+    v_bundle_pk.mv_size = strlen((const char*)v_bundle_pk.mv_data) + 1;
     MDB_val v_bundle_sk = {
+        .mv_size = 0,
         .mv_data = weechat_string_build_with_split_string(
             (const char **)signed_pre_key_buffers, ";"),
-        .mv_size = 0,
     };
-    v_bundle_sk.mv_size = strlen(v_bundle_sk.mv_data) + 1;
+    v_bundle_sk.mv_size = strlen((const char*)v_bundle_sk.mv_data) + 1;
     MDB_val v_bundle_sg = {
-        .mv_data = (char*)signature,
         .mv_size = strlen(signature),
+        .mv_data = (char*)signature,
     };
     MDB_val v_bundle_ik = {
-        .mv_data = (char*)identity_key,
         .mv_size = strlen(identity_key),
+        .mv_data = (char*)identity_key,
     };
 
     if (mdb_txn_begin(omemo->db->env, NULL, 0, &transaction)) {
@@ -1839,28 +1838,28 @@ int bks_load_bundle(session_pre_key_bundle **bundle, signal_protocol_address *ad
     uint32_t device_id = address->device_id;
     size_t keylen = strlen("bundle_??_") + address->name_len + 1 + 10 + 1;
     MDB_val k_bundle_pk = {
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
         .mv_size = 0,
+        .mv_data = malloc(sizeof(char) * (keylen + 1)),
     };
-    k_bundle_pk.mv_size = snprintf(k_bundle_pk.mv_data, keylen,
+    k_bundle_pk.mv_size = snprintf((char*)k_bundle_pk.mv_data, keylen,
              "bundle_pk_%s_%u", jid, device_id);
     MDB_val k_bundle_sk = {
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
         .mv_size = 0,
+        .mv_data = malloc(sizeof(char) * (keylen + 1)),
     };
-    k_bundle_sk.mv_size = snprintf(k_bundle_sk.mv_data, keylen,
+    k_bundle_sk.mv_size = snprintf((char*)k_bundle_sk.mv_data, keylen,
              "bundle_sk_%s_%u", jid, device_id);
     MDB_val k_bundle_sg = {
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
         .mv_size = 0,
+        .mv_data = malloc(sizeof(char) * (keylen + 1)),
     };
-    k_bundle_sg.mv_size = snprintf(k_bundle_sg.mv_data, keylen,
+    k_bundle_sg.mv_size = snprintf((char*)k_bundle_sg.mv_data, keylen,
              "bundle_sg_%s_%u", jid, device_id);
     MDB_val k_bundle_ik = {
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
         .mv_size = 0,
+        .mv_data = malloc(sizeof(char) * (keylen + 1)),
     };
-    k_bundle_ik.mv_size = snprintf(k_bundle_ik.mv_data, keylen,
+    k_bundle_ik.mv_size = snprintf((char*)k_bundle_ik.mv_data, keylen,
              "bundle_ik_%s_%u", jid, device_id);
 
     MDB_val v_bundle_pk;
@@ -1875,6 +1874,19 @@ int bks_load_bundle(session_pre_key_bundle **bundle, signal_protocol_address *ad
         return -1;
     }
 
+    int bundle_pk_len;
+    int bundle_sk_len;
+    char **bundle_pks;
+    char **bundle_sks;
+    ec_public_key *pre_key;
+    ec_public_key *signed_pre_key;
+    ec_public_key *identity_key;
+    uint32_t pre_key_id;
+    uint32_t signed_pre_key_id;
+    uint8_t *sig_buf; size_t sig_len;
+    signal_buffer *signature;
+    uint8_t *key_buf; size_t key_len;
+
     if ((ret = mdb_get(transaction, omemo->db->dbi_omemo,
                        &k_bundle_pk, &v_bundle_pk)) ||
         (ret = mdb_get(transaction, omemo->db->dbi_omemo,
@@ -1887,16 +1899,14 @@ int bks_load_bundle(session_pre_key_bundle **bundle, signal_protocol_address *ad
         goto cleanup;
     }
 
-    int bundle_pk_len = 0;
-    char **bundle_pks = weechat_string_split(v_bundle_pk.mv_data, ";", NULL, 0, 0, &bundle_pk_len);
-    uint32_t pre_key_id = 0;
-    ec_public_key *pre_key;
-    //for (int i = 0; i < bundle_pk_len; i++)
+    bundle_pk_len = 0;
+    bundle_pks = weechat_string_split((const char*)v_bundle_pk.mv_data, ";", NULL, 0, 0, &bundle_pk_len);
+    pre_key_id = 0;
     {
         int i = rand() % bundle_pk_len;
         char *bundle_pk = bundle_pks[i];
         pre_key_id = strtol(bundle_pk, NULL, 10);
-        char *key_data = memchr(bundle_pk, '.', 10 + 1) + 1;
+        char *key_data = (char *)memchr(bundle_pk, '.', 10 + 1) + 1;
         uint8_t *key_buf;
         size_t key_len = base64_decode(key_data, strlen(key_data), &key_buf);
         if ((ret = curve_decode_point(&pre_key, key_buf, key_len, omemo->context))) {
@@ -1905,16 +1915,12 @@ int bks_load_bundle(session_pre_key_bundle **bundle, signal_protocol_address *ad
             goto cleanup;
         };
     }
-    int bundle_sk_len;
-    char **bundle_sks = weechat_string_split(v_bundle_sk.mv_data, ";", NULL, 0, 0, &bundle_sk_len);
-    uint32_t signed_pre_key_id;
-    ec_public_key *signed_pre_key;
-    //for (int i = 0; i < bundle_sk_len; i++)
+    bundle_sks = weechat_string_split((const char*)v_bundle_sk.mv_data, ";", NULL, 0, 0, &bundle_sk_len);
     {
         int i = rand() % bundle_sk_len;
         char *bundle_sk = bundle_sks[i];
         signed_pre_key_id = strtol(bundle_sk, NULL, 10);
-        char *key_data = memchr(bundle_sk, '.', 10 + 1) + 1;
+        char *key_data = (char *)memchr(bundle_sk, '.', 10 + 1) + 1;
         uint8_t *key_buf;
         size_t key_len = base64_decode(key_data, strlen(key_data), &key_buf);
         if ((ret = curve_decode_point(&signed_pre_key, key_buf, key_len, omemo->context))) {
@@ -1923,12 +1929,9 @@ int bks_load_bundle(session_pre_key_bundle **bundle, signal_protocol_address *ad
             goto cleanup;
         };
     }
-    uint8_t *sig_buf;
-    size_t sig_len = base64_decode(v_bundle_sg.mv_data, v_bundle_sg.mv_size, &sig_buf);
-    signal_buffer *signature = signal_buffer_create(sig_buf, sig_len);
-    ec_public_key *identity_key;
-    uint8_t *key_buf;
-    size_t key_len = base64_decode(v_bundle_ik.mv_data, v_bundle_ik.mv_size, &key_buf);
+    sig_len = base64_decode((const char*)v_bundle_sg.mv_data, v_bundle_sg.mv_size, &sig_buf);
+    signature = signal_buffer_create(sig_buf, sig_len);
+    key_len = base64_decode((const char*)v_bundle_ik.mv_data, v_bundle_ik.mv_size, &key_buf);
     if ((ret = curve_decode_point(&identity_key, key_buf, key_len, omemo->context))) {
         weechat_printf(NULL, "%sxmpp: failed to decode ED25519 identity key",
                        weechat_prefix("error"));
@@ -1975,7 +1978,7 @@ void omemo__log_emit_weechat(int level, const char *message, size_t len, void *u
 xmpp_stanza_t *omemo__get_bundle(xmpp_ctx_t *context, char *from, char *to,
                                  struct t_omemo *omemo)
 {
-    xmpp_stanza_t **children = malloc(sizeof(*children) * (100 + 1));
+    xmpp_stanza_t **children = (xmpp_stanza_t **)malloc(sizeof(*children) * (100 + 1));
     xmpp_stanza_t *parent = NULL;
     signal_buffer *record = NULL;
     ec_key_pair *keypair = NULL;
@@ -2001,7 +2004,7 @@ xmpp_stanza_t *omemo__get_bundle(xmpp_ctx_t *context, char *from, char *to,
         signal_buffer_free(record);
         if (pre_key) session_pre_key_destroy((signal_type_base*)pre_key);
       //SIGNAL_UNREF(pre_key);
-        char *id_str = malloc(sizeof(char) * (10 + 1));
+        char *id_str = (char *)malloc(sizeof(char) * (10 + 1));
         snprintf(id_str, 10+1, "%u", id);
         children[num_keys-1] = stanza__iq_pubsub_publish_item_bundle_prekeys_preKeyPublic(
                 context, NULL, NULL, with_free(id_str));
@@ -2027,7 +2030,7 @@ xmpp_stanza_t *omemo__get_bundle(xmpp_ctx_t *context, char *from, char *to,
     base64_encode(signal_buffer_data(record), signal_buffer_len(record),
             &signed_pre_key_public);
     signal_buffer_free(record);
-    char *signed_pre_key_id_str = malloc(sizeof(char) * (10 + 1));
+    char *signed_pre_key_id_str = (char *)malloc(sizeof(char) * (10 + 1));
     snprintf(signed_pre_key_id_str, 10+1, "%u", signed_pre_key_id);
     children[0] = stanza__iq_pubsub_publish_item_bundle_signedPreKeyPublic(
             context, NULL, NULL, with_free(signed_pre_key_id_str));
@@ -2059,7 +2062,7 @@ xmpp_stanza_t *omemo__get_bundle(xmpp_ctx_t *context, char *from, char *to,
             context, NULL, children, NULL);
 
     size_t bundle_node_len = strlen("eu.siacs.conversations.axolotl.bundles:") + 10;
-    char *bundle_node = malloc(sizeof(char) * (bundle_node_len + 1));
+    char *bundle_node = (char *)malloc(sizeof(char) * (bundle_node_len + 1));
     snprintf(bundle_node, bundle_node_len+1,
             "eu.siacs.conversations.axolotl.bundles:%u", omemo->device_id);
     children[0] = stanza__iq_pubsub_publish(
@@ -2071,7 +2074,7 @@ xmpp_stanza_t *omemo__get_bundle(xmpp_ctx_t *context, char *from, char *to,
             context, NULL, children, with_noop("http://jabber.org/protocol/pubsub"));
 
     parent = stanza__iq(
-            context, NULL, children, NULL, "announce2", from, to, "set");
+        context, NULL, children, NULL, (char*)"announce2", from, to, (char*)"set");
     free(children);
 
     return parent;
@@ -2084,9 +2087,9 @@ void omemo__init(struct t_gui_buffer *buffer, struct t_omemo **omemo,
 
     gcry_check_version(NULL);
 
-    new_omemo = calloc(1, sizeof(**omemo));
+    new_omemo = (struct t_omemo*)calloc(1, sizeof(**omemo));
 
-    new_omemo->db = malloc(sizeof(struct t_omemo_db));
+    new_omemo->db = (struct t_omemo_db*)malloc(sizeof(struct t_omemo_db));
 
     signal_context_create(&new_omemo->context, buffer);
     signal_context_set_log_function(new_omemo->context, &omemo__log_emit_weechat);
@@ -2113,7 +2116,7 @@ void omemo__init(struct t_gui_buffer *buffer, struct t_omemo **omemo,
     }
 
     size_t db_name_len = strlen("omemo_") + strlen(account_name);
-    char *db_name = malloc(sizeof(char) * (db_name_len + 1));
+    char *db_name = (char *)malloc(sizeof(char) * (db_name_len + 1));
     snprintf(db_name, db_name_len+1, "omemo_%s", account_name);
     if (mdb_dbi_open(transaction, db_name, MDB_CREATE, &new_omemo->db->dbi_omemo)) {
         weechat_printf(NULL, "%sxmpp: failed to open lmdb database",
@@ -2282,7 +2285,7 @@ void omemo__handle_bundle(struct t_omemo *omemo, const char *jid,
     for (xmpp_stanza_t *prekey = xmpp_stanza_get_children(prekeys);
          prekey; prekey = xmpp_stanza_get_next(prekey))
         num_prekeys++;
-    struct t_pre_key **pre_keys = malloc(sizeof(struct t_pre_key) * num_prekeys);
+    struct t_pre_key **pre_keys = (struct t_pre_key **)malloc(sizeof(struct t_pre_key) * num_prekeys);
 
     num_prekeys = -1;
     char **format = weechat_string_dyn_alloc(256);
@@ -2301,11 +2304,9 @@ void omemo__handle_bundle(struct t_omemo *omemo, const char *jid,
         if (!pre_key)
             continue;
 
-        pre_keys[++num_prekeys] = malloc(sizeof(struct t_pre_key));
-        *pre_keys[num_prekeys] = (struct t_pre_key) {
-            .id = pre_key_id,
-            .public_key = pre_key,
-        };
+        pre_keys[++num_prekeys] = (struct t_pre_key*)malloc(sizeof(struct t_pre_key));
+        pre_keys[num_prekeys]->id = pre_key_id;
+        pre_keys[num_prekeys]->public_key = pre_key;
 
         weechat_string_dyn_concat(format, "\n%3$s..PK ", -1);
         weechat_string_dyn_concat(format, pre_key_id, -1);
@@ -2322,7 +2323,7 @@ void omemo__handle_bundle(struct t_omemo *omemo, const char *jid,
     struct t_pre_key *signed_pre_keys[2] = { &signed_key, NULL };
 
     signal_protocol_address address = {
-        .name = jid, .name_len = strlen(jid), .device_id = device_id };
+        .name = jid, .name_len = strlen(jid), .device_id = (int32_t)device_id };
     {
         ec_public_key *key;
         uint8_t *key_buf;
@@ -2386,7 +2387,7 @@ char *omemo__decode(struct t_account *account, const char *jid,
 
         int ret;
         signal_protocol_address address = {
-            .name = jid, .name_len = strlen(jid), .device_id = strtol(source_id, NULL, 10) };
+            .name = jid, .name_len = strlen(jid), .device_id = (int32_t)strtol(source_id, NULL, 10) };
         signal_message *key_message = NULL;
         signal_buffer *aes_key = NULL;
         if (key_prekey) {
@@ -2489,7 +2490,7 @@ xmpp_stanza_t *omemo__encode(struct t_account *account, const char *jid,
                 &key, &iv, &tag, &tag_len,
                 &ciphertext, &ciphertext_len);
 
-    uint8_t *key_and_tag = malloc(sizeof(uint8_t) * (AES_KEY_SIZE+tag_len));
+    uint8_t *key_and_tag = (uint8_t *)malloc(sizeof(uint8_t) * (AES_KEY_SIZE+tag_len));
     memcpy(key_and_tag, key, AES_KEY_SIZE);
     free(key);
     memcpy(key_and_tag+AES_KEY_SIZE, tag, tag_len);
@@ -2522,7 +2523,7 @@ xmpp_stanza_t *omemo__encode(struct t_account *account, const char *jid,
         {
             uint32_t device_id = signal_int_list_at(devicelist, i);
             signal_protocol_address address = {
-                .name = target, .name_len = strlen(target), .device_id = device_id};
+                .name = target, .name_len = strlen(target), .device_id = (int32_t)device_id};
 
             xmpp_stanza_t *header__key = xmpp_stanza_new(account->context);
             xmpp_stanza_set_name(header__key, "key");

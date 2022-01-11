@@ -20,7 +20,7 @@ CFLAGS+=$(DBGCFLAGS) \
 	$(INCLUDES)
 CPPFLAGS+=$(DBGCFLAGS) \
 	  -fno-omit-frame-pointer -fPIC \
-	  -std=c++17 -gdwarf-4 \
+	  -std=c++20 -gdwarf-4 \
 	  -Wall -Wextra -pedantic \
 	  -Wno-missing-field-initializers \
 	  $(INCLUDES)
@@ -49,10 +49,10 @@ HDRS=plugin.hh \
      connection.h \
      input.h \
      message.h \
-     omemo.h \
-     pgp.h \
+     omemo.hh \
+     pgp.hh \
      user.hh \
-     util.h \
+     util.hh \
      xmpp/stanza.hh \
 
 SRCS=plugin.cpp \
@@ -65,10 +65,10 @@ SRCS=plugin.cpp \
 	 connection.c \
 	 input.c \
 	 message.c \
-	 omemo.c \
-	 pgp.c \
+	 omemo.cpp \
+	 pgp.cpp \
 	 user.cpp \
-	 util.c \
+	 util.cpp \
 	 xmpp/presence.cpp \
 	 xmpp/iq.cpp \
 

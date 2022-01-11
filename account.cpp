@@ -15,7 +15,7 @@
 #include "xmpp/stanza.hh"
 #include "config.hh"
 #include "input.h"
-#include "omemo.h"
+#include "omemo.hh"
 #include "account.hh"
 #include "connection.h"
 #include "user.hh"

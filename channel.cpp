@@ -12,13 +12,13 @@
 
 #include "plugin.hh"
 #include "account.hh"
-#include "omemo.h"
+#include "omemo.hh"
 #include "user.hh"
 #include "channel.hh"
 #include "input.h"
 #include "buffer.h"
-#include "pgp.h"
-#include "util.h"
+#include "pgp.hh"
+#include "util.hh"
 
 const char *channel__transport_name(enum t_channel_transport transport)
 {

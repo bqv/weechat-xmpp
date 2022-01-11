@@ -18,9 +18,9 @@
 #include "user.hh"
 #include "channel.hh"
 #include "connection.h"
-#include "omemo.h"
-#include "pgp.h"
-#include "util.h"
+#include "omemo.hh"
+#include "pgp.hh"
+#include "util.hh"
 #include "diff/diff.h"
 
 void connection__init()

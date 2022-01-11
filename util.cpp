@@ -4,11 +4,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
-#include "util.h"
+#include "util.hh"
 
 int char_cmp(const void *p1, const void *p2)
 {
@@ -18,26 +19,26 @@ int char_cmp(const void *p1, const void *p2)
 char *exec(const char *command)
 {
     // use hook_process instead!
-   char buffer[128];
-   char **result = weechat_string_dyn_alloc(256);
+    char buffer[128];
+    char **result = weechat_string_dyn_alloc(256);
 
-   // Open pipe to file
-   FILE* pipe = popen(command, "r");
-   if (!pipe) {
-      return "popen failed!";
-   }
+    // Open pipe to file
+    FILE* pipe = popen(command, "r");
+    if (!pipe) {
+        return (char*)strdup("popen failed!");
+    }
 
-   // read till end of process:
-   while (!feof(pipe)) {
+    // read till end of process:
+    while (!feof(pipe)) {
 
-      // use buffer to read and add to result
-      if (fgets(buffer, 128, pipe) != NULL)
-         weechat_string_dyn_concat(result, buffer, -1);
-   }
+        // use buffer to read and add to result
+        if (fgets(buffer, 128, pipe) != NULL)
+            weechat_string_dyn_concat(result, buffer, -1);
+    }
 
-   pclose(pipe);
-   weechat_string_dyn_free(result, 0);
-   return *result;
+    pclose(pipe);
+    weechat_string_dyn_free(result, 0);
+    return *result;
 }
 
 char *stanza_xml(xmpp_stanza_t *stanza)
