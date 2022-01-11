@@ -11,9 +11,9 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
-#include "account.h"
-#include "user.h"
-#include "channel.h"
+#include "account.hh"
+#include "user.hh"
+#include "channel.hh"
 #include "buffer.h"
 #include "message.h"
 #include "command.h"

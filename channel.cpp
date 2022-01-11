@@ -11,10 +11,10 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
-#include "account.h"
+#include "account.hh"
 #include "omemo.h"
-#include "user.h"
-#include "channel.h"
+#include "user.hh"
+#include "channel.hh"
 #include "input.h"
 #include "buffer.h"
 #include "pgp.h"
@@ -116,7 +116,7 @@ struct t_gui_buffer *channel__search_buffer(struct t_account *account,
     const char *ptr_type, *ptr_account_name, *ptr_remote_jid;
 
     hdata_buffer = weechat_hdata_get("buffer");
-    ptr_buffer = weechat_hdata_get_list(hdata_buffer, "gui_buffers");
+    ptr_buffer = (struct t_gui_buffer*)weechat_hdata_get_list(hdata_buffer, "gui_buffers");
 
     while (ptr_buffer)
     {
@@ -140,7 +140,7 @@ struct t_gui_buffer *channel__search_buffer(struct t_account *account,
                 return ptr_buffer;
             }
         }
-        ptr_buffer = weechat_hdata_move(hdata_buffer, ptr_buffer, 1);
+        ptr_buffer = (struct t_gui_buffer*)weechat_hdata_move(hdata_buffer, ptr_buffer, 1);
     }
 
     return NULL;
@@ -178,7 +178,7 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
 
     if (buffer_created)
     {
-        char *res = strrchr(name, '/');
+        char *res = (char*)strrchr(name, '/');
         if (!weechat_buffer_get_integer(ptr_buffer, "short_name_is_set"))
             weechat_buffer_set(ptr_buffer, "short_name",
                                res ? res + 1 : name);
@@ -221,7 +221,7 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
             weechat_buffer_set(ptr_buffer, "nicklist", "1");
             weechat_buffer_set(ptr_buffer, "nicklist_display_groups", "0");
             weechat_buffer_set_pointer(ptr_buffer, "nicklist_callback",
-                                       &buffer__nickcmp_cb);
+                                       (void*)&buffer__nickcmp_cb);
             weechat_buffer_set_pointer(ptr_buffer, "nicklist_callback_pointer",
                                        account);
         }
@@ -293,7 +293,7 @@ struct t_channel *channel__new(struct t_account *account,
     if (!ptr_buffer)
         return NULL;
 
-    if ((new_channel = malloc(sizeof(*new_channel))) == NULL)
+    if ((new_channel = (struct t_channel*)malloc(sizeof(*new_channel))) == NULL)
         return NULL;
 
     typing_timer = weechat_hook_timer(1 * 1000, 0, 0,
@@ -569,7 +569,7 @@ int channel__add_typing(struct t_channel *channel,
     new_typing = channel__typing_search(channel, user->id);
     if (!new_typing)
     {
-        new_typing = malloc(sizeof(*new_typing));
+        new_typing = (struct t_channel_typing*)malloc(sizeof(*new_typing));
         new_typing->id = strdup(user->id);
         new_typing->name = strdup(user->profile.display_name);
 
@@ -695,7 +695,7 @@ int channel__add_self_typing(struct t_channel *channel,
     new_typing = channel__self_typing_search(channel, user);
     if (!new_typing)
     {
-        new_typing = malloc(sizeof(*new_typing));
+        new_typing = (struct t_channel_typing*)malloc(sizeof(*new_typing));
         new_typing->user = user;
         new_typing->name = user ? strdup(user->profile.display_name) : NULL;
 
@@ -739,7 +739,7 @@ void channel__unread_free_all(struct t_channel *channel)
             struct t_weelist_item *ptr_item = weechat_list_get(channel->unreads, i);
             if (ptr_item)
             {
-                struct t_channel_unread *unread = weechat_list_user_data(ptr_item);
+                struct t_channel_unread *unread = (struct t_channel_unread *)weechat_list_user_data(ptr_item);
 
                 channel__unread_free(unread);
 
@@ -896,7 +896,7 @@ struct t_channel_member *channel__add_member(struct t_account *account,
 
     if (!(member = channel__member_search(channel, id)))
     {
-        member = malloc(sizeof(struct t_channel_member));
+        member = (struct t_channel_member*)malloc(sizeof(struct t_channel_member));
         member->id = strdup(id);
 
         member->role = NULL;
@@ -1114,7 +1114,7 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
         channel__set_transport(channel, CHANNEL_TRANSPORT_PLAIN, 0);
     }
 
-    char *url = strstr(body, "http");
+    char *url = (char*)strstr(body, "http");
     if (url && channel->transport == CHANNEL_TRANSPORT_PLAIN)
     {
         xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
@@ -1184,7 +1184,7 @@ void channel__send_reads(struct t_account *account, struct t_channel *channel)
             if (ptr_item)
             {
                 const char *unread_id = weechat_list_string(ptr_item);
-                struct t_channel_unread *unread = weechat_list_user_data(ptr_item);
+                struct t_channel_unread *unread = (struct t_channel_unread*)weechat_list_user_data(ptr_item);
 
                 xmpp_stanza_t *message = xmpp_message_new(account->context, NULL,
                                                           channel->id, NULL);

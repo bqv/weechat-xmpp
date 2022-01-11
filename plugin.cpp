@@ -12,7 +12,7 @@
 #include "plugin.hh"
 #include "config.hh"
 extern "C" {
-#include "account.h"
+#include "account.hh"
 #include "connection.h"
 #include "command.h"
 #include "input.h"

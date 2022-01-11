@@ -40,9 +40,9 @@ PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
 
 HDRS=plugin.hh \
-     account.h \
+     account.hh \
      buffer.h \
-     channel.h \
+     channel.hh \
      command.h \
      completion.h \
      config.hh \
@@ -51,14 +51,14 @@ HDRS=plugin.hh \
      message.h \
      omemo.h \
      pgp.h \
-     user.h \
+     user.hh \
      util.h \
      xmpp/stanza.hh \
 
 SRCS=plugin.cpp \
-	 account.c \
+	 account.cpp \
 	 buffer.c \
-	 channel.c \
+	 channel.cpp \
 	 command.c \
 	 completion.c \
 	 config.cpp \
@@ -67,7 +67,7 @@ SRCS=plugin.cpp \
 	 message.c \
 	 omemo.c \
 	 pgp.c \
-	 user.c \
+	 user.cpp \
 	 util.c \
 	 xmpp/presence.cpp \
 	 xmpp/iq.cpp \

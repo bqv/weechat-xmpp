@@ -10,9 +10,9 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
-#include "account.h"
-#include "user.h"
-#include "channel.h"
+#include "account.hh"
+#include "user.hh"
+#include "channel.hh"
 
 const char *user__get_colour(struct t_user *user)
 {
@@ -166,7 +166,7 @@ struct t_user *user__new(struct t_account *account,
         return ptr_user;
     }
 
-    if ((new_user = malloc(sizeof(*new_user))) == NULL)
+    if ((new_user = (struct t_user*)malloc(sizeof(*new_user))) == NULL)
     {
         return NULL;
     }

@@ -8,8 +8,8 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
-#include "account.h"
-#include "channel.h"
+#include "account.hh"
+#include "channel.hh"
 #include "buffer.h"
 #include "message.h"
 #include "input.h"

@@ -8,8 +8,8 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
-#include "account.h"
-#include "channel.h"
+#include "account.hh"
+#include "channel.hh"
 #include "buffer.h"
 
 void buffer__get_account_and_channel(struct t_gui_buffer *buffer,

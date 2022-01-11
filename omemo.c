@@ -32,7 +32,7 @@ struct t_pre_key {
 
 #include "plugin.hh"
 #include "xmpp/stanza.hh"
-#include "account.h"
+#include "account.hh"
 #include "omemo.h"
 #include "util.h"
 

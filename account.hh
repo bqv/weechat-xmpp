@@ -2,8 +2,13 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef _ACCOUNT_H_
-#define _ACCOUNT_H_
+#pragma once
+
+#ifdef __cplusplus
+#include <ctime>
+#include <cstdint>
+#include <strophe.h>
+#endif
 
 extern struct t_account *accounts;
 extern struct t_account *last_account;
@@ -129,9 +134,12 @@ extern char *account_options[][2];
 struct t_account *account__search(const char *account_name);
 struct t_account *account__casesearch (const char *account_name);
 int account__search_option(const char *option_name);
-struct t_account_device *account__search_device(struct t_account *account, uint32_t id);
-void account__add_device(struct t_account *account, struct t_account_device *device);
-void account__free_device(struct t_account *account, struct t_account_device *device);
+struct t_account_device *account__search_device(struct t_account *account,
+                                                uint32_t id);
+void account__add_device(struct t_account *account,
+                         struct t_account_device *device);
+void account__free_device(struct t_account *account,
+                          struct t_account_device *device);
 void account__free_device_all(struct t_account *account);
 xmpp_stanza_t *account__get_devicelist(struct t_account *account);
 struct t_account_mam_query *account__add_mam_query(struct t_account *account,
@@ -152,5 +160,3 @@ void account__disconnect_all();
 void account__close_connection(struct t_account *account);
 int account__connect(struct t_account *account);
 int account__timer_cb(const void *pointer, void *data, int remaining_calls);
-
-#endif /*ACCOUNT_H*/

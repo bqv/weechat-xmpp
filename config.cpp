@@ -9,7 +9,7 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
-#include "account.h"
+#include "account.hh"
 #include "config.hh"
 
 struct t_config_file *config_file;

@@ -16,10 +16,10 @@
 #include "config.hh"
 #include "input.h"
 #include "omemo.h"
-#include "account.h"
+#include "account.hh"
 #include "connection.h"
-#include "user.h"
-#include "channel.h"
+#include "user.hh"
+#include "channel.hh"
 #include "buffer.h"
 
 struct t_account *accounts = NULL;
@@ -116,7 +116,7 @@ void account__add_device(struct t_account *account,
     new_device = account__search_device(account, device->id);
     if (!new_device)
     {
-        new_device = malloc(sizeof(*new_device));
+        new_device = (struct t_account_device*)malloc(sizeof(*new_device));
         new_device->id = device->id;
         new_device->name = strdup(device->name);
         new_device->label = device->label ? strdup(device->label) : NULL;
@@ -177,14 +177,14 @@ xmpp_stanza_t *account__get_devicelist(struct t_account *account)
     char id[64] = {0};
     int i = 0;
 
-    device = malloc(sizeof(struct t_account_device));
+    device = (struct t_account_device*)malloc(sizeof(struct t_account_device));
 
     device->id = account->omemo->device_id;
     snprintf(id, sizeof(id), "%u", device->id);
     device->name = strdup(id);
     device->label = strdup("weechat");
 
-    children = malloc(sizeof(xmpp_stanza_t *) * 128);
+    children = (xmpp_stanza_t **)malloc(sizeof(xmpp_stanza_t *) * 128);
     children[i++] = stanza__iq_pubsub_publish_item_list_device(
         account->context, NULL, with_noop(device->name), NULL);
 
@@ -231,7 +231,7 @@ struct t_account_mam_query *account__add_mam_query(struct t_account *account,
 
     if (!(mam_query = account__mam_query_search(account, id)))
     {
-        mam_query = malloc(sizeof(struct t_account_mam_query));
+        mam_query = (struct t_account_mam_query*)malloc(sizeof(struct t_account_mam_query));
         mam_query->id = strdup(id);
         mam_query->with = strdup(channel->id);
 
@@ -321,7 +321,7 @@ void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t leve
     const char *tags = level > XMPP_LEVEL_DEBUG ? "no_log" : NULL;
 
     char *xml;
-    if ((level == XMPP_LEVEL_DEBUG) && ((xml = strchr(msg, '<')) != NULL))
+    if ((level == XMPP_LEVEL_DEBUG) && ((xml = const_cast<char*>(strchr(msg, '<'))) != NULL))
     {
         FILE *nullfd = fopen("/dev/null", "w+");
         xmlGenericErrorContext = nullfd;
@@ -350,7 +350,7 @@ void account__log_emit_weechat(void *const userdata, const xmpp_log_level_t leve
         {
             colour = weechat_color("red");
         }
-        xmlChar *buf = malloc(strlen(xml) * 2);
+        xmlChar *buf = (xmlChar*)malloc(strlen(xml) * 2);
         if (buf == NULL) {
             weechat_printf(
                 account ? account->buffer : NULL,
@@ -407,7 +407,7 @@ struct t_account *account__alloc(const char *name)
         return NULL;
 
     /* alloc memory for new account */
-    new_account = malloc(sizeof(*new_account));
+    new_account = (struct t_account*)malloc(sizeof(*new_account));
     if (!new_account)
     {
         weechat_printf(NULL,
@@ -466,7 +466,7 @@ struct t_account *account__alloc(const char *name)
             strlen(account_options[i][0]) +
             512 +  /* inherited option name(xmpp.account_default.xxx) */
             1;
-        option_name = malloc(length);
+        option_name = (char*)malloc(length);
         if (option_name)
         {
             snprintf(option_name, length, "%s.%s << xmpp.account_default.%s",
@@ -702,7 +702,7 @@ struct t_gui_buffer *account__create_buffer(struct t_account *account)
     weechat_buffer_set(account->buffer, "nicklist", "1");
     weechat_buffer_set(account->buffer, "nicklist_display_groups", "0");
     weechat_buffer_set_pointer(account->buffer, "nicklist_callback",
-                               &buffer__nickcmp_cb);
+                               (void*)&buffer__nickcmp_cb);
     weechat_buffer_set_pointer(account->buffer, "nicklist_callback_pointer",
                                account);
 

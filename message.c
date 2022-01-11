@@ -11,9 +11,9 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
-#include "account.h"
-#include "channel.h"
-#include "user.h"
+#include "account.hh"
+#include "channel.hh"
+#include "user.hh"
 #include "message.h"
 
 static const char format_regex[] = "<([^>]*?)>";

@@ -2,8 +2,11 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef _WEECHAT_XMPP_CHANNEL_H_
-#define _WEECHAT_XMPP_CHANNEL_H_
+#pragma once
+
+#ifdef __cplusplus
+#include <ctime>
+#endif
 
 #define CHANNEL_MEMBERS_SPEAKING_LIMIT 128
 
@@ -208,5 +211,3 @@ void channel__send_paused(struct t_account *account, struct t_channel *channel,
 
 void channel__fetch_mam(struct t_account *account, struct t_channel *channel,
                         const char *id, time_t *start, time_t *end, const char *after);
-
-#endif /*WEECHAT_XMPP_CHANNEL_H*/

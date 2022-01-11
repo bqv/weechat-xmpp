@@ -11,9 +11,9 @@
 
 #include "plugin.hh"
 #include "config.hh"
-#include "account.h"
-#include "channel.h"
-#include "user.h"
+#include "account.hh"
+#include "channel.hh"
+#include "user.hh"
 #include "buffer.h"
 #include "completion.h"
 

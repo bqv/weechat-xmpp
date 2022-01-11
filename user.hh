@@ -2,8 +2,7 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef _WEECHAT_XMPP_USER_H_
-#define _WEECHAT_XMPP_USER_H_
+#pragma once
 
 struct t_user_profile
 {
@@ -31,6 +30,7 @@ struct t_user
     struct t_user *prev_user;
     struct t_user *next_user;
 };
+
 struct t_channel;
 
 const char *user__get_colour(struct t_user *user);
@@ -57,5 +57,3 @@ void user__nicklist_add(struct t_account *account,
 void user__nicklist_remove(struct t_account *account,
                            struct t_channel *channel,
                            struct t_user *user);
-
-#endif /*WEECHAT_XMPP_USER_H*/
