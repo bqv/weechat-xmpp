@@ -2,14 +2,15 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <time.h>
+#include <cstdlib>
+#include <cstdint>
+#include <cstring>
+#include <ctime>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
-#include "plugin.h"
+extern "C" {
+#include "plugin.hh"
 #include "config.h"
 #include "account.h"
 #include "connection.h"
@@ -17,7 +18,6 @@
 #include "input.h"
 #include "buffer.h"
 #include "completion.h"
-
 
 WEECHAT_PLUGIN_NAME(WEECHAT_XMPP_PLUGIN_NAME);
 WEECHAT_PLUGIN_DESCRIPTION(N_("XMPP client protocol"));
@@ -91,4 +91,5 @@ int weechat_plugin_end(struct t_weechat_plugin *plugin)
     xmpp_shutdown();
 
     return WEECHAT_RC_OK;
+}
 }

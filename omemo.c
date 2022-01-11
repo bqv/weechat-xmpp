@@ -30,7 +30,7 @@ struct t_pre_key {
     const char *public_key;
 };
 
-#include "plugin.h"
+#include "plugin.hh"
 #include "xmpp/stanza.h"
 #include "account.h"
 #include "omemo.h"

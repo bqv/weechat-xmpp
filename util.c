@@ -7,7 +7,7 @@
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
-#include "plugin.h"
+#include "plugin.hh"
 #include "util.h"
 
 int char_cmp(const void *p1, const void *p2)

@@ -9,7 +9,7 @@
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
-#include "plugin.h"
+#include "plugin.hh"
 #include "config.h"
 #include "account.h"
 #include "channel.h"

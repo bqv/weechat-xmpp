@@ -11,7 +11,7 @@
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
-#include "plugin.h"
+#include "plugin.hh"
 #include "diff/diff.h"
 #include "xmpp/stanza.h"
 #include "config.h"

@@ -10,7 +10,7 @@
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
-#include "plugin.h"
+#include "plugin.hh"
 #include "account.h"
 #include "omemo.h"
 #include "user.h"
