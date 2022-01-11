@@ -677,7 +677,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
     {
         nick = weechat_strcasecmp(channel->name, from) == 0
             ? xmpp_jid_resource(account->context, from)
-            : from;
+            : xmpp_jid_bare(account->context, from);
     }
     delay = xmpp_stanza_get_child_by_name_and_ns(stanza, "delay", "urn:xmpp:delay");
     timestamp = delay ? xmpp_stanza_get_attribute(delay, "stamp") : NULL;
