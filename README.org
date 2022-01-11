@@ -96,6 +96,7 @@
    * [-] OOB messages
      * [X] Single media on a line
      * [ ] Multiple media inline (protocol?)
+     * [ ] Encrypted (pgp/omemo)
    * [X] Buffer autoswitch on enter/open
    * [X] Handle open/enter jids with a resource without breaking
    * [X] Allow /close without crashing
@@ -120,7 +121,7 @@
        * [X] [#B] Leaves
        * [X] [#B] Tracking
      * [X] [#B] Set/show topic
-   * [-] OMEMO (libsignal-protocol-c)
+   * [X] OMEMO (libomemo-c)
      * [X] Presence
        * [X] Disco
        * [X] Disco response
@@ -130,8 +131,8 @@
          * [X] Announce
            * [X] Device ID
            * [X] Bundles
-     * [ ] Messages
-   * [ ] [#C] MUC PMs
+     * [X] Messages
+   * [X] [#C] MUC PMs
    * [X] [#A] Send typing notifications
    * [X] [#A] Recv typing notifications
    * [X] [#C] Read receipts
@@ -157,7 +158,6 @@
      * [X] Decryption
      * [X] Encryption
      * [X] Custom set/clear key (/pgp)
-     * [ ] OOB data and media
    * [ ] Room Explorer (https://search.jabber.network/docs/api)
 ** TODO [#C] Implement completion engine (milestone v0.3)
 ** TODO [#D] Close all issues (milestone v1.0)

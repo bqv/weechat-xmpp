@@ -273,7 +273,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
     (void) conn;
 
     struct t_account *account = (struct t_account *)userdata;
-    struct t_channel *channel;
+    struct t_channel *channel, *parent_channel;
     xmpp_stanza_t *x, *body, *delay, *topic, *replace, *request, *markable, *composing, *sent, *received, *result, *forwarded, *event, *items, *item, *list, *device, *encrypted, **children;
     const char *type, *from, *nick, *from_bare, *to, *to_bare, *id, *thread, *replace_id, *timestamp;
     char *text, *intext, *difftext = NULL, *cleartext = NULL;
@@ -460,12 +460,19 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
     const char *channel_id = weechat_strcasecmp(account_jid(account), from_bare)
         == 0 ? to_bare : from_bare;
-    channel = channel__search(account, channel_id);
+    parent_channel = channel__search(account, channel_id);
+    const char *pm_id = weechat_strcasecmp(account_jid(account), from_bare)
+        == 0 ? to : from;
+    channel = parent_channel;
     if (!channel)
         channel = channel__new(account,
                                weechat_strcasecmp(type, "groupchat") == 0
                                ? CHANNEL_TYPE_MUC : CHANNEL_TYPE_PM,
                                channel_id, channel_id);
+    if (channel && channel->type == CHANNEL_TYPE_MUC
+        && weechat_strcasecmp(type, "chat") == 0)
+        channel = channel__new(account, CHANNEL_TYPE_PM,
+                               pm_id, pm_id);
 
     if (id && (markable || request))
     {
@@ -663,6 +670,12 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
         nick = weechat_strcasecmp(channel->name,
                                   xmpp_jid_bare(account->context,
                                                 from)) == 0
+            ? xmpp_jid_resource(account->context, from)
+            : from;
+    }
+    else if (parent_channel && parent_channel->type == CHANNEL_TYPE_MUC)
+    {
+        nick = weechat_strcasecmp(channel->name, from) == 0
             ? xmpp_jid_resource(account->context, from)
             : from;
     }
@@ -896,7 +909,6 @@ xmpp_stanza_t *connection__get_caps(xmpp_stanza_t *reply, struct t_account *acco
     xmpp_stanza_set_type(reply, "result");
     xmpp_stanza_add_child(reply, query);
 
-    weechat_printf(NULL, "verstr: %s", *serial);
     unsigned char digest[20];
     xmpp_sha1_t *sha1 = xmpp_sha1_new(account->context);
     xmpp_sha1_update(sha1, (unsigned char*)*serial, strlen(*serial));
@@ -910,7 +922,6 @@ xmpp_stanza_t *connection__get_caps(xmpp_stanza_t *reply, struct t_account *acco
         char *cap_hash = xmpp_base64_encode(account->context, digest, 20);
         *hash = strdup(cap_hash);
         xmpp_free(account->context, cap_hash);
-        weechat_printf(NULL, "verhash: %s", *hash);
     }
 
     return reply;

@@ -178,8 +178,10 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
 
     if (buffer_created)
     {
+        char *res = strrchr(name, '/');
         if (!weechat_buffer_get_integer(ptr_buffer, "short_name_is_set"))
-            weechat_buffer_set(ptr_buffer, "short_name", name);
+            weechat_buffer_set(ptr_buffer, "short_name",
+                               res ? res + 1 : name);
     }
     else
     {
