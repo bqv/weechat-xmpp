@@ -2,8 +2,7 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef _WEECHAT_XMPP_BUFFER_H_
-#define _WEECHAT_XMPP_BUFFER_H_
+#pragma once
 
 void buffer__get_account_and_channel(struct t_gui_buffer *buffer,
                                      struct t_account **account,
@@ -22,5 +21,3 @@ int buffer__nickcmp_cb(const void *pointer, void *data,
 
 int buffer__close_cb(const void *pointer, void *data,
                      struct t_gui_buffer *buffer);
-
-#endif /*WEECHAT_XMPP_BUFFER_H*/

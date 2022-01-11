@@ -15,9 +15,9 @@ extern "C" {
 #include "account.hh"
 #include "connection.hh"
 #include "command.hh"
-#include "input.h"
-#include "buffer.h"
-#include "completion.h"
+#include "input.hh"
+#include "buffer.hh"
+#include "completion.hh"
 
 WEECHAT_PLUGIN_NAME(WEECHAT_XMPP_PLUGIN_NAME);
 WEECHAT_PLUGIN_DESCRIPTION(N_("XMPP client protocol"));

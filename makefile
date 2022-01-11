@@ -41,14 +41,14 @@ LIBDIR ?= $(PREFIX)/lib
 
 HDRS=plugin.hh \
      account.hh \
-     buffer.h \
+     buffer.hh \
      channel.hh \
      command.hh \
-     completion.h \
+     completion.hh \
      config.hh \
      connection.hh \
-     input.h \
-     message.h \
+     input.hh \
+     message.hh \
      omemo.hh \
      pgp.hh \
      user.hh \
@@ -57,14 +57,14 @@ HDRS=plugin.hh \
 
 SRCS=plugin.cpp \
 	 account.cpp \
-	 buffer.c \
+	 buffer.cpp \
 	 channel.cpp \
 	 command.cpp \
-	 completion.c \
+	 completion.cpp \
 	 config.cpp \
 	 connection.cpp \
-	 input.c \
-	 message.c \
+	 input.cpp \
+	 message.cpp \
 	 omemo.cpp \
 	 pgp.cpp \
 	 user.cpp \

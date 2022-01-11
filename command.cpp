@@ -14,8 +14,8 @@
 #include "account.hh"
 #include "user.hh"
 #include "channel.hh"
-#include "buffer.h"
-#include "message.h"
+#include "buffer.hh"
+#include "message.hh"
 #include "command.hh"
 
 #define MAM_DEFAULT_DAYS 2

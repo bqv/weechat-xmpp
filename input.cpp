@@ -10,9 +10,9 @@
 #include "plugin.hh"
 #include "account.hh"
 #include "channel.hh"
-#include "buffer.h"
-#include "message.h"
-#include "input.h"
+#include "buffer.hh"
+#include "message.hh"
+#include "input.hh"
 
 int input__data(struct t_gui_buffer *buffer, const char *text)
 {
@@ -85,5 +85,5 @@ int input__text_changed_cb(const void *pointer, void *data,
     (void) signal;
     (void) type_data;
 
-    return input__typing(signal_data);
+    return input__typing((struct t_gui_buffer*)signal_data);
 }

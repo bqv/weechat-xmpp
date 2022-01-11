@@ -10,7 +10,7 @@
 #include "plugin.hh"
 #include "account.hh"
 #include "channel.hh"
-#include "buffer.h"
+#include "buffer.hh"
 
 void buffer__get_account_and_channel(struct t_gui_buffer *buffer,
                                      struct t_account **account,
@@ -145,7 +145,7 @@ int buffer__close_cb(const void *pointer, void *data,
     (void) pointer;
     (void) data;
 
-    buffer_plugin = weechat_buffer_get_pointer(buffer, "plugin");
+    buffer_plugin = (struct t_weechat_plugin*)weechat_buffer_get_pointer(buffer, "plugin");
     if (buffer_plugin != weechat_plugin)
         return WEECHAT_RC_OK;
     buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);

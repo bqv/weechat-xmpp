@@ -14,8 +14,8 @@
 #include "account.hh"
 #include "channel.hh"
 #include "user.hh"
-#include "buffer.h"
-#include "completion.h"
+#include "buffer.hh"
+#include "completion.hh"
 
 void completion__channel_nicks_add_speakers(struct t_gui_completion *completion,
                                             struct t_account *account,
@@ -146,7 +146,7 @@ void completion__init()
         size_t length = snprintf(NULL, 0, "%s|%s",
                                 default_template,
                                 "%(account)") + 1;
-        char *new_template = malloc(length);
+        char *new_template = (char*)malloc(length);
         snprintf(new_template, length, "%s|%s",
                  default_template,
                  "%(account)");

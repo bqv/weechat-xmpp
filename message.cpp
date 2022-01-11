@@ -14,7 +14,7 @@
 #include "account.hh"
 #include "channel.hh"
 #include "user.hh"
-#include "message.h"
+#include "message.hh"
 
 static const char format_regex[] = "<([^>]*?)>";
 static const size_t max_groups = 2;
@@ -93,13 +93,13 @@ char *message__translate_code(struct t_account *account,
             symbol = strdup(code);
             break;
     }
-    
+
     free(identifier);
     resultlen = snprintf(NULL, 0, "%s%s%s%s", weechat_color("chat_nick"), prefix, symbol, weechat_color("reset")) + 1;
-    result = malloc(resultlen);
+    result = (char*)malloc(resultlen);
     snprintf(result, resultlen, "%s%s%s%s", weechat_color("chat_nick"), prefix, symbol, weechat_color("reset"));
     free(symbol);
-    
+
     return result;
 }
 
@@ -170,7 +170,7 @@ char *message__decode(struct t_account *account,
         return strdup(text);
     }
 
-    decoded_text = malloc(MESSAGE_MAX_LENGTH);
+    decoded_text = (char*)malloc(MESSAGE_MAX_LENGTH);
     if (!decoded_text)
     {
         regfree(&reg);

@@ -15,8 +15,8 @@
 #include "omemo.hh"
 #include "user.hh"
 #include "channel.hh"
-#include "input.h"
-#include "buffer.h"
+#include "input.hh"
+#include "buffer.hh"
 #include "pgp.hh"
 #include "util.hh"
 

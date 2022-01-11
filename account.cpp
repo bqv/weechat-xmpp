@@ -14,13 +14,13 @@
 #include "plugin.hh"
 #include "xmpp/stanza.hh"
 #include "config.hh"
-#include "input.h"
+#include "input.hh"
 #include "omemo.hh"
 #include "account.hh"
 #include "connection.hh"
 #include "user.hh"
 #include "channel.hh"
-#include "buffer.h"
+#include "buffer.hh"
 
 struct t_account *accounts = NULL;
 struct t_account *last_account = NULL;
