@@ -9,8 +9,8 @@
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
-extern "C" {
 #include "plugin.hh"
+extern "C" {
 #include "config.h"
 #include "account.h"
 #include "connection.h"
@@ -25,6 +25,7 @@ WEECHAT_PLUGIN_AUTHOR("bqv <weechat@fron.io>");
 WEECHAT_PLUGIN_VERSION(WEECHAT_XMPP_PLUGIN_VERSION);
 WEECHAT_PLUGIN_LICENSE("MPL2");
 WEECHAT_PLUGIN_PRIORITY(5500);
+}
 
 struct t_weechat_plugin *weechat_xmpp_plugin = NULL;
 
@@ -32,6 +33,7 @@ struct t_hook *weechat_xmpp_process_timer = NULL;
 
 struct t_gui_bar_item *weechat_xmpp_typing_bar_item = NULL;
 
+extern "C"
 int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 {
     (void) argc;
@@ -71,6 +73,7 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
     return WEECHAT_RC_OK;
 }
 
+extern "C"
 int weechat_plugin_end(struct t_weechat_plugin *plugin)
 {
     // make C compiler happy
@@ -91,5 +94,4 @@ int weechat_plugin_end(struct t_weechat_plugin *plugin)
     xmpp_shutdown();
 
     return WEECHAT_RC_OK;
-}
 }

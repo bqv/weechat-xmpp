@@ -53,7 +53,7 @@ HDRS=plugin.hh \
      pgp.h \
      user.h \
      util.h \
-     xmpp/stanza.h \
+     xmpp/stanza.hh \
 
 SRCS=plugin.cpp \
 	 account.c \
@@ -69,12 +69,12 @@ SRCS=plugin.cpp \
 	 pgp.c \
 	 user.c \
 	 util.c \
-	 xmpp/presence.c \
-	 xmpp/iq.c \
+	 xmpp/presence.cpp \
+	 xmpp/iq.cpp \
 
 DEPS=deps/diff/libdiff.a \
 
-OBJS=$(patsubst %.cpp,.%.o,$(patsubst %.c,.%.o,$(patsubst xmpp/%.c,xmpp/.%.o,$(SRCS))))
+OBJS=$(patsubst %.cpp,.%.o,$(patsubst %.c,.%.o,$(patsubst xmpp/%.cpp,xmpp/.%.o,$(patsubst xmpp/%.c,xmpp/.%.o,$(SRCS)))))
 
 all:
 	make depend
@@ -96,6 +96,9 @@ xmpp.so: $(OBJS) $(DEPS) $(HDRS)
 
 xmpp/.%.o: xmpp/%.c
 	@$(CC) $(CFLAGS) -c $< -o $@
+
+xmpp/.%.o: xmpp/%.cpp
+	@$(CXX) $(CPPFLAGS) -c $< -o $@
 
 deps/diff/libdiff.a:
 	git submodule update --init --recursive

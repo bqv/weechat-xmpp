@@ -12,7 +12,7 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
-#include "xmpp/stanza.h"
+#include "xmpp/stanza.hh"
 #include "config.h"
 #include "input.h"
 #include "omemo.h"
@@ -748,6 +748,8 @@ int account__timer_cb(const void *pointer, void *data, int remaining_calls)
     (void) remaining_calls;
 
     struct t_account *ptr_account;
+
+    if (!accounts) return WEECHAT_RC_ERROR;
 
     for (ptr_account = accounts; ptr_account;
          ptr_account = ptr_account ? ptr_account->next_account : NULL)

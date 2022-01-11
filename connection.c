@@ -13,7 +13,7 @@
 
 #include "plugin.hh"
 #include "diff/diff.h"
-#include "xmpp/stanza.h"
+#include "xmpp/stanza.hh"
 #include "config.h"
 #include "account.h"
 #include "user.h"

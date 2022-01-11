@@ -2,10 +2,10 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <strophe.h>
 
-#include "stanza.h"
+#include "stanza.hh"
 
 xmpp_stanza_t *stanza__iq(xmpp_ctx_t *context, xmpp_stanza_t *base,
                           xmpp_stanza_t **children, char *ns, char *id,
