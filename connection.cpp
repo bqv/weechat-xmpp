@@ -17,7 +17,7 @@
 #include "account.hh"
 #include "user.hh"
 #include "channel.hh"
-#include "connection.h"
+#include "connection.hh"
 #include "omemo.hh"
 #include "pgp.hh"
 #include "util.hh"
@@ -118,12 +118,12 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
         if (node && ver)
         {
             int len = strlen(node)+1+strlen(ver) + 1;
-            clientid = malloc(sizeof(char)*len);
+            clientid = (char*)malloc(sizeof(char)*len);
             snprintf(clientid, len, "%s#%s", node, ver);
 
             xmpp_stanza_t *children[2] = {NULL};
             children[0] = stanza__iq_pubsub_items(account->context, NULL,
-                    "eu.siacs.conversations.axolotl.devicelist");
+                    const_cast<char*>("eu.siacs.conversations.axolotl.devicelist"));
             children[0] = stanza__iq_pubsub(account->context, NULL,
                     children, with_noop("http://jabber.org/protocol/pubsub"));
             children[0] = stanza__iq(account->context, NULL, children, NULL,
@@ -397,7 +397,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                                         from ? from : account_jid(account), items);
                             }
 
-                            children = malloc(sizeof(*children) * (3 + 1));
+                            children = (xmpp_stanza_t**)malloc(sizeof(*children) * (3 + 1));
 
                             for (device = xmpp_stanza_get_children(list);
                                  device; device = xmpp_stanza_get_next(device))
@@ -476,7 +476,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
     if (id && (markable || request))
     {
-        struct t_channel_unread *unread = malloc(sizeof(struct t_channel_unread));
+        struct t_channel_unread *unread = (struct t_channel_unread *)malloc(sizeof(struct t_channel_unread));
         unread->id = strdup(id);
         unread->thread = thread ? strdup(thread) : NULL;
 
@@ -612,7 +612,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                             char **orig_message = weechat_string_dyn_alloc(256);
                             for (int i = 0; i < weechat_arraylist_size(orig_lines); i++)
                                 weechat_string_dyn_concat(orig_message,
-                                                          weechat_arraylist_get(orig_lines, i),
+                                                          (const char*)weechat_arraylist_get(orig_lines, i),
                                                           -1);
                             orig = *orig_message;
                             weechat_string_dyn_free(orig_message, 0);
@@ -1020,7 +1020,7 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
 
                             account__free_device_all(account);
 
-                            dev = malloc(sizeof(struct t_account_device));
+                            dev = (t_account_device*)malloc(sizeof(struct t_account_device));
 
                             dev->id = account->omemo->device_id;
                             snprintf(id, sizeof(id), "%d", dev->id);
@@ -1041,7 +1041,7 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
 
                                 device_id = xmpp_stanza_get_id(device);
 
-                                dev = malloc(sizeof(struct t_account_device));
+                                dev = (t_account_device*)malloc(sizeof(struct t_account_device));
                                 dev->id = atoi(device_id);
                                 dev->name = strdup(device_id);
                                 dev->label = NULL;
@@ -1217,7 +1217,7 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
                                                  NULL, NULL, NULL));
 
         /* Send initial <presence/> so that we appear online to contacts */
-        children = malloc(sizeof(*children) * (3 + 1));
+        children = (xmpp_stanza_t**)malloc(sizeof(*children) * (3 + 1));
 
         pres__c = xmpp_stanza_new(account->context);
         xmpp_stanza_set_name(pres__c, "c");
@@ -1335,7 +1335,7 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
 
 char* connection__rand_string(int length)
 {
-    char *string = malloc(length);
+    char *string = (char*)malloc(length);
     for(int i = 0; i < length; ++i){
         string[i] = '0' + rand()%72; // starting on '0', ending on '}'
         if (!((string[i] >= '0' && string[i] <= '9') ||

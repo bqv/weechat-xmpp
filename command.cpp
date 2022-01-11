@@ -16,7 +16,7 @@
 #include "channel.hh"
 #include "buffer.h"
 #include "message.h"
-#include "command.h"
+#include "command.hh"
 
 #define MAM_DEFAULT_DAYS 2
 #define STR(X) #X

@@ -17,7 +17,7 @@
 #include "input.h"
 #include "omemo.hh"
 #include "account.hh"
-#include "connection.h"
+#include "connection.hh"
 #include "user.hh"
 #include "channel.hh"
 #include "buffer.h"

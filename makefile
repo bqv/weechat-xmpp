@@ -43,10 +43,10 @@ HDRS=plugin.hh \
      account.hh \
      buffer.h \
      channel.hh \
-     command.h \
+     command.hh \
      completion.h \
      config.hh \
-     connection.h \
+     connection.hh \
      input.h \
      message.h \
      omemo.hh \
@@ -59,10 +59,10 @@ SRCS=plugin.cpp \
 	 account.cpp \
 	 buffer.c \
 	 channel.cpp \
-	 command.c \
+	 command.cpp \
 	 completion.c \
 	 config.cpp \
-	 connection.c \
+	 connection.cpp \
 	 input.c \
 	 message.c \
 	 omemo.cpp \

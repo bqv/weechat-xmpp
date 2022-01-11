@@ -13,8 +13,8 @@
 #include "config.hh"
 extern "C" {
 #include "account.hh"
-#include "connection.h"
-#include "command.h"
+#include "connection.hh"
+#include "command.hh"
 #include "input.h"
 #include "buffer.h"
 #include "completion.h"
