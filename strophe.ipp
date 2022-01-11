@@ -10,9 +10,17 @@ namespace xmpp {
     }
 
     template<typename UserData>
+<<<<<<< Updated upstream
     context::context(UserData& data)
         : context(xmpp_ctx_new(nullptr, const_cast<xmpp_log_t*>(static_cast<const xmpp_log_t*>(std::any_cast<logger<UserData>>(&this->m_logger))))) {
         this->m_logger = logger(data);
+=======
+    context::context(UserData& data) {
+        this->m_logger.emplace<logger<UserData>>(data);
+        auto logger_ptr = std::any_cast<logger<UserData>>(&this->m_logger);
+        xmpp_ctx_t *ctx_ptr = xmpp_ctx_new(nullptr, static_cast<xmpp_log_t*>(logger_ptr));
+        xmpp_ctx_ptr::operator=(xmpp_ctx_ptr(ctx_ptr, &xmpp_ctx_free));
+>>>>>>> Stashed changes
     }
 
     template<typename UserData>

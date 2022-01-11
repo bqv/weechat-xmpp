@@ -531,7 +531,11 @@ namespace weechat {
         return globals::plugin->config_new(
             globals::plugin, name,
             [] (const void *pointer, void *, struct t_config_file *file) {
+<<<<<<< Updated upstream
                 auto func = *reinterpret_cast<const config_file::reload_callback*>(pointer);
+=======
+                auto& func = *reinterpret_cast<const config_file::reload_callback*>(pointer);
+>>>>>>> Stashed changes
                 config_file file_(file);
                 return func(file_);
             }, &reload_cb, nullptr);
@@ -540,6 +544,7 @@ namespace weechat {
                                                        const char *name,
                                                        bool user_can_add_options,
                                                        bool user_can_delete_options,
+<<<<<<< Updated upstream
                                                        config_section::read_callback& read_cb,
                                                        config_section::write_callback& write_cb,
                                                        config_section::write_default_callback& write_default_cb,
@@ -574,11 +579,51 @@ namespace weechat {
             [] (const void *pointer, void *, struct t_config_file *file,
                 struct t_config_section *section, struct t_config_option *option) {
                 auto func = *reinterpret_cast<const config_section::delete_option_callback*>(pointer);
+=======
+                                                       config_section::read_callback *read_cb,
+                                                       config_section::write_callback *write_cb,
+                                                       config_section::write_default_callback *write_default_cb,
+                                                       config_section::create_option_callback *create_cb,
+                                                       config_section::delete_option_callback *delete_cb) {
+        return globals::plugin->config_new_section(
+            file, name, user_can_add_options, user_can_delete_options,
+            read_cb ? static_cast<config_section::read_fn>([] (const void *pointer, void *, struct t_config_file *file,
+                struct t_config_section *section, const char *key, const char *value) {
+                auto& func = *reinterpret_cast<const config_section::read_callback*>(pointer);
+                config_file file_(file);
+                config_section section_(section);
+                return func(file_, section_, key, value);
+            }) : nullptr, read_cb, nullptr,
+            write_cb ? static_cast<config_section::write_fn>([] (const void *pointer, void *, struct t_config_file *file, const char *name) {
+                auto& func = *reinterpret_cast<const config_section::write_callback*>(pointer);
+                config_file file_(file);
+                return func(file_, name);
+            }) : nullptr, write_cb, nullptr,
+            write_default_cb ? static_cast<config_section::write_default_fn>([] (const void *pointer, void *, struct t_config_file *file, const char *name) {
+                auto& func = *reinterpret_cast<const config_section::write_default_callback*>(pointer);
+                config_file file_(file);
+                return func(file_, name);
+            }) : nullptr, write_default_cb, nullptr,
+            create_cb ? static_cast<config_section::create_option_fn>([] (const void *pointer, void *, struct t_config_file *file,
+                struct t_config_section *section, const char *key, const char *value) {
+                auto& func = *reinterpret_cast<const config_section::create_option_callback*>(pointer);
+                config_file file_(file);
+                config_section section_(section);
+                return func(file_, section_, key, value);
+            }) : nullptr, create_cb, nullptr,
+            delete_cb ? static_cast<config_section::delete_option_fn>([] (const void *pointer, void *, struct t_config_file *file,
+                struct t_config_section *section, struct t_config_option *option) {
+                auto& func = *reinterpret_cast<const config_section::delete_option_callback*>(pointer);
+>>>>>>> Stashed changes
                 config_file file_(file);
                 config_section section_(section);
                 config_option option_(option);
                 return func(file_, section_, option_);
+<<<<<<< Updated upstream
             }, &delete_cb, nullptr);
+=======
+            }) : nullptr, delete_cb, nullptr);
+>>>>>>> Stashed changes
     }
     inline struct t_config_section *config_search_section(struct t_config_file *config_file,
                                                           const char *section_name) {
@@ -593,13 +638,20 @@ namespace weechat {
                                                      const char *default_value,
                                                      const char *value,
                                                      bool null_value_allowed,
+<<<<<<< Updated upstream
                                                      config_option::check_callback& check_value_cb,
                                                      config_option::change_callback& change_cb,
                                                      config_option::delete_callback& delete_cb) {
+=======
+                                                     config_option::check_callback *check_value_cb,
+                                                     config_option::change_callback *change_cb,
+                                                     config_option::delete_callback *delete_cb) {
+>>>>>>> Stashed changes
         return globals::plugin->config_new_option(
             config_file, section,
             name, type, description, string_values,
             min, max, default_value, value, null_value_allowed,
+<<<<<<< Updated upstream
             [] (const void *pointer, void *, struct t_config_option *option, const char *value) {
                 auto func = *reinterpret_cast<const config_option::check_callback*>(pointer);
                 config_option option_(option);
@@ -615,6 +667,23 @@ namespace weechat {
                 config_option option_(option);
                 return func(option_);
             }, &delete_cb, nullptr);
+=======
+            check_value_cb ? static_cast<config_option::check_fn>([] (const void *pointer, void *, struct t_config_option *option, const char *value) {
+                auto& func = *reinterpret_cast<const config_option::check_callback*>(pointer);
+                config_option option_(option);
+                return static_cast<int>(func(option_, value));
+            }) : nullptr, check_value_cb, nullptr,
+            change_cb ? static_cast<config_option::change_fn>([] (const void *pointer, void *, struct t_config_option *option) {
+                auto& func = *reinterpret_cast<const config_option::change_callback*>(pointer);
+                config_option option_(option);
+                return func(option_);
+            }) : nullptr, change_cb, nullptr,
+            delete_cb ? static_cast<config_option::delete_fn>([] (const void *pointer, void *, struct t_config_option *option) {
+                auto& func = *reinterpret_cast<const config_option::delete_callback*>(pointer);
+                config_option option_(option);
+                return func(option_);
+            }) : nullptr, delete_cb, nullptr);
+>>>>>>> Stashed changes
     }
     inline struct t_config_option *config_search_option(struct t_config_file *config_file,
                                                         struct t_config_section *section,
@@ -813,7 +882,11 @@ namespace weechat {
             globals::plugin,
             interval, align_second, max_calls,
             callback ? static_cast<hook::timer_fn>([] (const void *pointer, void *, int remaining_calls) {
+<<<<<<< Updated upstream
                 auto func = *reinterpret_cast<const hook::timer_callback*>(pointer);
+=======
+                auto& func = *reinterpret_cast<const hook::timer_callback*>(pointer);
+>>>>>>> Stashed changes
                 return static_cast<int>(func(remaining_calls));
             }) : nullptr, callback, nullptr);
     }
@@ -1047,13 +1120,21 @@ namespace weechat {
             [] (const void *pointer, void *,
                 struct t_gui_buffer *buffer,
                 const char *input_data) {
+<<<<<<< Updated upstream
                 auto func = *reinterpret_cast<const gui_buffer::input_callback*>(pointer);
+=======
+                auto& func = *reinterpret_cast<const gui_buffer::input_callback*>(pointer);
+>>>>>>> Stashed changes
                 gui_buffer buffer_(buffer);
                 return static_cast<int>(func(buffer_, input_data));
             }, &input_cb, nullptr,
             [] (const void *pointer, void *,
                 struct t_gui_buffer *buffer) {
+<<<<<<< Updated upstream
                 auto func = *reinterpret_cast<const gui_buffer::close_callback*>(pointer);
+=======
+                auto& func = *reinterpret_cast<const gui_buffer::close_callback*>(pointer);
+>>>>>>> Stashed changes
                 gui_buffer buffer_(buffer);
                 return static_cast<int>(func(buffer_));
             }, &close_cb, nullptr);
@@ -1232,7 +1313,11 @@ namespace weechat {
                       struct t_gui_window *window,
                       struct t_gui_buffer *buffer,
                       struct t_hashtable *extra_args) {
+<<<<<<< Updated upstream
                 auto func = *reinterpret_cast<const gui_bar_item::build_callback*>(pointer);
+=======
+                auto& func = *reinterpret_cast<const gui_bar_item::build_callback*>(pointer);
+>>>>>>> Stashed changes
                 gui_bar_item item_(item);
                 gui_buffer buffer_(buffer);
                 auto res = func(item_, window, buffer_, extra_args);

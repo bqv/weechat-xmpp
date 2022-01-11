@@ -15,9 +15,21 @@ namespace weechat {
         check_callback check_value_cb, change_callback change_cb, delete_callback delete_cb)
         : config_option(weechat::config_new_option(
                             config_file, section, name.data(), type.data(),
+<<<<<<< Updated upstream
                             description.data(), string_values.data(), min, max,
                             default_value.data(), value.data(), null_value_allowed,
                             this->m_check_cb, this->m_change_cb, this->m_delete_cb)) {
+=======
+                            description.data(),
+                            !string_values.empty() ? string_values.data() : nullptr,
+                            min, max,
+                            !default_value.empty() ? default_value.data() : nullptr,
+                            !value.empty() ? value.data() : nullptr,
+                            null_value_allowed,
+                            check_value_cb ? &this->m_check_cb : nullptr,
+                            change_cb ? &this->m_change_cb : nullptr,
+                            delete_cb ? &this->m_delete_cb : nullptr)) {
+>>>>>>> Stashed changes
         this->m_check_cb = check_value_cb;
         this->m_change_cb = change_cb;
         this->m_delete_cb = delete_cb;
@@ -55,10 +67,18 @@ namespace weechat {
                                    delete_option_callback delete_option_cb)
         : config_section(weechat::config_new_section(config_file, name.data(),
                                                      user_can_add_options, user_can_delete_options,
+<<<<<<< Updated upstream
                                                      this->m_read_cb, this->m_write_cb,
                                                      this->m_write_default_cb,
                                                      this->m_create_option_cb,
                                                      this->m_delete_option_cb)) {
+=======
+                                                     read_cb ? &this->m_read_cb : nullptr,
+                                                     write_cb ? &this->m_write_cb : nullptr,
+                                                     write_default_cb ? &this->m_write_default_cb : nullptr,
+                                                     create_option_cb ? &this->m_create_option_cb : nullptr,
+                                                     delete_option_cb ? &this->m_delete_option_cb : nullptr)) {
+>>>>>>> Stashed changes
         this->m_read_cb = read_cb;
         this->m_write_cb = write_cb;
         this->m_write_default_cb = write_default_cb;
@@ -105,7 +125,11 @@ namespace weechat {
     }
 
     gui_buffer::~gui_buffer() {
+<<<<<<< Updated upstream
         weechat::buffer_close(*this);
+=======
+      //weechat::buffer_close(*this);
+>>>>>>> Stashed changes
     }
 
     gui_bar_item::gui_bar_item(struct t_gui_bar_item* item)
@@ -115,7 +139,11 @@ namespace weechat {
     }
 
     gui_bar_item::~gui_bar_item() {
+<<<<<<< Updated upstream
         weechat::bar_item_remove(*this);
+=======
+      //weechat::bar_item_remove(*this);
+>>>>>>> Stashed changes
     }
 
     hook::hook(struct t_hook* hook)
@@ -132,6 +160,10 @@ namespace weechat {
     }
 
     hook::~hook() {
+<<<<<<< Updated upstream
         weechat::unhook(*this);
+=======
+      //weechat::unhook(*this);
+>>>>>>> Stashed changes
     }
 }

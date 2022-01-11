@@ -144,6 +144,10 @@ weechat::xmpp::account::account(std::string name)
             + " << xmpp.account_default." + it->first;
 
         auto [option, success] = this->m_options.try_emplace(it->first,
+<<<<<<< Updated upstream
+=======
+          weechat::config_option(
+>>>>>>> Stashed changes
             weechat::globals::plugin.config().file(),
             weechat::globals::plugin.config().section_account(),
             option_name, it->second.type,
@@ -151,7 +155,11 @@ weechat::xmpp::account::account(std::string name)
             it->second.range, 0, 0, it->second.value, it->second.value, false,
             std::function([this](weechat::config_option&, std::string){ return true; }),
             std::function([this](weechat::config_option&){ }),
+<<<<<<< Updated upstream
             std::function([this](weechat::config_option&){ }));
+=======
+            std::function([this](weechat::config_option&){ })));
+>>>>>>> Stashed changes
         if (!success)
             throw weechat::error("duplicate option key");
         //option.change_cb(it->first, nullptr, this->m_options[it->first]);
@@ -314,6 +322,10 @@ void weechat::xmpp::account::disconnect_all()
 std::pair<std::map<std::string, weechat::xmpp::account>::iterator, bool>
 weechat::xmpp::account::create(std::string name)
 {
+<<<<<<< Updated upstream
+=======
+    weechat::xmpp::account v(name);
+>>>>>>> Stashed changes
     return weechat::xmpp::globals::accounts.try_emplace(name, name);
 }
 
