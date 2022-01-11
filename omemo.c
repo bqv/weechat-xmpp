@@ -2614,63 +2614,68 @@ xmpp_stanza_t *omemo__encode(struct t_account *account, const char *jid,
 
     int ret, keycount = 0;
     signal_int_list *devicelist;
-    if ((ret = dls_load_devicelist(&devicelist, jid, omemo))) return NULL;
-    for (size_t i = 0; i < signal_int_list_size(devicelist); i++)
+    const char *target = jid;
+    for (int self = 0; self <= 1; self++)
     {
-        uint32_t device_id = signal_int_list_at(devicelist, i);
-        signal_protocol_address address = {
-            .name = jid, .name_len = strlen(jid), .device_id = device_id};
-
-        xmpp_stanza_t *header__key = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(header__key, "key");
-        char device_id_str[10+1] = {0};
-        snprintf(device_id_str, 10+1, "%u", device_id);
-        xmpp_stanza_set_attribute(header__key, "rid", device_id_str);
-
-        session_builder *builder = NULL;
-        if (((ret = ss_contains_session_func(&address, omemo))) <= 0)
+        if ((ret = dls_load_devicelist(&devicelist, target, omemo))) return NULL;
+        for (size_t i = 0; i < signal_int_list_size(devicelist); i++)
         {
-            session_pre_key_bundle *bundle;
-    weechat_printf(NULL, "%somemo send deviceid %u", weechat_color("blue"), device_id);
-            if ((ret = bks_load_bundle(&bundle, &address, omemo))) continue;
+            uint32_t device_id = signal_int_list_at(devicelist, i);
+            signal_protocol_address address = {
+                .name = target, .name_len = strlen(target), .device_id = device_id};
 
-            if ((ret = session_builder_create(&builder, omemo->store_context, &address, omemo->context))) continue;
-            if ((ret = session_builder_process_pre_key_bundle(builder, bundle))) continue;
-    weechat_printf(NULL, "%somemo bundle ok", weechat_color("blue"), device_id);
+            xmpp_stanza_t *header__key = xmpp_stanza_new(account->context);
+            xmpp_stanza_set_name(header__key, "key");
+            char device_id_str[10+1] = {0};
+            snprintf(device_id_str, 10+1, "%u", device_id);
+            xmpp_stanza_set_attribute(header__key, "rid", device_id_str);
+
+            session_builder *builder = NULL;
+            if (((ret = ss_contains_session_func(&address, omemo))) <= 0)
+            {
+                session_pre_key_bundle *bundle;
+        weechat_printf(NULL, "%somemo send deviceid %u", weechat_color("blue"), device_id);
+                if ((ret = bks_load_bundle(&bundle, &address, omemo))) continue;
+
+                if ((ret = session_builder_create(&builder, omemo->store_context, &address, omemo->context))) continue;
+                if ((ret = session_builder_process_pre_key_bundle(builder, bundle))) continue;
+        weechat_printf(NULL, "%somemo bundle ok", weechat_color("blue"), device_id);
+            }
+
+            session_cipher *cipher;
+            if ((ret = session_cipher_create(&cipher, omemo->store_context, &address, omemo->context))) continue;
+        weechat_printf(NULL, "%somemo cipher ok", weechat_color("blue"));
+
+            ciphertext_message *signal_message;
+            if ((ret = session_cipher_encrypt(cipher, key_and_tag, AES_KEY_SIZE+tag_len, &signal_message))) continue;
+        weechat_printf(NULL, "%somemo encrypt ok", weechat_color("blue"));
+            signal_buffer *record = ciphertext_message_get_serialized(signal_message);
+            int prekey = ciphertext_message_get_type(signal_message) == CIPHERTEXT_PREKEY_TYPE
+                ? 1 : 0;
+        weechat_printf(NULL, "%somemo prekey %s", weechat_color("blue"), prekey ? "true" : "false");
+
+            char *payload = NULL;
+            base64_encode(signal_buffer_data(record), signal_buffer_len(record),
+                    &payload);
+
+            if (prekey)
+                xmpp_stanza_set_attribute(header__key, "prekey",
+                        prekey ? "true" : "false");
+            stanza__set_text(account->context, header__key, with_free(payload));
+            xmpp_stanza_add_child(header, header__key);
+            xmpp_stanza_release(header__key);
+
+            keycount++;
+
+            signal_buffer_free(record);
+          //SIGNAL_UNREF(signal_message);
+            session_cipher_free(cipher);
+            if (builder)
+                session_builder_free(builder);
         }
-
-        session_cipher *cipher;
-        if ((ret = session_cipher_create(&cipher, omemo->store_context, &address, omemo->context))) continue;
-    weechat_printf(NULL, "%somemo cipher ok", weechat_color("blue"));
-
-        ciphertext_message *signal_message;
-        if ((ret = session_cipher_encrypt(cipher, key_and_tag, AES_KEY_SIZE+tag_len, &signal_message))) continue;
-    weechat_printf(NULL, "%somemo encrypt ok", weechat_color("blue"));
-        signal_buffer *record = ciphertext_message_get_serialized(signal_message);
-        int prekey = ciphertext_message_get_type(signal_message) == CIPHERTEXT_PREKEY_TYPE
-            ? 1 : 0;
-    weechat_printf(NULL, "%somemo prekey %s", weechat_color("blue"), prekey ? "true" : "false");
-
-        char *payload = NULL;
-        base64_encode(signal_buffer_data(record), signal_buffer_len(record),
-                &payload);
-
-        if (prekey)
-            xmpp_stanza_set_attribute(header__key, "prekey",
-                    prekey ? "true" : "false");
-        stanza__set_text(account->context, header__key, with_free(payload));
-        xmpp_stanza_add_child(header, header__key);
-        xmpp_stanza_release(header__key);
-
-        keycount++;
-
-        signal_buffer_free(record);
-      //SIGNAL_UNREF(signal_message);
-        session_cipher_free(cipher);
-        if (builder)
-            session_builder_free(builder);
+        signal_int_list_free(devicelist);
+        target = account_jid(account);
     }
-    signal_int_list_free(devicelist);
     free(key_and_tag);
 
     if (keycount == 0) return NULL;
