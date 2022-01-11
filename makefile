@@ -6,7 +6,7 @@ endif
 RM=rm -f
 FIND=find
 
-INCLUDES=-Ilibstrophe \
+INCLUDES=-Ilibstrophe -Ideps \
 	 $(shell xml2-config --cflags) \
 	 $(shell pkg-config --cflags librnp-0) \
 	 $(shell pkg-config --cflags libomemo-c)
@@ -45,7 +45,7 @@ HDRS=plugin.hh \
      channel.h \
      command.h \
      completion.h \
-     config.h \
+     config.hh \
      connection.h \
      input.h \
      message.h \
@@ -61,7 +61,7 @@ SRCS=plugin.cpp \
 	 channel.c \
 	 command.c \
 	 completion.c \
-	 config.c \
+	 config.cpp \
 	 connection.c \
 	 input.c \
 	 message.c \

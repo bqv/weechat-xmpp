@@ -10,7 +10,7 @@
 
 #include "plugin.hh"
 #include "account.h"
-#include "config.h"
+#include "config.hh"
 
 struct t_config_file *config_file;
 
@@ -302,7 +302,7 @@ int config__account_read_cb (const void *pointer, void *data,
 
     if (option_name)
     {
-        pos_option = strrchr(option_name, '.');
+        pos_option = const_cast<char*>(strrchr(option_name, '.'));
         if (pos_option)
         {
             account_name = weechat_strndup(option_name,

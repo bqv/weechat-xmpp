@@ -12,9 +12,8 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
-#include "diff/diff.h"
 #include "xmpp/stanza.hh"
-#include "config.h"
+#include "config.hh"
 #include "account.h"
 #include "user.h"
 #include "channel.h"
@@ -22,6 +21,7 @@
 #include "omemo.h"
 #include "pgp.h"
 #include "util.h"
+#include "diff/diff.h"
 
 void connection__init()
 {

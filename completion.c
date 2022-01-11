@@ -10,7 +10,7 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
-#include "config.h"
+#include "config.hh"
 #include "account.h"
 #include "channel.h"
 #include "user.h"
@@ -59,7 +59,7 @@ int completion__channel_nicks_cb(const void *pointer, void *data,
     (void) pointer;
     (void) data;
     (void) completion_item;
-    
+
     ptr_account = NULL;
     ptr_channel = NULL;
     buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);
@@ -128,12 +128,12 @@ void completion__init()
     struct t_config_option *option;
     const char *default_template;
 
-    
+
     weechat_hook_completion("nick",
                             N_("nicks of current Slack channel"),
                             &completion__channel_nicks_cb,
                             NULL, NULL);
-    
+
     weechat_hook_completion("account",
                             N_("xmpp accounts"),
                             &completion__accounts_cb,

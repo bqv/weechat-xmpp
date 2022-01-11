@@ -10,8 +10,8 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
+#include "config.hh"
 extern "C" {
-#include "config.h"
 #include "account.h"
 #include "connection.h"
 #include "command.h"

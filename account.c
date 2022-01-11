@@ -13,7 +13,7 @@
 
 #include "plugin.hh"
 #include "xmpp/stanza.hh"
-#include "config.h"
+#include "config.hh"
 #include "input.h"
 #include "omemo.h"
 #include "account.h"
