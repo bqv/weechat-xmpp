@@ -2,6 +2,7 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include <fmt/core.h>
 #include <memory>
 #include <stdlib.h>
 #include <stdint.h>
@@ -17,7 +18,7 @@
 #include <session_pre_key.h>
 #include <protocol.h>
 #include <curve.h>
-#include <lmdb.h>
+#include <lmdb++.h>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
@@ -2107,28 +2108,21 @@ void omemo__init(struct t_gui_buffer *buffer, struct t_omemo **omemo,
         return;
     }
 
-    MDB_txn *parentTransaction = NULL;
-    MDB_txn *transaction = NULL;
-    if (mdb_txn_begin(new_omemo->db->env, parentTransaction, 0, &transaction)) {
-        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
-                       weechat_prefix("error"));
+    try {
+        MDB_txn *parentTransaction = NULL;
+        lmdb::txn transaction = lmdb::txn::begin(new_omemo->db->env, parentTransaction);
+
+        size_t db_name_len = strlen("omemo_") + strlen(account_name);
+        char *db_name = (char *)malloc(sizeof(char) * (db_name_len + 1));
+        snprintf(db_name, db_name_len+1, "omemo_%s", account_name);
+        new_omemo->db->dbi_omemo = lmdb::dbi::open(transaction, db_name, MDB_CREATE);
+
+        transaction.commit();
+    } catch (const std::exception& ex) {
+        auto format = fmt::format("%sxmpp: lmdb failure {}", ex.what());
+        weechat_printf(NULL, format.data(), weechat_prefix("error"));
         return;
     }
-
-    size_t db_name_len = strlen("omemo_") + strlen(account_name);
-    char *db_name = (char *)malloc(sizeof(char) * (db_name_len + 1));
-    snprintf(db_name, db_name_len+1, "omemo_%s", account_name);
-    if (mdb_dbi_open(transaction, db_name, MDB_CREATE, &new_omemo->db->dbi_omemo)) {
-        weechat_printf(NULL, "%sxmpp: failed to open lmdb database",
-                       weechat_prefix("error"));
-        return;
-    }
-
-    if (mdb_txn_commit(transaction)) {
-        weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
-                       weechat_prefix("error"));
-        return;
-    };
 
     struct signal_crypto_provider crypto_provider = {
         .random_func = &cp_random_generator,

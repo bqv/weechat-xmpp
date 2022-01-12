@@ -6,7 +6,7 @@ endif
 RM=rm -f
 FIND=find
 
-INCLUDES=-Ilibstrophe -Ideps \
+INCLUDES=-Ilibstrophe -Ideps -Ideps/fmt/include \
 	 $(shell xml2-config --cflags) \
 	 $(shell pkg-config --cflags librnp-0) \
 	 $(shell pkg-config --cflags libomemo-c)
@@ -88,14 +88,11 @@ xmpp.so: $(OBJS) $(DEPS) $(HDRS)
 		patchelf --set-rpath $(LIBRARY_PATH):$(shell realpath $(shell dirname $(shell gcc --print-libgcc-file-name))/../../../) xmpp.so && \
 		patchelf --shrink-rpath xmpp.so || true
 
-.%.o: %.cpp
-	@$(CXX) $(CPPFLAGS) -c $< -o $@
-
 .%.o: %.c
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-xmpp/.%.o: xmpp/%.c
-	@$(CC) $(CFLAGS) -c $< -o $@
+.%.o: %.cpp
+	@$(CXX) $(CPPFLAGS) -c $< -o $@
 
 xmpp/.%.o: xmpp/%.cpp
 	@$(CXX) $(CPPFLAGS) -c $< -o $@
