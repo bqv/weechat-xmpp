@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <strophe.h>
 
+#include "stanza.hh"
+
 xmpp_stanza_t *stanza__presence(xmpp_ctx_t *context, xmpp_stanza_t *base,
                                 xmpp_stanza_t **children, char *ns,
                                 char *from, char *to, char *type)

@@ -5,6 +5,9 @@ compile_commands.json
 cscope*
 .depend
 *.d
+*.gcno
+*.gcda
+*.json.gz
 
 # Object files
 *.o

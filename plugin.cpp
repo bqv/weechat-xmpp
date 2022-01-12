@@ -11,7 +11,6 @@
 
 #include "plugin.hh"
 #include "config.hh"
-extern "C" {
 #include "account.hh"
 #include "connection.hh"
 #include "command.hh"
@@ -19,6 +18,7 @@ extern "C" {
 #include "buffer.hh"
 #include "completion.hh"
 
+extern "C" {
 WEECHAT_PLUGIN_NAME(WEECHAT_XMPP_PLUGIN_NAME);
 WEECHAT_PLUGIN_DESCRIPTION(N_("XMPP client protocol"));
 WEECHAT_PLUGIN_AUTHOR("bqv <weechat@fron.io>");

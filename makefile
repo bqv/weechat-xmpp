@@ -73,8 +73,10 @@ SRCS=plugin.cpp \
 	 xmpp/iq.cpp \
 
 DEPS=deps/diff/libdiff.a \
+	 deps/fmt/libfmt.a \
 
-OBJS=$(patsubst %.cpp,.%.o,$(patsubst %.c,.%.o,$(patsubst xmpp/%.cpp,xmpp/.%.o,$(patsubst xmpp/%.c,xmpp/.%.o,$(SRCS)))))
+OBJS=$(patsubst %.cpp,.%.o,$(patsubst %.c,.%.o,$(patsubst xmpp/%.cpp,xmpp/.%.o,$(SRCS))))
+COVS=$(patsubst %.cpp,.%.cov.o,$(patsubst xmpp/%.cpp,xmpp/.%.cov.o,$(SRCS)))
 
 all:
 	make depend
@@ -83,34 +85,50 @@ all:
 weechat-xmpp: $(DEPS) xmpp.so
 
 xmpp.so: $(OBJS) $(DEPS) $(HDRS)
-	$(CXX) $(LDFLAGS) -o .$@ $(OBJS) $(DEPS) $(LDLIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(DEPS) $(LDLIBS)
 	which patchelf >/dev/null && \
 		patchelf --set-rpath $(LIBRARY_PATH):$(shell realpath $(shell dirname $(shell gcc --print-libgcc-file-name))/../../../) xmpp.so && \
 		patchelf --shrink-rpath xmpp.so || true
 
 .%.o: %.c
-	@$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 .%.o: %.cpp
-	@$(CXX) $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) -c $< -o $@
+
+.%.cov.o: %.cpp
+	@$(CXX) --coverage -O0 $(CPPFLAGS) -c $< -o $@
 
 xmpp/.%.o: xmpp/%.cpp
-	@$(CXX) $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) -c $< -o $@
+
+xmpp/.%.cov.o: xmpp/%.cpp
+	@$(CXX) --coverage -O0 $(CPPFLAGS) -c $< -o $@
 
 deps/diff/libdiff.a:
 	git submodule update --init --recursive
 	cd deps/diff && env -u MAKEFLAGS ./configure
 	$(MAKE) -C deps/diff CFLAGS=-fPIC
 diff: deps/diff/libdiff.a
+deps/fmt/libfmt.a:
+	git submodule update --init --recursive
+	env -u MAKEFLAGS cmake -S deps/fmt -B deps/fmt \
+		-DCMAKE_POSITION_INDEPENDENT_CODE=ON
+	$(MAKE) -C deps/fmt fmt
+fmt: deps/fmt/libfmt.a
 
-tests/run: xmpp.so tests/main.cpp
-	$(CXX) $(CPPFLAGS) -o tests/run xmpp.so tests/main.cpp $(LDLIBS)
+tests/run: $(COVS) $(DEPS) $(HDRS) tests/main.cc
+	$(CXX) --coverage -O0 $(LDFLAGS) -o tests/xmpp.cov.so $(COVS) $(DEPS) $(LDLIBS)
+	env --chdir tests $(CXX) $(CPPFLAGS) -o run xmpp.cov.so main.cc $(LDLIBS)
 	which patchelf >/dev/null && \
-		patchelf --set-rpath $(PWD):$(LIBRARY_PATH):$(shell realpath $(shell dirname $(shell gcc --print-libgcc-file-name))/../../../) tests/run && \
-		patchelf --shrink-rpath tests/run || true
+		patchelf --set-rpath $(PWD)/tests:$(LIBRARY_PATH):$(shell realpath $(shell dirname $(shell gcc --print-libgcc-file-name))/../../../) tests/xmpp.cov.so tests/run && \
+		patchelf --shrink-rpath tests/run tests/xmpp.cov.so || true
 
 test: tests/run
-	tests/run
+	env --chdir tests ./run
+
+coverage: tests/run
+	gcov -m -abcfu -rqk -i .*.gcda xmpp/.*.gcda
 
 debug: xmpp.so
 	env LD_PRELOAD=$(DEBUG) gdb -ex "handle SIGPIPE nostop noprint pass" --args \
@@ -132,10 +150,13 @@ depend: $(SRCS) $(HDRS)
 
 tidy:
 	$(FIND) . -name "*.o" -delete
+	$(FIND) . -name "*.gcno" -delete
+	$(FIND) . -name "*.gcda" -delete
 
 clean:
 	$(RM) -f $(OBJS)
 	$(MAKE) -C deps/diff clean || true
+	$(MAKE) -C deps/fmt clean || true
 	git submodule foreach --recursive git clean -xfd || true
 	git submodule foreach --recursive git reset --hard || true
 

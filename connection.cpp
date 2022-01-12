@@ -21,7 +21,9 @@
 #include "omemo.hh"
 #include "pgp.hh"
 #include "util.hh"
+extern "C" {
 #include "diff/diff.h"
+}
 
 void connection__init()
 {
