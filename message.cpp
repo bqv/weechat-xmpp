@@ -37,7 +37,7 @@ char *message__translate_code(struct t_account *account,
         case '#': /* channel */
             if (alttext)
             {
-                prefix = "#";
+                prefix = (char*)"#";
                 symbol = strdup(alttext);
             }
             else
@@ -45,12 +45,12 @@ char *message__translate_code(struct t_account *account,
                 channel = channel__search(account, identifier+1);
                 if (channel)
                 {
-                    prefix = "#";
+                    prefix = (char*)"#";
                     symbol = strdup(channel->name);
                 }
                 else
                 {
-                    prefix = "Channel:";
+                    prefix = (char*)"Channel:";
                     symbol = strdup(identifier+1);
                 }
             }
@@ -58,7 +58,7 @@ char *message__translate_code(struct t_account *account,
         case '@': /* user */
             if (alttext)
             {
-                prefix = "@";
+                prefix = (char*)"@";
                 symbol = strdup(alttext);
             }
             else
@@ -66,12 +66,12 @@ char *message__translate_code(struct t_account *account,
                 user = user__search(account, identifier+1);
                 if (user)
                 {
-                    prefix = "@";
+                    prefix = (char*)"@";
                     symbol = strdup(user->profile.display_name);
                 }
                 else
                 {
-                    prefix = "User:";
+                    prefix = (char*)"User:";
                     symbol = strdup(identifier+1);
                 }
             }
@@ -79,17 +79,17 @@ char *message__translate_code(struct t_account *account,
         case '!': /* special */
             if (alttext)
             {
-                prefix = "@";
+                prefix = (char*)"@";
                 symbol = strdup(alttext);
             }
             else
             {
-                prefix = "@";
+                prefix = (char*)"@";
                 symbol = strdup(identifier+1);
             }
             break;
         default: /* url */
-            prefix = "";
+            prefix = (char*)"";
             symbol = strdup(code);
             break;
     }

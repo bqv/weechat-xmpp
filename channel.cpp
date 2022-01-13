@@ -1044,7 +1044,7 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
 
     if (account->omemo && channel->omemo.enabled)
     {
-        xmpp_stanza_t *encrypted = omemo__encode(account, to, body);
+        xmpp_stanza_t *encrypted = account->omemo.encode(account, to, body);
         if (!encrypted)
         {
             weechat_printf_date_tags(channel->buffer, 0, "notify_none", "%s%s",

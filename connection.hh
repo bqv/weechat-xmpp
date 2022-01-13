@@ -4,9 +4,7 @@
 
 #pragma once
 
-#ifdef __cplusplus
 #include <strophe.h>
-#endif
 
 void connection__init();
 

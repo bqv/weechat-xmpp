@@ -26,16 +26,16 @@ struct t_account *accounts = NULL;
 struct t_account *last_account = NULL;
 
 char *account_options[ACCOUNT_NUM_OPTIONS][2] =
-{ { "jid", "" },
-  { "password", "" },
-  { "tls", "normal" },
-  { "nickname", "" },
-  { "autoconnect", "" },
-  { "resource", "" },
-  { "status", "probably about to segfault" },
-  { "pgp_pubring_path", "${weechat_data_dir}/pubring.gpg" },
-  { "pgp_secring_path", "${weechat_data_dir}/secring.gpg" },
-  { "pgp_keyid", "" },
+{ { (char*)"jid", (char*)"" },
+  { (char*)"password", (char*)"" },
+  { (char*)"tls", (char*)"normal" },
+  { (char*)"nickname", (char*)"" },
+  { (char*)"autoconnect", (char*)"" },
+  { (char*)"resource", (char*)"" },
+  { (char*)"status", (char*)"probably about to segfault" },
+  { (char*)"pgp_pubring_path", (char*)"${weechat_data_dir}/pubring.gpg" },
+  { (char*)"pgp_secring_path", (char*)"${weechat_data_dir}/secring.gpg" },
+  { (char*)"pgp_keyid", (char*)"" },
 };
 
 struct t_account *account__search(const char *name)
@@ -179,7 +179,7 @@ xmpp_stanza_t *account__get_devicelist(struct t_account *account)
 
     device = (struct t_account_device*)malloc(sizeof(struct t_account_device));
 
-    device->id = account->omemo->device_id;
+    device->id = account->omemo.device_id;
     snprintf(id, sizeof(id), "%u", device->id);
     device->name = strdup(id);
     device->label = strdup("weechat");
@@ -195,7 +195,7 @@ xmpp_stanza_t *account__get_devicelist(struct t_account *account)
     for (device = account->devices; device;
          device = device->next_device)
     {
-        if (device->id != account->omemo->device_id)
+        if (device->id != account->omemo.device_id)
             children[i++] = stanza__iq_pubsub_publish_item_list_device(
                 account->context, NULL, with_noop(device->name), NULL);
     }
@@ -446,8 +446,6 @@ struct t_account *account__alloc(const char *name)
     new_account->buffer = NULL;
     new_account->buffer_as_string = NULL;
 
-    new_account->omemo = NULL;
-
     new_account->devices = NULL;
     new_account->last_device = NULL;
     new_account->mam_queries = NULL;
@@ -542,9 +540,6 @@ void account__free_data(struct t_account *account)
 
     if (account->buffer_as_string)
         free(account->buffer_as_string);
-
-    if (account->omemo)
-        omemo__free(account->omemo);
 
   //channel__free_all(account);
   //user__free_all(account);

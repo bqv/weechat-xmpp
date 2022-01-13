@@ -395,8 +395,8 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                         {
                             if (account->omemo)
                             {
-                                omemo__handle_devicelist(account->omemo,
-                                        from ? from : account_jid(account), items);
+                                account->omemo.handle_devicelist(
+                                    from ? from : account_jid(account), items);
                             }
 
                             children = (xmpp_stanza_t**)malloc(sizeof(*children) * (3 + 1));
@@ -533,7 +533,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                                                      "eu.siacs.conversations.axolotl");
     if (encrypted && account->omemo)
     {
-        cleartext = omemo__decode(account, from_bare, encrypted);
+        cleartext = account->omemo.decode(account, from_bare, encrypted);
     }
     x = xmpp_stanza_get_child_by_name_and_ns(stanza, "x", "jabber:x:encrypted");
     intext = xmpp_stanza_get_text(body);
@@ -979,8 +979,8 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
                         item, "list", "eu.siacs.conversations.axolotl");
                     if (list && account->omemo)
                     {
-                        omemo__handle_devicelist(account->omemo,
-                                from ? from : account_jid(account), items);
+                        account->omemo.handle_devicelist(
+                            from ? from : account_jid(account), items);
 
                         xmpp_stanza_t *children[2] = {NULL};
                         for (device = xmpp_stanza_get_children(list);
@@ -1024,7 +1024,7 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
 
                             dev = (t_account_device*)malloc(sizeof(struct t_account_device));
 
-                            dev->id = account->omemo->device_id;
+                            dev->id = account->omemo.device_id;
                             snprintf(id, sizeof(id), "%d", dev->id);
                             dev->name = strdup(id);
                             dev->label = strdup("weechat");
@@ -1082,8 +1082,8 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
                             strlen("eu.siacs.conversations.axolotl.bundles:");
                         if (account->omemo && strlen(items_node) > node_prefix)
                         {
-                            omemo__handle_bundle(account->omemo,
-                                                 from ? from : account_jid(account),
+                            account->omemo.handle_bundle(
+                                from ? from : account_jid(account),
                                                  strtol(items_node+node_prefix,
                                                         NULL, 10),
                                                  items);
@@ -1314,13 +1314,13 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         xmpp_send(conn, children[0]);
         xmpp_stanza_release(children[0]);
 
-        omemo__init(account->buffer, &account->omemo, account->name);
+        account->omemo.init(account->buffer, account->name);
 
         if (account->omemo)
         {
             children[0] =
-            omemo__get_bundle(account->context,
-                    strdup(account_jid(account)), NULL, account->omemo);
+            account->omemo.get_bundle(account->context,
+                    strdup(account_jid(account)), NULL);
             xmpp_send(conn, children[0]);
             xmpp_stanza_release(children[0]);
         }

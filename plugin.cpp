@@ -18,7 +18,14 @@
 #include "buffer.hh"
 #include "completion.hh"
 
+struct t_weechat_plugin *weechat_xmpp_plugin = NULL;
+
+struct t_hook *weechat_xmpp_process_timer = NULL;
+
+struct t_gui_bar_item *weechat_xmpp_typing_bar_item = NULL;
+
 extern "C" {
+#pragma GCC visibility push(default)
 WEECHAT_PLUGIN_NAME(WEECHAT_XMPP_PLUGIN_NAME);
 WEECHAT_PLUGIN_DESCRIPTION(N_("XMPP client protocol"));
 WEECHAT_PLUGIN_AUTHOR("bqv <weechat@fron.io>");
@@ -26,12 +33,6 @@ WEECHAT_PLUGIN_VERSION(WEECHAT_XMPP_PLUGIN_VERSION);
 WEECHAT_PLUGIN_LICENSE("MPL2");
 WEECHAT_PLUGIN_PRIORITY(5500);
 }
-
-struct t_weechat_plugin *weechat_xmpp_plugin = NULL;
-
-struct t_hook *weechat_xmpp_process_timer = NULL;
-
-struct t_gui_bar_item *weechat_xmpp_typing_bar_item = NULL;
 
 extern "C"
 int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])

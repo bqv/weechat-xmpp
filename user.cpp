@@ -103,21 +103,21 @@ void user__nicklist_add(struct t_account *account,
 
     ptr_buffer = channel ? channel->buffer : account->buffer;
 
-    char *group = "...";
-    if (weechat_strcasecmp(user->profile.affiliation, "outcast") == 0)
-        group = "!";
-    if (weechat_strcasecmp(user->profile.role, "visitor") == 0)
-        group = "?";
-    if (weechat_strcasecmp(user->profile.role, "participant") == 0)
-        group = "+";
-    if (weechat_strcasecmp(user->profile.affiliation, "member") == 0)
-        group = "%";
-    if (weechat_strcasecmp(user->profile.role, "moderator") == 0)
-        group = "@";
-    if (weechat_strcasecmp(user->profile.affiliation, "admin") == 0)
-        group = "&";
-    if (weechat_strcasecmp(user->profile.affiliation, "owner") == 0)
-        group = "~";
+    char *group = (char*)"...";
+    if (weechat_strcasecmp(user->profile.affiliation, (char*)"outcast") == 0)
+        group = (char*)"!";
+    if (weechat_strcasecmp(user->profile.role, (char*)"visitor") == 0)
+        group = (char*)"?";
+    if (weechat_strcasecmp(user->profile.role, (char*)"participant") == 0)
+        group = (char*)"+";
+    if (weechat_strcasecmp(user->profile.affiliation, (char*)"member") == 0)
+        group = (char*)"%";
+    if (weechat_strcasecmp(user->profile.role, (char*)"moderator") == 0)
+        group = (char*)"@";
+    if (weechat_strcasecmp(user->profile.affiliation, (char*)"admin") == 0)
+        group = (char*)"&";
+    if (weechat_strcasecmp(user->profile.affiliation, (char*)"owner") == 0)
+        group = (char*)"~";
     ptr_group = weechat_nicklist_search_group(ptr_buffer, NULL, group);
     weechat_nicklist_add_nick(ptr_buffer, ptr_group,
                               name,

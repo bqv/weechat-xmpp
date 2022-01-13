@@ -4,11 +4,12 @@
 
 #pragma once
 
-#ifdef __cplusplus
 #include <ctime>
 #include <cstdint>
+#include <memory>
 #include <strophe.h>
-#endif
+
+#include "omemo.hh"
 
 extern struct t_account *accounts;
 extern struct t_account *last_account;
@@ -113,7 +114,7 @@ struct t_account
     struct t_gui_buffer *buffer;
     char *buffer_as_string;
 
-    struct t_omemo *omemo;
+    weechat::xmpp::omemo omemo;
     struct t_pgp *pgp;
 
     struct t_account_device *devices;

@@ -12,6 +12,7 @@ INCLUDES=-Ilibstrophe -Ideps -Ideps/fmt/include \
 	 $(shell pkg-config --cflags libomemo-c)
 CFLAGS+=$(DBGCFLAGS) \
 	-fno-omit-frame-pointer -fPIC \
+	-fvisibility=hidden -fvisibility-inlines-hidden \
 	-std=gnu99 -gdwarf-4 \
 	-Wall -Wextra -pedantic \
 	-Werror-implicit-function-declaration \
@@ -20,6 +21,7 @@ CFLAGS+=$(DBGCFLAGS) \
 	$(INCLUDES)
 CPPFLAGS+=$(DBGCFLAGS) \
 	  -fno-omit-frame-pointer -fPIC \
+	  -fvisibility=hidden -fvisibility-inlines-hidden \
 	  -std=c++20 -gdwarf-4 \
 	  -Wall -Wextra -pedantic \
 	  -Wno-missing-field-initializers \

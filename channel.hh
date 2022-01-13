@@ -4,9 +4,7 @@
 
 #pragma once
 
-#ifdef __cplusplus
 #include <ctime>
-#endif
 
 #define CHANNEL_MEMBERS_SPEAKING_LIMIT 128
 

@@ -2,8 +2,7 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef _WEECHAT_XMPP_PGP_H_
-#define _WEECHAT_XMPP_PGP_H_
+#pragma once
 
 extern const char *PGP_ADVICE;
 
@@ -24,5 +23,3 @@ char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *s
 char *pgp__verify(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *certificate);
 
 char *pgp__sign(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *source, const char *message);
-
-#endif /*WEECHAT_XMPP_PGP_H*/

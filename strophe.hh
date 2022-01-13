@@ -4,7 +4,10 @@
 
 #pragma once
 
-#define MESSAGE_MAX_LENGTH 40000
+#include <memory>
+#include <functional>
+#include <strophe.h>
 
-char *message__decode(struct t_account *account,
-                      const char *text);
+namespace strophe {
+
+}
