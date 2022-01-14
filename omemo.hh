@@ -29,10 +29,10 @@ struct omemo
     libsignal::context context;
     libsignal::store_context store_context;
 
-    struct {
-        lmdb::env env;
-        lmdb::dbi dbi_omemo;
-    } db;
+    lmdb::env db_env = nullptr;
+    struct dbi {
+        lmdb::dbi omemo;
+    } dbi;
     std::string db_path;
 
     libsignal::identity_key_pair identity;

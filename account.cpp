@@ -116,7 +116,7 @@ void account__add_device(struct t_account *account,
     new_device = account__search_device(account, device->id);
     if (!new_device)
     {
-        new_device = (struct t_account_device*)malloc(sizeof(*new_device));
+        new_device = new struct t_account_device;
         new_device->id = device->id;
         new_device->name = strdup(device->name);
         new_device->label = device->label ? strdup(device->label) : NULL;
@@ -158,7 +158,7 @@ void account__free_device(struct t_account *account, struct t_account_device *de
     if (device->name)
         free(device->name);
 
-    free(device);
+    delete device;
 
     account->devices = new_devices;
 }
@@ -177,7 +177,7 @@ xmpp_stanza_t *account__get_devicelist(struct t_account *account)
     char id[64] = {0};
     int i = 0;
 
-    device = (struct t_account_device*)malloc(sizeof(struct t_account_device));
+    device = new struct t_account_device;
 
     device->id = account->omemo.device_id;
     snprintf(id, sizeof(id), "%u", device->id);
@@ -190,7 +190,7 @@ xmpp_stanza_t *account__get_devicelist(struct t_account *account)
 
     free(device->label);
     free(device->name);
-    free(device);
+    delete device;
 
     for (device = account->devices; device;
          device = device->next_device)
@@ -407,7 +407,7 @@ struct t_account *account__alloc(const char *name)
         return NULL;
 
     /* alloc memory for new account */
-    new_account = (struct t_account*)malloc(sizeof(*new_account));
+    new_account = new struct t_account;
     if (!new_account)
     {
         weechat_printf(NULL,
@@ -575,7 +575,7 @@ void account__free(struct t_account *account)
         (account->next_account)->prev_account = account->prev_account;
 
     account__free_data(account);
-    free(account);
+    delete account;
     accounts = new_accounts;
 }
 
