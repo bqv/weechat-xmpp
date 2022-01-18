@@ -24,8 +24,8 @@ struct t_hook *weechat_xmpp_process_timer = NULL;
 
 struct t_gui_bar_item *weechat_xmpp_typing_bar_item = NULL;
 
-extern "C" {
 #pragma GCC visibility push(default)
+extern "C" {
 WEECHAT_PLUGIN_NAME(WEECHAT_XMPP_PLUGIN_NAME);
 WEECHAT_PLUGIN_DESCRIPTION(N_("XMPP client protocol"));
 WEECHAT_PLUGIN_AUTHOR("bqv <weechat@fron.io>");

@@ -16,11 +16,11 @@
 [[https://github.com/bqv/weechat-xmpp/issues?q=is:issue+is:closed][file:https://img.shields.io/github/issues-closed/bqv/weechat-xmpp.svg]]
 [[https://github.com/bqv/weechat-xmpp/blob/master/LICENSE][file:https://img.shields.io/github/license/bqv/weechat-xmpp.svg]]
 [[https://github.com/bqv/weechat-extras/][file:https://img.shields.io/badge/weechat--extras-xmpp-blue.svg]]
-[[https://inverse.chat/#converse/room?jid=weechat@muc.xa0.uk][file:https://inverse.chat/badge.svg?room=weechat@muc.xa0.uk]]
+[[https://inverse.chat/#converse/room?jid=weechat@muc.xa0.uk][file:https://img.shields.io/badge/xmpp-weechat%40muc.xa0.uk-yellow]]
 
  | Status:     | XMPP for power users and digital masochists |
- | Location:   | [[http://github.com/bqv/weechat-xmpp]]          |
- | Version:    | 0.1.1                                       |
+ | Location:   | [[http://github.com/bqv/weechat-xmpp]]      |
+ | Version:    | 0.2.0                                       |
  | Disclaimer: | I'm lazy and unashamedly clinically insane  |
 
 * Description

@@ -12,6 +12,7 @@
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
+#include "xmpp/node.hh"
 #include "xmpp/stanza.hh"
 #include "config.hh"
 #include "account.hh"
@@ -84,8 +85,6 @@ int connection__version_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
 int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 {
-    (void) conn;
-
     struct t_account *account = (struct t_account *)userdata;
     struct t_user *user;
     struct t_channel *channel;
@@ -94,6 +93,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
     const char *show__text = NULL, *idle__since = NULL, *certificate = NULL, *node = NULL, *ver = NULL;
     char *clientid = NULL, *status;
 
+    auto binding = xml::presence(account->context, stanza);
     to = xmpp_stanza_get_to(stanza);
     from = xmpp_stanza_get_from(stanza);
     if (from == NULL)
@@ -272,8 +272,6 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
 
 int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 {
-    (void) conn;
-
     struct t_account *account = (struct t_account *)userdata;
     struct t_channel *channel, *parent_channel;
     xmpp_stanza_t *x, *body, *delay, *topic, *replace, *request, *markable, *composing, *sent, *received, *result, *forwarded, *event, *items, *item, *list, *device, *encrypted, **children;
@@ -282,6 +280,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
     struct tm time = {0};
     time_t date = 0;
 
+    auto binding = xml::message(account->context, stanza);
     body = xmpp_stanza_get_child_by_name(stanza, "body");
     if (body == NULL)
     {
@@ -531,12 +530,18 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
     encrypted = xmpp_stanza_get_child_by_name_and_ns(stanza, "encrypted",
                                                      "eu.siacs.conversations.axolotl");
+    x = xmpp_stanza_get_child_by_name_and_ns(stanza, "x", "jabber:x:encrypted");
+    intext = xmpp_stanza_get_text(body);
     if (encrypted && account->omemo)
     {
         cleartext = account->omemo.decode(account, from_bare, encrypted);
+        if (!cleartext)
+        {
+            weechat_printf_date_tags(channel->buffer, 0, "notify_none", "%s%s (%s)",
+                                     weechat_prefix("error"), "OMEMO Decryption Error", from);
+            return 1;
+        }
     }
-    x = xmpp_stanza_get_child_by_name_and_ns(stanza, "x", "jabber:x:encrypted");
-    intext = xmpp_stanza_get_text(body);
     if (x)
     {
         char *ciphertext = xmpp_stanza_get_text(x);
@@ -936,6 +941,7 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
     xmpp_stanza_t         *pubsub, *items, *item, *list, *bundle, *device;
     xmpp_stanza_t         *storage, *conference, *nick;
 
+    auto binding = xml::iq(account->context, stanza);
     const char *id = xmpp_stanza_get_id(stanza);
     const char *from = xmpp_stanza_get_from(stanza);
     const char *to = xmpp_stanza_get_to(stanza);

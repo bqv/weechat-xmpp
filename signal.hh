@@ -32,40 +32,10 @@ namespace libsignal {
     private:
         T *_ptr;
 
-    public:
+    protected:
         typedef T* pointer_type;
 
-        inline explicit type() : _ptr(nullptr) {
-        }
-
-        template<typename... Args>
-        inline explicit type(Args&&... args) : type() {
-            f_create(&_ptr, std::forward<Args>(args)...);
-        }
-
-        inline ~type() {
-            if (_ptr)
-                f_destroy(reinterpret_cast<Base*>(_ptr));
-            _ptr = nullptr;
-        }
-
-        template<typename... Args>
-        inline void create(Args&&... args) {
-            if (_ptr)
-                f_destroy(reinterpret_cast<Base*>(_ptr));
-            _ptr = nullptr;
-            f_create(&_ptr, std::forward<Args>(args)...);
-        }
-
-        inline operator bool() const { return _ptr; }
-
-        inline operator T*() { return _ptr; }
-
-        inline operator const T*() const { return _ptr; }
-
-    protected:
-        inline type(T *ptr) {
-            _ptr = ptr;
+        inline type(T *ptr) : _ptr(ptr) {
         }
 
         template<typename Fun, Fun &func, int success = 0, typename... Args,
@@ -82,6 +52,43 @@ namespace libsignal {
         call(Args&&... args) {
             return func(*this, std::forward<Args>(args)...);
         }
+
+    public:
+        inline explicit type() : _ptr(nullptr) {
+        }
+
+        template<typename... Args>
+        inline explicit type(Args&&... args) : type() {
+            f_create(&_ptr, std::forward<Args>(args)...);
+        }
+
+        inline ~type() {
+            if (_ptr)
+                f_destroy(reinterpret_cast<Base*>(_ptr));
+            _ptr = nullptr;
+        }
+
+        type(const type &other) = delete; /* no copy construction */
+        type(type &&other) = default;
+
+        template<typename... Args>
+        inline void create(Args&&... args) {
+            if (_ptr)
+                f_destroy(reinterpret_cast<Base*>(_ptr));
+            _ptr = nullptr;
+            f_create(&_ptr, std::forward<Args>(args)...);
+        }
+
+        type& operator =(const type &other) = delete; /* no copy assignment */
+        type& operator =(type &&other) = default;
+
+        inline operator bool() const { return _ptr; }
+
+        inline T* operator *() { return _ptr; }
+
+        inline operator T*() { return _ptr; }
+
+        inline operator const T*() const { return _ptr; }
     };
 
     typedef type<struct signal_context,
@@ -90,9 +97,6 @@ namespace libsignal {
     class context : public context_type {
     public:
         using context_type::context_type;
-
-        context& operator =(const context &other) = delete;
-        context& operator =(context &&other) = default;
 
         inline auto set_log_function(auto &&...args) {
             return call<decltype(signal_context_set_log_function),
@@ -217,6 +221,32 @@ namespace libsignal {
         inline private_key get_private(auto &&...args) {
             return call<decltype(ratchet_identity_key_pair_get_private),
                         ratchet_identity_key_pair_get_private>(args...);
+        }
+    };
+
+    typedef type<struct session_pre_key_bundle,
+        decltype(session_pre_key_bundle_create),
+        decltype(session_pre_key_bundle_destroy),
+        session_pre_key_bundle_create,
+        session_pre_key_bundle_destroy,
+        signal_type_base> pre_key_bundle_type;
+    class pre_key_bundle : public pre_key_bundle_type {
+    public:
+        using pre_key_bundle_type::pre_key_bundle_type;
+    };
+
+    typedef type<struct session_builder,
+        decltype(session_builder_create),
+        decltype(session_builder_free),
+        session_builder_create,
+        session_builder_free> session_builder_type;
+    class session_builder : public session_builder_type {
+    public:
+        using session_builder_type::session_builder_type;
+
+        inline auto process_pre_key_bundle(auto &&...args) {
+            return call<decltype(session_builder_process_pre_key_bundle),
+                        session_builder_process_pre_key_bundle>(args...);
         }
     };
 

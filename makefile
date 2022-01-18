@@ -13,16 +13,17 @@ INCLUDES=-Ilibstrophe -Ideps -Ideps/fmt/include \
 CFLAGS+=$(DBGCFLAGS) \
 	-fno-omit-frame-pointer -fPIC \
 	-fvisibility=hidden -fvisibility-inlines-hidden \
-	-std=gnu99 -gdwarf-4 \
+	-fdebug-prefix-map=.=$(shell readlink -f .) \
+	-std=gnu99 -gdwarf-4 -fkeep-inline-functions  \
 	-Wall -Wextra -pedantic \
 	-Werror-implicit-function-declaration \
 	-Wno-missing-field-initializers \
 	-D_XOPEN_SOURCE=700 \
 	$(INCLUDES)
-CPPFLAGS+=$(DBGCFLAGS) \
+CPPFLAGS+=$(DBGCFLAGS) -O0 \
 	  -fno-omit-frame-pointer -fPIC \
 	  -fvisibility=hidden -fvisibility-inlines-hidden \
-	  -std=c++20 -gdwarf-4 \
+	  -std=c++20 -gdwarf-4 -fkeep-inline-functions  \
 	  -Wall -Wextra -pedantic \
 	  -Wno-missing-field-initializers \
 	  $(INCLUDES)
@@ -56,6 +57,8 @@ HDRS=plugin.hh \
      user.hh \
      util.hh \
      xmpp/stanza.hh \
+     xmpp/ns.hh \
+     xmpp/node.hh \
 
 SRCS=plugin.cpp \
 	 account.cpp \
@@ -73,6 +76,7 @@ SRCS=plugin.cpp \
 	 util.cpp \
 	 xmpp/presence.cpp \
 	 xmpp/iq.cpp \
+	 xmpp/node.cpp \
 
 DEPS=deps/diff/libdiff.a \
 	 deps/fmt/libfmt.a \
@@ -99,13 +103,13 @@ xmpp.so: $(OBJS) $(DEPS) $(HDRS)
 	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 .%.cov.o: %.cpp
-	@$(CXX) --coverage -O0 $(CPPFLAGS) -c $< -o $@
+	@$(CXX) --coverage $(CPPFLAGS) -O0 -c $< -o $@
 
 xmpp/.%.o: xmpp/%.cpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 xmpp/.%.cov.o: xmpp/%.cpp
-	@$(CXX) --coverage -O0 $(CPPFLAGS) -c $< -o $@
+	@$(CXX) --coverage $(CPPFLAGS) -O0 -c $< -o $@
 
 deps/diff/libdiff.a:
 	git submodule update --init --recursive

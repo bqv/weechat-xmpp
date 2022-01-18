@@ -1048,7 +1048,7 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
         if (!encrypted)
         {
             weechat_printf_date_tags(channel->buffer, 0, "notify_none", "%s%s",
-                                     weechat_prefix("error"), "OMEMO Error");
+                                     weechat_prefix("error"), "OMEMO Encryption Error");
             channel__set_transport(channel, CHANNEL_TRANSPORT_PLAIN, 1);
             xmpp_stanza_release(message);
             return WEECHAT_RC_ERROR;

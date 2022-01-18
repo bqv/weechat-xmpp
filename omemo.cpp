@@ -4,14 +4,18 @@
 
 #include <fmt/core.h>
 #include <memory>
-#include <stdexcept>
+#include <numeric>
+#include <optional>
+#include <ranges>
+#include <sstream>
+#include <string>
+#include <string_view>
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/param.h>
 #include <time.h>
 #include <math.h>
 #include <limits.h>
-#include <gcrypt.h>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
@@ -19,6 +23,7 @@
 #include "xmpp/stanza.hh"
 #include "account.hh"
 #include "omemo.hh"
+#include "gcrypt.hh"
 #include "util.hh"
 
 using namespace weechat::xmpp;
@@ -520,7 +525,7 @@ int iks_get_identity_key_pair(struct signal_buffer **public_data, signal_buffer 
         *public_data = signal_buffer_create((const uint8_t*)v_local_public_key.mv_data,
                 v_local_public_key.mv_size);
 
-        omemo->identity = identity;
+        omemo->identity = std::move(identity);
     }
 
     return 0;
@@ -1558,54 +1563,34 @@ void sks_destroy_func(void *user_data)
 
 int dls_store_devicelist(const char *jid, signal_int_list *devicelist, t_omemo *omemo)
 {
-    MDB_txn *transaction = NULL;
-    MDB_val k_devicelist = {
-        .mv_size = strlen("devicelist_") + strlen(jid),
-        .mv_data = NULL,
-    };
-    MDB_val v_devicelist;
+    auto transaction = lmdb::txn::begin(omemo->db_env);
+    std::string k_devicelist = fmt::format("devicelist_{}", jid);
+    std::string v_devicelist;
 
-    k_devicelist.mv_data = malloc(sizeof(char) * (
-                                           k_devicelist.mv_size + 1));
-    k_devicelist.mv_size =
-    snprintf((char*)k_devicelist.mv_data, k_devicelist.mv_size + 1,
-             "devicelist_%s", jid);
-    char *devices[128] = {0};
     for (size_t i = 0; i < signal_int_list_size(devicelist); i++)
     {
         int device = signal_int_list_at(devicelist, i);
-        devices[i] = (char*)malloc(sizeof(*devices) * (10 + 1));
-        devices[i+1] = NULL;
-        snprintf(devices[i], 10 + 1, "%u", device);
-    }
-    v_devicelist.mv_data = weechat_string_build_with_split_string(
-            (const char **)devices, ";");
-    v_devicelist.mv_size = strlen((const char*)v_devicelist.mv_data);
-    for (char **device = (char **)devices; *device; device++) free(*device);
-
-    if (mdb_txn_begin(omemo->db_env, NULL, 0, &transaction)) {
-        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
-                       weechat_prefix("error"));
-        return -1;
+        std::string device_id = std::to_string(device);
+        if (v_devicelist.size() > 0)
+            v_devicelist += ";";
+        v_devicelist += device_id;
     }
 
-    if (mdb_put(transaction, omemo->dbi.omemo, &k_devicelist,
-                &v_devicelist, 0)) {
-      weechat_printf(NULL, "%sxmpp: failed to write lmdb value",
-                     weechat_prefix("error"));
-      goto cleanup;
-    };
+    omemo->dbi.omemo.put(transaction, k_devicelist, v_devicelist);
+  //omemo->dbi.omemo.put(wtxn, "fullname", std::string_view("J. Random Hacker"));
+  //{
+  //    auto cursor = lmdb::cursor::open(rtxn, dbi);
+  //    std::string_view key, value;
+  //    if (cursor.get(key, value, MDB_FIRST)) {
+  //        do {
+  //            std::cout << "key: " << key << "  value: " << value << std::endl;
+  //        } while (cursor.get(key, value, MDB_NEXT));
+  //    }
+  //}
 
-    if (mdb_txn_commit(transaction)) {
-      weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
-                     weechat_prefix("error"));
-      goto cleanup;
-    };
+    transaction.commit();
 
     return 0;
-cleanup:
-    mdb_txn_abort(transaction);
-    return -1;
 }
 
 int dls_load_devicelist(signal_int_list **devicelist, const char *jid, t_omemo *omemo)
@@ -1615,16 +1600,17 @@ int dls_load_devicelist(signal_int_list **devicelist, const char *jid, t_omemo *
     std::string_view v_devicelist;
     omemo->dbi.omemo.get(transaction, k_devicelist, v_devicelist);
 
-    int devices_len = 0;
-    char **devices = weechat_string_split(v_devicelist.data(), ";", NULL, 0, 0, &devices_len);
+    auto devices = v_devicelist
+        | std::ranges::views::split(';')
+        | std::ranges::views::transform([](auto&& str) {
+            return std::stoul(std::string(&*str.begin(), std::ranges::distance(str)));
+        });
 
     *devicelist = signal_int_list_alloc();
-    for (int i = 0; i < devices_len; i++)
+    for (uint32_t&& device_id : devices)
     {
-        char* device_id = devices[i];
-        signal_int_list_push_back(*devicelist, strtol(device_id, NULL, 10));
+        signal_int_list_push_back(*devicelist, device_id);
     }
-    weechat_string_free_split(devices);
 
     transaction.commit();
 
@@ -1637,28 +1623,18 @@ int bks_store_bundle(struct signal_protocol_address *address,
 {
     size_t n_pre_keys = -1;
     while (pre_keys[++n_pre_keys] != NULL);
-    char **pre_key_buffers = (char**)malloc(sizeof(char*) * (n_pre_keys + 1));
-    for (size_t i = 0; i < n_pre_keys; i++)
+    auto pre_key_buffers = std::vector<std::string>(n_pre_keys);
+    for (auto pre_key : std::vector<struct t_pre_key*>(pre_keys, pre_keys + n_pre_keys))
     {
-        struct t_pre_key *pre_key = pre_keys[i];
-        size_t keylen = 10 + strlen(pre_key->public_key) + 1;
-        pre_key_buffers[i] = (char*)malloc(sizeof(char) * keylen);
-        pre_key_buffers[i+1] = NULL;
-        snprintf(pre_key_buffers[i], keylen,
-             "%s.%s", pre_key->id, pre_key->public_key);
+        pre_key_buffers.push_back(fmt::format("{}.{}", pre_key->id, pre_key->public_key));
     }
 
-    size_t n_signed_pre_keys = -1;
-    while (signed_pre_keys[++n_signed_pre_keys] != NULL);
-    char **signed_pre_key_buffers = (char**)malloc(sizeof(char*) * (n_signed_pre_keys + 1));
-    for (size_t i = 0; i < n_signed_pre_keys; i++)
+    n_pre_keys = -1;
+    while (signed_pre_keys[++n_pre_keys] != NULL);
+    auto signed_pre_key_buffers = std::vector<std::string>(n_pre_keys);
+    for (auto signed_pre_key : std::vector<struct t_pre_key*>(signed_pre_keys, signed_pre_keys + n_pre_keys))
     {
-        struct t_pre_key *signed_pre_key = signed_pre_keys[i];
-        size_t keylen = 10 + 1 + strlen(signed_pre_key->public_key);
-        signed_pre_key_buffers[i] = (char*)malloc(sizeof(char) * (keylen + 1));
-        signed_pre_key_buffers[i+1] = NULL;
-        snprintf(signed_pre_key_buffers[i], keylen + 1,
-             "%s.%s", signed_pre_key->id, signed_pre_key->public_key);
+        signed_pre_key_buffers.push_back(fmt::format("{}.{}", signed_pre_key->id, signed_pre_key->public_key));
 
         uint8_t *signing_key_buf;
         size_t signing_key_len = base64_decode(identity_key,
@@ -1681,214 +1657,108 @@ int bks_store_bundle(struct signal_protocol_address *address,
         }
     }
 
-    MDB_txn *transaction = NULL;
-    const char *jid = address->name;
-    uint32_t device_id = address->device_id;
-    size_t keylen = strlen("bundle_??_") + strlen(jid) + 1 + 10 + 1;
-    MDB_val k_bundle_pk = {
-        .mv_size = 0,
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
-    };
-    k_bundle_pk.mv_size = snprintf((char*)k_bundle_pk.mv_data, keylen,
-             "bundle_pk_%s_%u", jid, device_id);
-    MDB_val k_bundle_sk = {
-        .mv_size = 0,
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
-    };
-    k_bundle_sk.mv_size = snprintf((char*)k_bundle_sk.mv_data, keylen,
-             "bundle_sk_%s_%u", jid, device_id);
-    MDB_val k_bundle_sg = {
-        .mv_size = 0,
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
-    };
-    k_bundle_sg.mv_size = snprintf((char*)k_bundle_sg.mv_data, keylen,
-             "bundle_sg_%s_%u", jid, device_id);
-    MDB_val k_bundle_ik = {
-        .mv_size = 0,
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
-    };
-    k_bundle_ik.mv_size = snprintf((char*)k_bundle_ik.mv_data, keylen,
-             "bundle_ik_%s_%u", jid, device_id);
+    std::string k_bundle_pk = fmt::format("bundle_pk_{}_{}", address->name, address->device_id);
+    std::string k_bundle_sk = fmt::format("bundle_sk_{}_{}", address->name, address->device_id);
+    std::string k_bundle_sg = fmt::format("bundle_sg_{}_{}", address->name, address->device_id);
+    std::string k_bundle_ik = fmt::format("bundle_ik_{}_{}", address->name, address->device_id);
 
-    MDB_val v_bundle_pk = {
-        .mv_size = 0,
-        .mv_data = weechat_string_build_with_split_string(
-            (const char **)pre_key_buffers, ";"),
-    };
-    v_bundle_pk.mv_size = strlen((const char*)v_bundle_pk.mv_data) + 1;
-    MDB_val v_bundle_sk = {
-        .mv_size = 0,
-        .mv_data = weechat_string_build_with_split_string(
-            (const char **)signed_pre_key_buffers, ";"),
-    };
-    v_bundle_sk.mv_size = strlen((const char*)v_bundle_sk.mv_data) + 1;
-    MDB_val v_bundle_sg = {
-        .mv_size = strlen(signature),
-        .mv_data = (char*)signature,
-    };
-    MDB_val v_bundle_ik = {
-        .mv_size = strlen(identity_key),
-        .mv_data = (char*)identity_key,
-    };
+    std::string v_bundle_pk = std::accumulate(pre_key_buffers.begin(), pre_key_buffers.end(), std::string(";"));
+    std::string v_bundle_sk = std::accumulate(signed_pre_key_buffers.begin(), signed_pre_key_buffers.end(), std::string(";"));
+    std::string_view v_bundle_sg = signature;
+    std::string_view v_bundle_ik = identity_key;
 
-    if (mdb_txn_begin(omemo->db_env, NULL, 0, &transaction)) {
-        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
-                       weechat_prefix("error"));
-        return -1;
-    }
+    auto transaction = lmdb::txn::begin(omemo->db_env);
 
-    int ret;
-    if ((ret = mdb_put(transaction, omemo->dbi.omemo, &k_bundle_pk,
-                 &v_bundle_pk, 0)) ||
-        (ret = mdb_put(transaction, omemo->dbi.omemo, &k_bundle_sk,
-                 &v_bundle_sk, 0)) ||
-        (ret = mdb_put(transaction, omemo->dbi.omemo, &k_bundle_sg,
-                 &v_bundle_sg, 0)) ||
-        (ret = mdb_put(transaction, omemo->dbi.omemo, &k_bundle_ik,
-                 &v_bundle_ik, 0))) {
-      weechat_printf(NULL, "%sxmpp: failed to write lmdb value '%s'@%u: %s",
-                     weechat_prefix("error"), v_bundle_pk.mv_data, v_bundle_pk.mv_size, mdb_strerror(ret));
-      goto cleanup;
-    };
+    omemo->dbi.omemo.put(transaction, k_bundle_pk, v_bundle_pk);
+    omemo->dbi.omemo.put(transaction, k_bundle_sk, v_bundle_sk);
+    omemo->dbi.omemo.put(transaction, k_bundle_sg, v_bundle_sg);
+    omemo->dbi.omemo.put(transaction, k_bundle_ik, v_bundle_ik);
 
-    if ((ret = mdb_txn_commit(transaction))) {
-      weechat_printf(NULL, "%sxmpp: failed to write lmdb transaction",
-                     weechat_prefix("error"));
-      goto cleanup;
-    };
+    transaction.commit();
 
     return 0;
-cleanup:
-    mdb_txn_abort(transaction);
-    return -1;
 }
 
-int bks_load_bundle(session_pre_key_bundle **bundle, struct signal_protocol_address *address, t_omemo *omemo)
+std::optional<libsignal::pre_key_bundle> bks_load_bundle(struct signal_protocol_address *address, t_omemo *omemo)
 {
-    MDB_txn *transaction = NULL;
-    const char *jid = address->name;
-    uint32_t device_id = address->device_id;
-    size_t keylen = strlen("bundle_??_") + address->name_len + 1 + 10 + 1;
-    MDB_val k_bundle_pk = {
-        .mv_size = 0,
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
-    };
-    k_bundle_pk.mv_size = snprintf((char*)k_bundle_pk.mv_data, keylen,
-             "bundle_pk_%s_%u", jid, device_id);
-    MDB_val k_bundle_sk = {
-        .mv_size = 0,
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
-    };
-    k_bundle_sk.mv_size = snprintf((char*)k_bundle_sk.mv_data, keylen,
-             "bundle_sk_%s_%u", jid, device_id);
-    MDB_val k_bundle_sg = {
-        .mv_size = 0,
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
-    };
-    k_bundle_sg.mv_size = snprintf((char*)k_bundle_sg.mv_data, keylen,
-             "bundle_sg_%s_%u", jid, device_id);
-    MDB_val k_bundle_ik = {
-        .mv_size = 0,
-        .mv_data = malloc(sizeof(char) * (keylen + 1)),
-    };
-    k_bundle_ik.mv_size = snprintf((char*)k_bundle_ik.mv_data, keylen,
-             "bundle_ik_%s_%u", jid, device_id);
+    std::string k_bundle_pk = fmt::format("bundle_pk_{}_{}", address->name, address->device_id);
+    std::string k_bundle_sk = fmt::format("bundle_sk_{}_{}", address->name, address->device_id);
+    std::string k_bundle_sg = fmt::format("bundle_sg_{}_{}", address->name, address->device_id);
+    std::string k_bundle_ik = fmt::format("bundle_ik_{}_{}", address->name, address->device_id);
 
-    MDB_val v_bundle_pk;
-    MDB_val v_bundle_sk;
-    MDB_val v_bundle_sg;
-    MDB_val v_bundle_ik;
+    std::string_view v_bundle_pk;
+    std::string_view v_bundle_sk;
+    std::string_view v_bundle_sg;
+    std::string_view v_bundle_ik;
 
-    int ret;
-    if ((ret = mdb_txn_begin(omemo->db_env, NULL, MDB_RDONLY, &transaction))) {
-        weechat_printf(NULL, "%sxmpp: failed to open lmdb transaction",
-                       weechat_prefix("error"));
-        return -1;
-    }
+    auto transaction = lmdb::txn::begin(omemo->db_env);
 
-    int bundle_pk_len;
-    int bundle_sk_len;
-    char **bundle_pks;
-    char **bundle_sks;
-    ec_public_key *pre_key;
-    ec_public_key *signed_pre_key;
-    ec_public_key *identity_key;
-    uint32_t pre_key_id;
-    uint32_t signed_pre_key_id;
+    uint32_t pre_key_id = 0;
+    uint32_t signed_pre_key_id = 0;
     uint8_t *sig_buf; size_t sig_len;
     struct signal_buffer *signature;
     uint8_t *key_buf; size_t key_len;
 
-    if ((ret = mdb_get(transaction, omemo->dbi.omemo,
-                       &k_bundle_pk, &v_bundle_pk)) ||
-        (ret = mdb_get(transaction, omemo->dbi.omemo,
-                       &k_bundle_sk, &v_bundle_sk)) ||
-        (ret = mdb_get(transaction, omemo->dbi.omemo,
-                       &k_bundle_sg, &v_bundle_sg)) ||
-        (ret = mdb_get(transaction, omemo->dbi.omemo,
-                       &k_bundle_ik, &v_bundle_ik)))
-    {
-        goto cleanup;
-    }
+    omemo->dbi.omemo.get(transaction, k_bundle_pk, v_bundle_pk);
+    omemo->dbi.omemo.get(transaction, k_bundle_sk, v_bundle_sk);
+    omemo->dbi.omemo.get(transaction, k_bundle_sg, v_bundle_sg);
+    omemo->dbi.omemo.get(transaction, k_bundle_ik, v_bundle_ik);
 
-    bundle_pk_len = 0;
-    bundle_pks = weechat_string_split((const char*)v_bundle_pk.mv_data, ";", NULL, 0, 0, &bundle_pk_len);
-    pre_key_id = 0;
+    auto r_bundle_pks = v_bundle_pk
+        | std::ranges::views::split(';')
+        | std::ranges::views::transform([](auto&& str) {
+            return std::string_view(&*str.begin(), std::ranges::distance(str));
+        });
+    auto bundle_pks = std::vector<std::string>{r_bundle_pks.begin(), r_bundle_pks.begin()};
+    if (bundle_pks.size() > 0)
     {
-        int i = rand() % bundle_pk_len;
-        char *bundle_pk = bundle_pks[i];
-        pre_key_id = strtol(bundle_pk, NULL, 10);
-        char *key_data = (char *)memchr(bundle_pk, '.', 10 + 1) + 1;
-        uint8_t *key_buf;
-        size_t key_len = base64_decode(key_data, strlen(key_data), &key_buf);
-        if ((ret = curve_decode_point(&pre_key, key_buf, key_len, omemo->context))) {
-            weechat_printf(NULL, "%sxmpp: failed to decode ED25519 prekey",
-                           weechat_prefix("error"));
-            goto cleanup;
-        };
+        std::istringstream iss(bundle_pks[rand() % bundle_pks.size()]);
+        iss >> pre_key_id;
+        char delim;
+        iss.get(delim);
+        if (delim != ',') throw std::runtime_error("Bundle parse failure");
+        std::string key_data;
+        iss >> key_data;
+        key_len = base64_decode(key_data.data(), key_data.size(), &key_buf);
     }
-    bundle_sks = weechat_string_split((const char*)v_bundle_sk.mv_data, ";", NULL, 0, 0, &bundle_sk_len);
+    else
+        return {};
+    libsignal::public_key pre_key(key_buf, key_len, omemo->context);
+
+    auto r_bundle_sks = v_bundle_sk
+        | std::ranges::views::split(';')
+        | std::ranges::views::transform([](auto&& str) {
+            return std::string_view(&*str.begin(), std::ranges::distance(str));
+        });
+    auto bundle_sks = std::vector<std::string>{r_bundle_sks.begin(), r_bundle_sks.begin()};
+    if (bundle_sks.size() > 0)
     {
-        int i = rand() % bundle_sk_len;
-        char *bundle_sk = bundle_sks[i];
-        signed_pre_key_id = strtol(bundle_sk, NULL, 10);
-        char *key_data = (char *)memchr(bundle_sk, '.', 10 + 1) + 1;
-        uint8_t *key_buf;
-        size_t key_len = base64_decode(key_data, strlen(key_data), &key_buf);
-        if ((ret = curve_decode_point(&signed_pre_key, key_buf, key_len, omemo->context))) {
-            weechat_printf(NULL, "%sxmpp: failed to decode ED25519 signed prekey",
-                           weechat_prefix("error"));
-            goto cleanup;
-        };
+        std::istringstream iss(bundle_sks[rand() % bundle_sks.size()]);
+        iss >> signed_pre_key_id;
+        char delim;
+        iss.get(delim);
+        if (delim != ',') throw std::runtime_error("Bundle parse failure");
+        std::string key_data;
+        iss >> key_data;
+        key_len = base64_decode(key_data.data(), key_data.size(), &key_buf);
     }
-    sig_len = base64_decode((const char*)v_bundle_sg.mv_data, v_bundle_sg.mv_size, &sig_buf);
+    else
+        return {};
+    libsignal::public_key signed_pre_key(key_buf, key_len, omemo->context);
+
+    sig_len = base64_decode(v_bundle_sg.data(), v_bundle_sg.size(), &sig_buf);
     signature = signal_buffer_create(sig_buf, sig_len);
-    key_len = base64_decode((const char*)v_bundle_ik.mv_data, v_bundle_ik.mv_size, &key_buf);
-    if ((ret = curve_decode_point(&identity_key, key_buf, key_len, omemo->context))) {
-        weechat_printf(NULL, "%sxmpp: failed to decode ED25519 identity key",
-                       weechat_prefix("error"));
-        goto cleanup;
-    };
+    key_len = base64_decode(v_bundle_ik.data(), v_bundle_ik.size(), &key_buf);
+    libsignal::public_key identity_key(key_buf, key_len, omemo->context);
 
-    if ((ret = session_pre_key_bundle_create(bundle, device_id, device_id/*?*/, pre_key_id, pre_key, signed_pre_key_id, signed_pre_key, signal_buffer_data(signature), signal_buffer_len(signature), identity_key))) {
-        weechat_printf(NULL, "%sxmpp: failed to create OMEMO prekey bundle",
-                       weechat_prefix("error"));
-        goto cleanup;
-    };
+    libsignal::pre_key_bundle bundle((uint32_t)address->device_id, (int)address->device_id,
+                                     (uint32_t)pre_key_id, *pre_key, (uint32_t)signed_pre_key_id, *signed_pre_key,
+                                     (const uint8_t*)signal_buffer_data(signature), (size_t)signal_buffer_len(signature),
+                                     *identity_key);
 
-    if ((ret = mdb_txn_commit(transaction))) {
-        weechat_printf(NULL, "%sxmpp: failed to close lmdb transaction",
-                       weechat_prefix("error"));
-        goto cleanup;
-    };
+    transaction.commit();
 
-    return 0;
-cleanup:
-    /*
-    void session_pre_key_bundle_destroy(signal_type_base *type);
-     */
-    mdb_txn_abort(transaction);
-    return -1;
+    return bundle;
 }
 
 extern "C"
@@ -2016,10 +1886,9 @@ xmpp_stanza_t *omemo::get_bundle(xmpp_ctx_t *context, char *from, char *to)
 
 void omemo::init(struct t_gui_buffer *buffer, const char *account_name)
 {
-    if (!gcry_check_version(GCRYPT_VERSION))
-        throw std::runtime_error("GCrypt: library version mismatch");
+    gcrypt::check_version();
 
-    auto omemo = this;
+    const auto omemo = this;
 
     omemo->context.create(buffer);
     omemo->context.set_log_function(&log_emit_weechat);
@@ -2030,11 +1899,10 @@ void omemo::init(struct t_gui_buffer *buffer, const char *account_name)
                                            NULL, NULL, NULL),
             &free).get();
 
-        lmdb::env &env = omemo->db_env;
-        env = lmdb::env::create();
-        env.set_max_dbs(50);
-        env.set_mapsize((size_t)1048576 * 8000); // 8000MB map for valgrind
-        env.open(omemo->db_path.data(), MDB_NOSUBDIR, 0664);
+        omemo->db_env = lmdb::env::create();
+        omemo->db_env.set_max_dbs(50);
+        omemo->db_env.set_mapsize((size_t)1048576 * 8000); // 8000MB map for valgrind
+        omemo->db_env.open(omemo->db_path.data(), MDB_NOSUBDIR, 0664);
 
         lmdb::txn parentTransaction{nullptr};
         lmdb::txn transaction = lmdb::txn::begin(omemo->db_env, parentTransaction);
@@ -2043,10 +1911,10 @@ void omemo::init(struct t_gui_buffer *buffer, const char *account_name)
         omemo->dbi.omemo = lmdb::dbi::open(transaction, db_name.data(), MDB_CREATE);
 
         transaction.commit();
-    } catch (const std::exception& ex) {
+    } catch (const lmdb::error& ex) {
         auto format = fmt::format("%sxmpp: lmdb failure - {}", ex.what());
         weechat_printf(NULL, format.data(), weechat_prefix("error"));
-        return;
+        throw;
     }
 
     struct signal_crypto_provider crypto_provider = {
@@ -2431,7 +2299,6 @@ xmpp_stanza_t *omemo::encode(struct t_account *account, const char *jid,
         for (size_t i = 0; i < signal_int_list_size(devicelist); i++)
         {
             uint32_t device_id = signal_int_list_at(devicelist, i);
-            weechat_printf(NULL, "omemo: trying device %u for %s", device_id, jid);
             if (!device_id) continue;
             struct signal_protocol_address address = {
                 .name = target, .name_len = strlen(target), .device_id = (int32_t)device_id};
@@ -2442,14 +2309,18 @@ xmpp_stanza_t *omemo::encode(struct t_account *account, const char *jid,
             snprintf(device_id_str, 10+1, "%u", device_id);
             xmpp_stanza_set_attribute(header__key, "rid", device_id_str);
 
-            struct session_builder *builder = NULL;
             if (((ret = ss_contains_session_func(&address, omemo))) <= 0)
             {
-                struct session_pre_key_bundle *bundle;
-                if ((ret = bks_load_bundle(&bundle, &address, omemo))) continue;
+                try {
+                    auto bundle = bks_load_bundle(&address, omemo);
+                    if (!bundle) throw std::runtime_error(fmt::format("No bundle for {}", target));
 
-                if ((ret = session_builder_create(&builder, omemo->store_context, &address, omemo->context))) continue;
-                if ((ret = session_builder_process_pre_key_bundle(builder, bundle))) continue;
+                    libsignal::session_builder builder(omemo->store_context, &address, omemo->context);
+                    builder.process_pre_key_bundle(*bundle);
+                }
+                catch (const std::exception& ex) {
+                    continue;
+                }
             }
 
             struct session_cipher *cipher;
@@ -2478,8 +2349,6 @@ xmpp_stanza_t *omemo::encode(struct t_account *account, const char *jid,
             signal_buffer_free(record);
           //SIGNAL_UNREF(signal_message);
             session_cipher_free(cipher);
-            if (builder)
-                session_builder_free(builder);
         }
         signal_int_list_free(devicelist);
         target = account_jid(account);

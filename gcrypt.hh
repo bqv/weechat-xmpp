@@ -6,8 +6,26 @@
 
 #include <memory>
 #include <functional>
+#include <stdexcept>
 #include <gcrypt.h>
 
 namespace gcrypt {
+
+    class version_error : public std::runtime_error {
+    private:
+        const char *const message = "GCrypt: library version mismatch";
+    public:
+        version_error() noexcept : runtime_error(GCRYPT_VERSION) {
+        }
+
+        virtual const char* what() const noexcept {
+            return message;
+        }
+    };
+
+    void check_version() {
+        if (!gcry_check_version(GCRYPT_VERSION))
+            throw gcrypt::version_error();
+    }
 
 }
