@@ -107,6 +107,7 @@ struct t_account
     int reconnect_delay;
     int reconnect_start;
 
+    xmpp_mem_t memory;
     xmpp_log_t logger;
     xmpp_ctx_t *context;
     xmpp_conn_t *connection;

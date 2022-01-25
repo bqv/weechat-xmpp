@@ -7,14 +7,12 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <regex>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
 #include <chrono>
-#include <sstream>
-#include <locale>
-#include <iomanip>
 #include <fmt/core.h>
 #include <strophe.h>
 
@@ -27,15 +25,20 @@ std::string get_text(xmpp_stanza_t *stanza);
 std::chrono::system_clock::time_point get_time(const std::string& text);
 
 class jid {
-public:
-    std::optional<std::string> local;
-    std::string domain;
-    std::optional<std::string> resource;
+private:
+    static const std::regex pattern;
 
+public:
     jid(xmpp_ctx_t *context, std::string s);
 
-    std::string full() const;
-    std::string bare() const;
+    operator std::string&() { return full; }
+
+    std::string full;
+    std::string_view bare;
+    std::string_view local;
+    std::string_view domain;
+    std::string_view resource;
+
     bool is_bare() const;
 };
 
@@ -46,9 +49,11 @@ namespace xml {
         explicit node();
 
     public:
-        inline node(xmpp_ctx_t *context, xmpp_stanza_t *stanza) {
+        inline node(xmpp_ctx_t *context, xmpp_stanza_t *stanza) : context(context) {
             bind(context, stanza);
         }
+
+        xmpp_ctx_t *context;
 
         std::optional<std::string> name;
 
@@ -61,6 +66,14 @@ namespace xml {
         std::string text;
 
         virtual void bind(xmpp_ctx_t *context, xmpp_stanza_t *stanza);
+
+        inline std::optional<std::string>
+        get_attr(const std::string& name) {
+            auto attribute = attributes.find(name);
+            if (attribute != attributes.end())
+                return attribute->second;
+            return {};
+        }
 
         template<typename xmlns>
         inline std::vector<std::reference_wrapper<node>>
@@ -96,9 +109,12 @@ namespace xml {
 
 namespace xml {
 
-    class message : virtual public node, public xep0027 {
+    class message : virtual public node,
+                    public xep0027 {
     public:
-        using node::node;
+        inline message(xmpp_ctx_t *context, xmpp_stanza_t *stanza) : node(context, stanza) {
+            bind(context, stanza);
+        }
 
         std::optional<jid> from;
         std::optional<jid> to;
@@ -108,9 +124,12 @@ namespace xml {
         void bind(xmpp_ctx_t *context, xmpp_stanza_t *stanza) override;
     };
 
-    class presence : virtual public node, public xep0045, public xep0115, public xep0319 {
+    class presence : virtual public node,
+                     public xep0027, public xep0045, public xep0115, public xep0319 {
     public:
-        using node::node;
+        inline presence(xmpp_ctx_t *context, xmpp_stanza_t *stanza) : node(context, stanza) {
+            bind(context, stanza);
+        }
 
         std::optional<jid> from;
         std::optional<jid> to;
@@ -125,12 +144,26 @@ namespace xml {
 
     class iq : virtual public node {
     public:
-        using node::node;
+        inline iq(xmpp_ctx_t *context, xmpp_stanza_t *stanza) : node(context, stanza) {
+            bind(context, stanza);
+        }
 
         std::optional<jid> from;
         std::optional<jid> to;
 
         std::optional<std::string> type;
+
+        void bind(xmpp_ctx_t *context, xmpp_stanza_t *stanza) override;
+    };
+
+    class error : virtual public node {
+    public:
+        inline error(xmpp_ctx_t *context, xmpp_stanza_t *stanza) : node(context, stanza) {
+            bind(context, stanza);
+        }
+
+        std::optional<jid> from;
+        std::optional<jid> to;
 
         void bind(xmpp_ctx_t *context, xmpp_stanza_t *stanza) override;
     };

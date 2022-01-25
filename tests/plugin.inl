@@ -1,18 +1,14 @@
 #include <doctest/doctest.h>
 
+#include <weechat/weechat-plugin.h>
 #include "../plugin.hh"
 
-TEST_CASE("placeholder")
+TEST_CASE("weechat")
 {
-    int argc = 2;
-    const char *argv[2] = {"a", "b"};
+    std::string current("20211106-01");
     
-    SUBCASE("takes no arguments")
+    SUBCASE("plugin api match")
     {
-        CHECK(argc != 1);
+        CHECK(current == WEECHAT_PLUGIN_API_VERSION);
     }
-
-    (void) argv;
-  //weechat::plugin c;
-  //CHECK(&c.name() == NULL);
 }

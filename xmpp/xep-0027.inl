@@ -15,19 +15,32 @@
 namespace xml {
 
     class xep0027 : virtual public node {
+    private:
+        std::optional<std::optional<std::string>> _signature;
+        std::optional<std::optional<std::string>> _encrypted;
     public:
-        std::optional<std::string> signature() {
-            auto child = get_children<jabber::x::signed_>("x");
-            if (child.size() > 0)
-                return child.front().get().text;
-            return {};
+        std::optional<std::string>& signature() {
+            if (!_signature)
+            {
+                auto child = get_children<jabber::x::signed_>("x");
+                if (child.size() > 0)
+                    _signature = child.front().get().text;
+                else
+                    _signature.emplace(std::nullopt);
+            }
+            return *_signature;
         }
 
-        std::optional<std::string> encrypted() {
-            auto child = get_children<jabber::x::encrypted>("x");
-            if (child.size() > 0)
-                return child.front().get().text;
-            return {};
+        std::optional<std::string>& encrypted() {
+            if (!_encrypted)
+            {
+                auto child = get_children<jabber::x::encrypted>("x");
+                if (child.size() > 0)
+                    _encrypted = child.front().get().text;
+                else
+                    _encrypted.emplace(std::nullopt);
+            }
+            return *_encrypted;
         }
     };
 

@@ -1,6 +1,6 @@
 ifdef DEBUG
-	DBGCFLAGS=-fsanitize=address -fsanitize=undefined -fsanitize=leak
-	DBGLDFLAGS=-lasan -lubsan -llsan
+	DBGCFLAGS=-fno-omit-frame-pointer -fsanitize=address #-fsanitize=undefined -fsanitize=leak
+	DBGLDFLAGS=-lasan -lrt -lasan #-lubsan -llsan
 endif
 
 RM=rm -f
@@ -8,8 +8,8 @@ FIND=find
 
 INCLUDES=-Ilibstrophe -Ideps -Ideps/fmt/include \
 	 $(shell xml2-config --cflags) \
-	 $(shell pkg-config --cflags librnp-0) \
-	 $(shell pkg-config --cflags libomemo-c)
+	 $(shell pkg-config --cflags librnp) \
+	 $(shell pkg-config --cflags libsignal-protocol-c)
 CFLAGS+=$(DBGCFLAGS) \
 	-fno-omit-frame-pointer -fPIC \
 	-fvisibility=hidden -fvisibility-inlines-hidden \
@@ -23,7 +23,7 @@ CFLAGS+=$(DBGCFLAGS) \
 CPPFLAGS+=$(DBGCFLAGS) -O0 \
 	  -fno-omit-frame-pointer -fPIC \
 	  -fvisibility=hidden -fvisibility-inlines-hidden \
-	  -std=c++20 -gdwarf-4 -fkeep-inline-functions  \
+	  -std=c++23 -gdwarf-4 -fkeep-inline-functions  \
 	  -Wall -Wextra -pedantic \
 	  -Wno-missing-field-initializers \
 	  $(INCLUDES)
@@ -34,8 +34,8 @@ LDFLAGS+=$(DBGLDFLAGS) \
 LDLIBS=-lstrophe \
 	   -lpthread \
 	   $(shell xml2-config --libs) \
-	   $(shell pkg-config --libs librnp-0) \
-	   $(shell pkg-config --libs libomemo-c) \
+	   $(shell pkg-config --libs librnp) \
+	   $(shell pkg-config --libs libsignal-protocol-c) \
 	   -lgcrypt \
 	   -llmdb
 
@@ -92,9 +92,6 @@ weechat-xmpp: $(DEPS) xmpp.so
 
 xmpp.so: $(OBJS) $(DEPS) $(HDRS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(DEPS) $(LDLIBS)
-	which patchelf >/dev/null && \
-		patchelf --set-rpath $(LIBRARY_PATH):$(shell realpath $(shell dirname $(shell gcc --print-libgcc-file-name))/../../../) xmpp.so && \
-		patchelf --shrink-rpath xmpp.so || true
 
 .%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -123,15 +120,14 @@ deps/fmt/libfmt.a:
 	$(MAKE) -C deps/fmt fmt
 fmt: deps/fmt/libfmt.a
 
-tests/run: $(COVS) $(DEPS) $(HDRS) tests/main.cc
+tests/xmpp.cov.so: $(COVS) $(DEPS) $(HDRS)
 	$(CXX) --coverage -O0 $(LDFLAGS) -o tests/xmpp.cov.so $(COVS) $(DEPS) $(LDLIBS)
-	env --chdir tests $(CXX) $(CPPFLAGS) -o run xmpp.cov.so main.cc $(LDLIBS)
-	which patchelf >/dev/null && \
-		patchelf --set-rpath $(PWD)/tests:$(LIBRARY_PATH):$(shell realpath $(shell dirname $(shell gcc --print-libgcc-file-name))/../../../) tests/xmpp.cov.so tests/run && \
-		patchelf --shrink-rpath tests/run tests/xmpp.cov.so || true
+
+tests/run: $(COVS) tests/main.cc tests/xmpp.cov.so
+	env --chdir tests $(CXX) $(CPPFLAGS) -o run ./xmpp.cov.so main.cc $(LDLIBS)
 
 test: tests/run
-	env --chdir tests ./run
+	env --chdir tests ./run -s
 
 coverage: tests/run
 	gcov -m -abcfu -rqk -i .*.gcda xmpp/.*.gcda
@@ -160,7 +156,7 @@ tidy:
 	$(FIND) . -name "*.gcda" -delete
 
 clean:
-	$(RM) -f $(OBJS)
+	$(RM) -f $(OBJS) $(COVS)
 	$(MAKE) -C deps/diff clean || true
 	$(MAKE) -C deps/fmt clean || true
 	git submodule foreach --recursive git clean -xfd || true

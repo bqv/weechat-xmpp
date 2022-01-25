@@ -61,6 +61,18 @@ size_t base64_encode(const uint8_t *buffer, size_t length, char **result)
     return weechat_string_base_encode(64, (char*)buffer, length, *result);
 }
 
+std::vector<std::uint8_t> base64_decode(std::string_view buffer)
+{
+    auto result = std::make_unique<std::uint8_t[]>(buffer.size() + 1);
+    return std::vector<std::uint8_t>(result.get(), result.get() + weechat_string_base_decode(64, buffer.data(), (char*)result.get()));
+}
+
+std::string base64_encode(std::vector<std::uint8_t> buffer)
+{
+    auto result = std::make_unique<char[]>(buffer.size() * 2);
+    return std::string(result.get(), result.get() + weechat_string_base_encode(64, (char*)buffer.data(), buffer.size(), result.get()));
+}
+
 int aes_decrypt(const uint8_t *ciphertext, size_t ciphertext_len,
                 uint8_t *key, uint8_t *iv, uint8_t *tag, size_t tag_len,
                 uint8_t **plaintext, size_t *plaintext_len)
@@ -1761,7 +1773,6 @@ std::optional<libsignal::pre_key_bundle> bks_load_bundle(struct signal_protocol_
     return bundle;
 }
 
-extern "C"
 void log_emit_weechat(int level, const char *message, size_t len, void *user_data)
 {
     struct t_gui_buffer *buffer = (struct t_gui_buffer*)user_data;

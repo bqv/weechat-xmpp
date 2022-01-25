@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstring>
 #include <ctime>
+#include <csignal>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
@@ -35,10 +36,18 @@ WEECHAT_PLUGIN_PRIORITY(5500);
 }
 
 extern "C"
+void weechat_signal_handler(int)
+{
+    __asm__("int3");
+}
+
+extern "C"
 int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 {
     (void) argc;
     (void) argv;
+
+    std::signal(SIGSEGV, weechat_signal_handler);
 
     weechat_xmpp_plugin = plugin;
 

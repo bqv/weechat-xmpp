@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/utsname.h>
+#include <fmt/core.h>
+#include <fmt/chrono.h>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
@@ -85,187 +87,163 @@ int connection__version_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
 
 int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userdata)
 {
-    struct t_account *account = (struct t_account *)userdata;
+    struct t_account *account = reinterpret_cast<struct t_account *>(userdata);
     struct t_user *user;
     struct t_channel *channel;
-    xmpp_stanza_t *pres__x_signed, *pres__x_muc_user, *show, *idle, *pres__x__item, *pres__c, *pres__status;
-    const char *to, *from, *from_bare, *from_res, *type, *role = NULL, *affiliation = NULL, *jid = NULL;
-    const char *show__text = NULL, *idle__since = NULL, *certificate = NULL, *node = NULL, *ver = NULL;
-    char *clientid = NULL, *status;
 
     auto binding = xml::presence(account->context, stanza);
-    to = xmpp_stanza_get_to(stanza);
-    from = xmpp_stanza_get_from(stanza);
-    if (from == NULL)
+    if (!binding.from)
         return 1;
-    from_bare = xmpp_jid_bare(account->context, from);
-    from_res = xmpp_jid_resource(account->context, from);
-    type = xmpp_stanza_get_type(stanza);
-    show = xmpp_stanza_get_child_by_name(stanza, "show");
-    show__text = show ? xmpp_stanza_get_text(show) : NULL;
-    idle = xmpp_stanza_get_child_by_name_and_ns(stanza, "idle", "urn:xmpp:idle:1");
-    idle__since = idle ? xmpp_stanza_get_attribute(idle, "since") : NULL;
-    pres__x_signed = xmpp_stanza_get_child_by_name_and_ns(
-        stanza, "x", "jabber:x:signed");
-    if (pres__x_signed)
+
+    std::string clientid;
+    if (auto caps = binding.capabilities())
     {
-        certificate = xmpp_stanza_get_text(pres__x_signed);
+        auto node = caps->node;
+        auto ver = caps->verification;
+
+        clientid = fmt::format("{}#{}", node, ver);
+
+        std::string to = binding.to ? binding.to->full : "";
+
+        xmpp_stanza_t *children[2] = {NULL};
+        children[0] = stanza__iq_pubsub_items(account->context, NULL,
+                const_cast<char*>("eu.siacs.conversations.axolotl.devicelist"));
+        children[0] = stanza__iq_pubsub(account->context, NULL,
+                children, with_noop("http://jabber.org/protocol/pubsub"));
+        children[0] = stanza__iq(account->context, NULL, children, NULL,
+                                    strdup("fetch2"), to.size() ? strdup(to.data()) : NULL,
+                                    binding.from->bare.size() ? strdup(binding.from->bare.data()) : NULL, strdup("get"));
+        xmpp_send(conn, children[0]);
+        xmpp_stanza_release(children[0]);
     }
-    pres__c = xmpp_stanza_get_child_by_name_and_ns(
-        stanza, "c", "http://jabber.org/protocol/caps");
-    if (pres__c)
+
+    channel = channel__search(account, std::string(binding.from->bare).data());
+    if (!(binding.type && *binding.type == "unavailable") && !binding.muc_user() && !channel)
+        channel = channel__new(account, CHANNEL_TYPE_PM, std::string(binding.from->bare).data(), std::string(binding.from->bare).data());
+
+    if (auto x = binding.muc_user())
     {
-        node = xmpp_stanza_get_attribute(pres__c, "node");
-        ver = xmpp_stanza_get_attribute(pres__c, "ver");
-        if (node && ver)
+        for (int& status : x->statuses)
         {
-            int len = strlen(node)+1+strlen(ver) + 1;
-            clientid = (char*)malloc(sizeof(char)*len);
-            snprintf(clientid, len, "%s#%s", node, ver);
-
-            xmpp_stanza_t *children[2] = {NULL};
-            children[0] = stanza__iq_pubsub_items(account->context, NULL,
-                    const_cast<char*>("eu.siacs.conversations.axolotl.devicelist"));
-            children[0] = stanza__iq_pubsub(account->context, NULL,
-                    children, with_noop("http://jabber.org/protocol/pubsub"));
-            children[0] = stanza__iq(account->context, NULL, children, NULL,
-                    strdup("fetch2"), to ? strdup(to) : NULL, strdup(from_bare),
-                    strdup("get"));
-            xmpp_send(conn, children[0]);
-            xmpp_stanza_release(children[0]);
-        }
-    }
-    pres__status = xmpp_stanza_get_child_by_name(stanza, "status");
-    status = pres__status ? xmpp_stanza_get_text(pres__status) : NULL;
-    pres__x_muc_user = xmpp_stanza_get_child_by_name_and_ns(
-        stanza, "x", "http://jabber.org/protocol/muc#user");
-
-    channel = channel__search(account, from_bare);
-    if (weechat_strcasecmp(type, "unavailable") != 0 && !pres__x_muc_user && !channel)
-        channel = channel__new(account, CHANNEL_TYPE_PM, from_bare, from_bare);
-
-    if (pres__x_muc_user)
-    for (pres__x__item = xmpp_stanza_get_children(pres__x_muc_user);
-         pres__x__item; pres__x__item = xmpp_stanza_get_next(pres__x__item))
-    {
-        const char *pres__x__item__name = xmpp_stanza_get_name(pres__x__item);
-        if (weechat_strcasecmp(pres__x__item__name, "item") != 0)
-        {
-            if (weechat_strcasecmp(pres__x__item__name, "status") == 0)
+            switch (status)
             {
-                const char *pres__x__status__code = xmpp_stanza_get_attribute(
-                        pres__x__item, "code");
-                switch (strtol(pres__x__status__code, NULL, 10))
-                {
-                    case 100: // Non-Anonymous: [message | Entering a room]: Inform user that any occupant is allowed to see the user's full JID
+                case 100: // Non-Anonymous: [message | Entering a room]: Inform user that any occupant is allowed to see the user's full JID
+                    if (channel)
                         weechat_buffer_set(channel->buffer, "notify", "2");
-                        break;
-                    case 101: // : [message (out of band) | Affiliation change]: Inform user that his or her affiliation changed while not in the room
-                        break;
-                    case 102: // : [message | Configuration change]: Inform occupants that room now shows unavailable members
-                        break;
-                    case 103: // : [message | Configuration change]: Inform occupants that room now does not show unavailable members
-                        break;
-                    case 104: // : [message | Configuration change]: Inform occupants that a non-privacy-related room configuration change has occurred
-                        break;
-                    case 110: // Self-Presence: [presence | Any room presence]: Inform user that presence refers to one of its own room occupants
-                        break;
-                    case 170: // Logging Active: [message or initial presence | Configuration change]: Inform occupants that room logging is now enabled
-                        break;
-                    case 171: // : [message | Configuration change]: Inform occupants that room logging is now disabled
-                        break;
-                    case 172: // : [message | Configuration change]: Inform occupants that the room is now non-anonymous
-                        break;
-                    case 173: // : [message | Configuration change]: Inform occupants that the room is now semi-anonymous
-                        break;
-                    case 174: // : [message | Configuration change]: Inform occupants that the room is now fully-anonymous
-                        break;
-                    case 201: // : [presence | Entering a room]: Inform user that a new room has been created
-                        break;
-                    case 210: // Nick Modified: [presence | Entering a room]: Inform user that the service has assigned or modified the occupant's roomnick
-                        break;
-                    case 301: // : [presence | Removal from room]: Inform user that he or she has been banned from the room
-                        break;
-                    case 303: // : [presence | Exiting a room]: Inform all occupants of new room nickname
-                        break;
-                    case 307: // : [presence | Removal from room]: Inform user that he or she has been kicked from the room
-                        break;
-                    case 321: // : [presence | Removal from room]: Inform user that he or she is being removed from the room because of an affiliation change
-                        break;
-                    case 322: // : [presence | Removal from room]: Inform user that he or she is being removed from the room because the room has been changed to members-only and the user is not a member
-                        break;
-                    case 332: // : [presence | Removal from room]: Inform user that he or she is being removed from the room because of a system shutdown
-                        break;
-                    default:
-                        break;
-                }
+                    break;
+                case 101: // : [message (out of band) | Affiliation change]: Inform user that his or her affiliation changed while not in the room
+                    break;
+                case 102: // : [message | Configuration change]: Inform occupants that room now shows unavailable members
+                    break;
+                case 103: // : [message | Configuration change]: Inform occupants that room now does not show unavailable members
+                    break;
+                case 104: // : [message | Configuration change]: Inform occupants that a non-privacy-related room configuration change has occurred
+                    break;
+                case 110: // Self-Presence: [presence | Any room presence]: Inform user that presence refers to one of its own room occupants
+                    break;
+                case 170: // Logging Active: [message or initial presence | Configuration change]: Inform occupants that room logging is now enabled
+                    break;
+                case 171: // : [message | Configuration change]: Inform occupants that room logging is now disabled
+                    break;
+                case 172: // : [message | Configuration change]: Inform occupants that the room is now non-anonymous
+                    break;
+                case 173: // : [message | Configuration change]: Inform occupants that the room is now semi-anonymous
+                    break;
+                case 174: // : [message | Configuration change]: Inform occupants that the room is now fully-anonymous
+                    break;
+                case 201: // : [presence | Entering a room]: Inform user that a new room has been created
+                    break;
+                case 210: // Nick Modified: [presence | Entering a room]: Inform user that the service has assigned or modified the occupant's roomnick
+                    break;
+                case 301: // : [presence | Removal from room]: Inform user that he or she has been banned from the room
+                    break;
+                case 303: // : [presence | Exiting a room]: Inform all occupants of new room nickname
+                    break;
+                case 307: // : [presence | Removal from room]: Inform user that he or she has been kicked from the room
+                    break;
+                case 321: // : [presence | Removal from room]: Inform user that he or she is being removed from the room because of an affiliation change
+                    break;
+                case 322: // : [presence | Removal from room]: Inform user that he or she is being removed from the room because the room has been changed to members-only and the user is not a member
+                    break;
+                case 332: // : [presence | Removal from room]: Inform user that he or she is being removed from the room because of a system shutdown
+                    break;
+                default:
+                    break;
             }
-            continue;
         }
 
-        role = xmpp_stanza_get_attribute(pres__x__item, "role");
-        affiliation = xmpp_stanza_get_attribute(pres__x__item, "affiliation");
-        jid = xmpp_stanza_get_attribute(pres__x__item, "jid");
-
-        user = user__search(account, from);
-        if (!user)
-            user = user__new(account, from,
-                             channel && weechat_strcasecmp(from_bare, channel->id) == 0
-                             ? from_res : from);
-        user->profile.status_text = status ? strdup(status) : NULL;
-        user->profile.status = show ? strdup(show__text) : NULL;
-        user->profile.idle = idle ? strdup(idle__since) : NULL;
-        user->is_away = show ? weechat_strcasecmp(show__text, "away") == 0 : 0;
-        user->profile.role = role ? strdup(role) : NULL;
-        user->profile.affiliation = affiliation && strcmp(affiliation, "none") != 0
-            ? strdup(affiliation) : NULL;
-        if (certificate && channel)
+        for (auto& item : x->items)
         {
-            user->profile.pgp_id = pgp__verify(channel->buffer, account->pgp, certificate);
-            if (channel->type != CHANNEL_TYPE_MUC)
-                channel->pgp.id = user->profile.pgp_id;
-        }
+            using xml::xep0045;
 
-        if (channel)
-        {
-            if (weechat_strcasecmp(role, "none") == 0)
-                channel__remove_member(account, channel, from, status);
-            else
-                channel__add_member(account, channel, from, jid ? jid : clientid);
+            std::string role(item.role ? xep0045::format_role(*item.role) : "");
+            std::string affiliation(item.affiliation ? xep0045::format_affiliation(*item.affiliation) : "");
+            std::string jid = item.target ? item.target->full : clientid;
+
+            user = user__search(account, std::string(binding.from->full).data());
+            if (!user)
+                user = user__new(account, std::string(binding.from->full).data(),
+                                channel && std::string(binding.from->bare).data() == channel->id
+                                 ? (binding.from->resource.size() ? std::string(binding.from->resource).data() : "")
+                                 : std::string(binding.from->full).data());
+            auto status = binding.status();
+            auto show = binding.show();
+            auto idle = binding.idle_since();
+            user->profile.status_text = status ? strdup(status->data()) : NULL;
+            user->profile.status = show ? strdup(show->data()) : NULL;
+            user->profile.idle = idle ? strdup("2000-01-01T00:00:00.000z") : NULL;
+            user->is_away = show ? *show == "away" : false;
+            user->profile.role = role.size() ? strdup(role.data()) : NULL;
+            user->profile.affiliation = affiliation.size() && affiliation == "none"
+                ? strdup(affiliation.data()) : NULL;
+            if (channel)
+            {
+                if (auto signature = binding.signature())
+                {
+                    user->profile.pgp_id = pgp__verify(channel->buffer, account->pgp, signature->data());
+                    if (channel->type != CHANNEL_TYPE_MUC)
+                        channel->pgp.id = user->profile.pgp_id;
+                }
+
+                if (weechat_strcasecmp(role.data(), "none") == 0)
+                    channel__remove_member(account, channel, std::string(binding.from->full).data(), status ? status->data() : nullptr);
+                else
+                    channel__add_member(account, channel, std::string(binding.from->full).data(), jid.data());
+            }
         }
     }
     else
     {
-        user = user__search(account, from);
+        user = user__search(account, std::string(binding.from->full).data());
         if (!user)
-            user = user__new(account, from,
-                             channel && weechat_strcasecmp(from_bare, channel->id) == 0
-                             ? from_res : from);
-        user->profile.status_text = status ? strdup(status) : NULL;
-        user->profile.status = show ? strdup(show__text) : NULL;
-        user->profile.idle = idle ? strdup(idle__since) : NULL;
-        user->is_away = show ? weechat_strcasecmp(show__text, "away") == 0 : 0;
-        user->profile.role = role ? strdup(role) : NULL;
-        user->profile.affiliation = affiliation && strcmp(affiliation, "none") != 0
-            ? strdup(affiliation) : NULL;
-        if (certificate && channel)
-        {
-            user->profile.pgp_id = pgp__verify(channel->buffer, account->pgp, certificate);
-            if (channel->type != CHANNEL_TYPE_MUC)
-                channel->pgp.id = user->profile.pgp_id;
-        }
-
+            user = user__new(account, std::string(binding.from->full).data(),
+                            channel && std::string(binding.from->bare).data() == channel->id
+                             ? (binding.from->resource.size() ? std::string(binding.from->resource).data() : "")
+                                : std::string(binding.from->full).data());
+        auto status = binding.status();
+        auto show = binding.show();
+        auto idle = binding.idle_since();
+        user->profile.status_text = status ? strdup(status->data()) : NULL;
+        user->profile.status = show ? strdup(show->data()) : NULL;
+        user->profile.idle = idle ? strdup("2000-01-01T00:00:00.000z") : NULL;
+        user->is_away = show ? *show == "away" : false;
+        user->profile.role = NULL;
+        user->profile.affiliation = NULL;
         if (channel)
         {
-            if (weechat_strcasecmp(type, "unavailable") == 0)
-                channel__remove_member(account, channel, from, status);
+            if (auto signature = binding.signature(); signature && account->pgp)
+            {
+                user->profile.pgp_id = pgp__verify(channel->buffer, account->pgp, signature->data());
+                if (channel->type != CHANNEL_TYPE_MUC)
+                    channel->pgp.id = user->profile.pgp_id;
+            }
+
+            if (user->profile.role)
+                channel__remove_member(account, channel, std::string(binding.from->full).data(), status ? status->data() : nullptr);
             else
-                channel__add_member(account, channel, from, clientid);
+                channel__add_member(account, channel, std::string(binding.from->full).data(), clientid.data());
         }
     }
-
-    if (clientid)
-        free(clientid);
 
     return 1;
 }
@@ -1213,8 +1191,6 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
                          NULL, "presence", NULL, account);
         xmpp_handler_add(conn, &connection__message_handler,
                          NULL, "message", /*type*/ NULL, account);
-      //xmpp_handler_add(conn, &connection__iq_handler,
-      //                 NULL, "iq", "get", account);
         xmpp_handler_add(conn, &connection__iq_handler,
                          NULL, "iq", NULL, account);
 

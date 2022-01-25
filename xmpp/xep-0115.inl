@@ -16,11 +16,36 @@ namespace xml{
 
     class xep0115  : virtual public node {
     public:
-        std::optional<node> caps() {
-            auto child = get_children<jabber_org::protocol::caps>("c");
-            if (child.size() > 0)
-                return child.front().get();
-            return {};
+        struct caps {
+            caps(::xml::node& node) {
+                if (auto attr = node.get_attr("ext"))
+                    ext = *attr;
+                if (auto attr = node.get_attr("hash"))
+                    hashalgo = *attr;
+                if (auto attr = node.get_attr("node"))
+                    this->node = *attr;
+                if (auto attr = node.get_attr("ver"))
+                    verification = *attr;
+            };
+
+            std::optional<std::string> ext;
+            std::string hashalgo;
+            std::string node;
+            std::string verification;
+        };
+
+    private:
+        std::optional<std::optional<caps>> _capabilities;
+    public:
+        std::optional<caps> capabilities() {
+            if (!_capabilities)
+            {
+                auto child = get_children<jabber_org::protocol::caps>("c");
+                if (child.size() > 0)
+                    _capabilities = caps(child.front().get());
+                _capabilities.emplace(std::nullopt);
+            }
+            return *_capabilities;
         }
     };
 

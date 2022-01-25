@@ -408,6 +408,7 @@ struct t_account *account__alloc(const char *name)
 
     /* alloc memory for new account */
     new_account = new struct t_account;
+    std::memset(&new_account->omemo, 0, sizeof(new_account->omemo));
     if (!new_account)
     {
         weechat_printf(NULL,
@@ -440,7 +441,17 @@ struct t_account *account__alloc(const char *name)
 
     new_account->logger.handler = &account__log_emit_weechat;
     new_account->logger.userdata = new_account;
-    new_account->context = xmpp_ctx_new(NULL, &new_account->logger);
+    new_account->memory.alloc = [](const size_t size, void *const) {
+        return calloc(1, size);
+    };
+    new_account->memory.free = [](void *ptr, void *const) {
+        free(ptr);
+    };
+    new_account->memory.realloc = [](void *ptr, const size_t size, void *const) {
+        return realloc(ptr, size);
+    };
+    new_account->memory.userdata = new_account;
+    new_account->context = xmpp_ctx_new(&new_account->memory, &new_account->logger);
     new_account->connection = NULL;
 
     new_account->buffer = NULL;
@@ -742,24 +753,32 @@ int account__timer_cb(const void *pointer, void *data, int remaining_calls)
     (void) data;
     (void) remaining_calls;
 
-    struct t_account *ptr_account;
-
-    if (!accounts) return WEECHAT_RC_ERROR;
-
-    for (ptr_account = accounts; ptr_account;
-         ptr_account = ptr_account ? ptr_account->next_account : NULL)
+    try
     {
-        if (ptr_account->is_connected
-            && (xmpp_conn_is_connecting(ptr_account->connection)
-                || xmpp_conn_is_connected(ptr_account->connection)))
-            connection__process(ptr_account->context, ptr_account->connection, 10);
-        else if (ptr_account->disconnected);
-        else if (ptr_account->reconnect_start > 0
-                 && ptr_account->reconnect_start < time(NULL))
-        {
-            account__connect(ptr_account);
-        }
-    }
+        struct t_account *ptr_account;
 
-    return WEECHAT_RC_OK;
+        if (!accounts) return WEECHAT_RC_ERROR;
+
+        for (ptr_account = accounts; ptr_account;
+             ptr_account = ptr_account ? ptr_account->next_account : NULL)
+        {
+            if (ptr_account->is_connected
+                && (xmpp_conn_is_connecting(ptr_account->connection)
+                    || xmpp_conn_is_connected(ptr_account->connection)))
+                connection__process(ptr_account->context, ptr_account->connection, 10);
+            else if (ptr_account->disconnected);
+            else if (ptr_account->reconnect_start > 0
+                     && ptr_account->reconnect_start < time(NULL))
+            {
+                account__connect(ptr_account);
+            }
+        }
+
+        return WEECHAT_RC_OK;
+    }
+    catch (const std::exception& ex)
+    {
+        __asm__("int3");
+        return WEECHAT_RC_ERROR;
+    }
 }

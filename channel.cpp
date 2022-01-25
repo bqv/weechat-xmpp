@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <regex>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
@@ -152,8 +153,8 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
 {
     struct t_gui_buffer *ptr_buffer;
     int buffer_created;
-    const char *short_name, *localvar_remote_jid;
-    char buffer_name[1024];
+    const char *short_name = NULL, *localvar_remote_jid = NULL;
+    char buffer_name[1024] = {0};
 
     buffer_created = 0;
 
@@ -1114,9 +1115,14 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
         channel__set_transport(channel, CHANNEL_TRANSPORT_PLAIN, 0);
     }
 
-    char *url = (char*)strstr(body, "http");
-    if (url && channel->transport == CHANNEL_TRANSPORT_PLAIN)
+    static const std::regex pattern("https?:[^ ]*");
+    std::cmatch match;
+    if (channel->transport == CHANNEL_TRANSPORT_PLAIN &&
+            std::regex_search(body, match, pattern)
+            && match[0].matched && !match.prefix().length())
     {
+        std::string url { &*match[0].first, static_cast<size_t>(match[0].length()) };
+
         xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
         xmpp_stanza_set_name(message__x, "x");
         xmpp_stanza_set_ns(message__x, "jabber:x:oob");
@@ -1125,7 +1131,7 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
         xmpp_stanza_set_name(message__x__url, "url");
 
         xmpp_stanza_t *message__x__url__text = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_text(message__x__url__text, url);
+        xmpp_stanza_set_text(message__x__url__text, url.data());
         xmpp_stanza_add_child(message__x__url, message__x__url__text);
         xmpp_stanza_release(message__x__url__text);
 
