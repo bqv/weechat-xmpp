@@ -1,9 +1,6 @@
-[submodule "axc"]
-	path = axc
-	url = https://github.com/gkdr/axc
-[submodule "omemo"]
-	path = omemo
-	url = https://github.com/gkdr/libomemo
+[submodule "fmt"]
+	path = deps/fmt
+	url = https://github.com/fmtlib/fmt
 [submodule "diff"]
-	path = diff
+	path = deps/diff
 	url = https://github.com/kristapsdz/libdiff
