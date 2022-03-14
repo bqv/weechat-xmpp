@@ -52,6 +52,7 @@
   - lmdb (dynamic, dependency)
   - libomemo-c (libsignal-protocol-c) (dynamic, dependency)
   - rnp (dynamic, dependency)
+  - gpgme (dynamic, dependency)
   - weechat (>= v3.0)
 
   .. or just use the guix spec in .envrc
@@ -96,7 +97,7 @@
    * [-] OOB messages
      * [X] Single media on a line
      * [ ] Multiple media inline (protocol?)
-     * [ ] Encrypted (pgp/omemo)
+     * [ ] [#D] Encrypted (pgp/omemo)
    * [X] Buffer autoswitch on enter/open
    * [X] Handle open/enter jids with a resource without breaking
    * [X] Allow /close without crashing
@@ -113,7 +114,7 @@
      * [-] [#B] Edits
        * [X] [#B] Displaying
        * [X] [#B] Tagging
-       * [ ] [#B] Making
+       * [ ] [#B] Making (/edit)
        * [X] [#C] Diff highlighting
      * [ ] [#B] Handle errors gracefully
      * [X] [#B] Presence/nicklist
@@ -145,9 +146,14 @@
      * [X] Message Delivery (XEP-0184)
    * [X] Message Carbons
    * [ ] Service Disco
+     * [ ] /disco [domain]
+   * [ ] /whois [user|muc]
+     * [ ] User Avatars
+     * [ ] MUC Icons
    * [X] MAM Fetching
    * [-] Bookmarks / Roster
      * [X] Autojoin bookmarks
+       * [ ] Except biboumi rooms
      * [ ] Add bookmarks
      * [ ] Delete bookmarks
      * [ ] Roster
@@ -158,8 +164,10 @@
      * [X] Decryption
      * [X] Encryption
      * [X] Custom set/clear key (/pgp)
+     * [ ] Save pgp key set per jid/muc
+     * [ ] GPGME
    * [ ] Room Explorer (https://search.jabber.network/docs/api)
-** TODO [#C] Implement completion engine (milestone v0.3)
+** TODO [#C] Adhere to CCS (milestone v0.3)
 ** TODO [#D] Close all issues (milestone v1.0)
 
 * Contributing

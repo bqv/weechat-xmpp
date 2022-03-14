@@ -906,6 +906,26 @@ int command__xml(const void *pointer, void *data,
     return WEECHAT_RC_OK;
 }
 
+int command__xmpp(const void *pointer, void *data,
+                  struct t_gui_buffer *buffer, int argc,
+                  char **argv, char **argv_eol)
+{
+    struct t_account *ptr_account = NULL;
+    struct t_channel *ptr_channel = NULL;
+    xmpp_stanza_t *stanza;
+
+    (void) pointer;
+    (void) data;
+    (void) argv;
+
+    weechat_printf(nullptr,
+                   _("%s%s %s [%s]"),
+                   weechat_prefix("info"), WEECHAT_XMPP_PLUGIN_NAME,
+                   WEECHAT_XMPP_PLUGIN_VERSION, XMPP_PLUGIN_COMMIT);
+
+    return WEECHAT_RC_OK;
+}
+
 void command__init()
 {
     struct t_hook *hook;
@@ -1015,4 +1035,13 @@ void command__init()
         NULL, &command__xml, NULL, NULL);
     if (!hook)
         weechat_printf(NULL, "Failed to setup command /xml");
+
+    hook = weechat_hook_command(
+        "xmpp",
+        N_("get xmpp plugin version"),
+        N_(""),
+        N_(""),
+        NULL, &command__xmpp, NULL, NULL);
+    if (!hook)
+        weechat_printf(NULL, "Failed to setup command /xmpp");
 }

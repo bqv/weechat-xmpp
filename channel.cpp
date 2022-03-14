@@ -201,8 +201,12 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
         account_option_set(account, ACCOUNT_OPTION_NICKNAME,
                            xmpp_jid_node(account->context, account_jid(account)));
 
+    // Set notify level for buffer: "0" = never add to hotlist
+    //                              "1" = add for highlights only
+    //                              "2" = add for highlights and messages
+    //                              "3" = add for all messages.
     weechat_buffer_set(ptr_buffer, "notify",
-                       (type == CHANNEL_TYPE_PM) ? "3" : "1");
+                       (type == CHANNEL_TYPE_PM) ? "3" : "2");
     weechat_buffer_set(ptr_buffer, "localvar_set_type",
                        (type == CHANNEL_TYPE_PM) ? "private" : "channel");
     weechat_buffer_set(ptr_buffer, "localvar_set_nick",

@@ -156,16 +156,21 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
                 case 210: // Nick Modified: [presence | Entering a room]: Inform user that the service has assigned or modified the occupant's roomnick
                     break;
                 case 301: // : [presence | Removal from room]: Inform user that he or she has been banned from the room
+                    weechat_printf(channel->buffer, "[!]\t%sBanned from Room", weechat_color("gray"));
                     break;
                 case 303: // : [presence | Exiting a room]: Inform all occupants of new room nickname
                     break;
                 case 307: // : [presence | Removal from room]: Inform user that he or she has been kicked from the room
+                    weechat_printf(channel->buffer, "[!]\t%sKicked from room", weechat_color("gray"));
                     break;
                 case 321: // : [presence | Removal from room]: Inform user that he or she is being removed from the room because of an affiliation change
+                    weechat_printf(channel->buffer, "[!]\t%sRoom Affiliation changed, kicked", weechat_color("gray"));
                     break;
                 case 322: // : [presence | Removal from room]: Inform user that he or she is being removed from the room because the room has been changed to members-only and the user is not a member
+                    weechat_printf(channel->buffer, "[!]\t%sRoom now members-only, kicked", weechat_color("gray"));
                     break;
                 case 332: // : [presence | Removal from room]: Inform user that he or she is being removed from the room because of a system shutdown
+                    weechat_printf(channel->buffer, "[!]\t%sRoom Shutdown", weechat_color("gray"));
                     break;
                 default:
                     break;
@@ -618,6 +623,8 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
             {
                 char **visual = weechat_string_dyn_alloc(256);
                 char ch[2] = {0};
+                int retention = 0;
+                int modification = 0;
 
                 for (size_t i = 0; i < result.sessz; i++)
                     switch (result.ses[i].type)
@@ -626,11 +633,13 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                             weechat_string_dyn_concat(visual, weechat_color("green"), -1);
                             *ch = *(const char *)result.ses[i].e;
                             weechat_string_dyn_concat(visual, ch, -1);
+                            modification++;
                             break;
                         case DIFF_DELETE:
                             weechat_string_dyn_concat(visual, weechat_color("red"), -1);
                             *ch = *(const char *)result.ses[i].e;
                             weechat_string_dyn_concat(visual, ch, -1);
+                            modification++;
                             break;
                         case DIFF_COMMON:
                         default:
@@ -638,11 +647,24 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                             *ch = *(const char *)result.ses[i].e;
 
                             weechat_string_dyn_concat(visual, ch, -1);
+                            retention++;
                             break;
                     }
                 free(result.ses);
                 free(result.lcs);
 
+                if ((modification > 20) && (modification > retention)) {
+                    weechat_string_dyn_free(visual, 1);
+                    visual = weechat_string_dyn_alloc(256);
+                    weechat_string_dyn_concat(visual, weechat_color("red"), -1);
+                    if (strlen(orig) >= 16) {
+                        weechat_string_dyn_concat(visual, orig, 16);
+                        weechat_string_dyn_concat(visual, "...", -1);
+                    } else
+                        weechat_string_dyn_concat(visual, orig, -1);
+                    weechat_string_dyn_concat(visual, weechat_color("green"), -1);
+                    weechat_string_dyn_concat(visual, text, -1);
+                }
                 difftext = strdup(*visual);
                 weechat_string_dyn_free(visual, 1);
             }

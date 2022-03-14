@@ -8,6 +8,7 @@ FIND=find
 
 INCLUDES=-Ilibstrophe -Ideps -Ideps/fmt/include \
 	 $(shell xml2-config --cflags) \
+	 $(shell pkg-config --cflags gpgme) \
 	 $(shell pkg-config --cflags librnp) \
 	 $(shell pkg-config --cflags libsignal-protocol-c)
 CFLAGS+=$(DBGCFLAGS) \
@@ -34,6 +35,7 @@ LDFLAGS+=$(DBGLDFLAGS) \
 LDLIBS=-lstrophe \
 	   -lpthread \
 	   $(shell xml2-config --libs) \
+	   $(shell pkg-config --libs gpgme) \
 	   $(shell pkg-config --libs librnp) \
 	   $(shell pkg-config --libs libsignal-protocol-c) \
 	   -lgcrypt \
@@ -94,10 +96,12 @@ xmpp.so: $(OBJS) $(DEPS) $(HDRS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(DEPS) $(LDLIBS)
 
 .%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(eval GIT_REF=$(shell git describe --abbrev=6 --always --dirty 2>/dev/null || true))
+	$(CC) -DGIT_COMMIT=$(GIT_REF) $(CFLAGS) -c $< -o $@
 
 .%.o: %.cpp
-	$(CXX) $(CPPFLAGS) -c $< -o $@
+	$(eval GIT_REF=$(shell git describe --abbrev=6 --always --dirty 2>/dev/null || true))
+	$(CXX) -DGIT_COMMIT=$(GIT_REF) $(CPPFLAGS) -c $< -o $@
 
 .%.cov.o: %.cpp
 	@$(CXX) --coverage $(CPPFLAGS) -O0 -c $< -o $@
