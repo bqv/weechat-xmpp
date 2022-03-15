@@ -51,7 +51,6 @@
   - libxml2 (dynamic, dependency)
   - lmdb (dynamic, dependency)
   - libomemo-c (libsignal-protocol-c) (dynamic, dependency)
-  - rnp (dynamic, dependency)
   - gpgme (dynamic, dependency)
   - weechat (>= v3.0)
 
@@ -158,14 +157,13 @@
      * [ ] Delete bookmarks
      * [ ] Roster
    * [ ] OTR (libotr)
-   * [X] PGP (rnpgp)
-     * [X] Use keyrings (e.g. exported from gnupg)
+   * [X] PGP (gpgme)
+     * [X] Use keyrings (from gnupg)
      * [X] Presence
      * [X] Decryption
      * [X] Encryption
      * [X] Custom set/clear key (/pgp)
      * [ ] Save pgp key set per jid/muc
-     * [ ] GPGME
    * [ ] Room Explorer (https://search.jabber.network/docs/api)
 ** TODO [#C] Adhere to CCS (milestone v0.3)
 ** TODO [#D] Close all issues (milestone v1.0)

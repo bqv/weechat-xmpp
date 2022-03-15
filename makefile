@@ -9,7 +9,6 @@ FIND=find
 INCLUDES=-Ilibstrophe -Ideps -Ideps/fmt/include \
 	 $(shell xml2-config --cflags) \
 	 $(shell pkg-config --cflags gpgme) \
-	 $(shell pkg-config --cflags librnp) \
 	 $(shell pkg-config --cflags libsignal-protocol-c)
 CFLAGS+=$(DBGCFLAGS) \
 	-fno-omit-frame-pointer -fPIC \
@@ -36,7 +35,6 @@ LDLIBS=-lstrophe \
 	   -lpthread \
 	   $(shell xml2-config --libs) \
 	   $(shell pkg-config --libs gpgme) \
-	   $(shell pkg-config --libs librnp) \
 	   $(shell pkg-config --libs libsignal-protocol-c) \
 	   -lgcrypt \
 	   -llmdb

@@ -4,11 +4,13 @@
 
 #pragma once
 
+#include <string>
+
 extern const char *PGP_ADVICE;
 
 struct t_pgp
 {
-    struct rnp_ffi_st *context;
+    struct gpgme_context *gpgme;
     const char *keyid;
 };
 
