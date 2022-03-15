@@ -117,9 +117,11 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
         xmpp_stanza_release(children[0]);
     }
 
-    channel = channel__search(account, std::string(binding.from->bare).data());
+    channel = channel__search(account, binding.from->bare.data());
     if (!(binding.type && *binding.type == "unavailable") && !binding.muc_user() && !channel)
-        channel = channel__new(account, CHANNEL_TYPE_PM, std::string(binding.from->bare).data(), std::string(binding.from->bare).data());
+    {
+        channel = channel__new(account, CHANNEL_TYPE_PM, binding.from->bare.data(), binding.from->bare.data());
+    }
 
     if (auto x = binding.muc_user())
     {
@@ -185,12 +187,12 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
             std::string affiliation(item.affiliation ? xep0045::format_affiliation(*item.affiliation) : "");
             std::string jid = item.target ? item.target->full : clientid;
 
-            user = user__search(account, std::string(binding.from->full).data());
+            user = user__search(account, binding.from->full.data());
             if (!user)
-                user = user__new(account, std::string(binding.from->full).data(),
-                                channel && std::string(binding.from->bare).data() == channel->id
-                                 ? (binding.from->resource.size() ? std::string(binding.from->resource).data() : "")
-                                 : std::string(binding.from->full).data());
+                user = user__new(account, binding.from->full.data(),
+                                channel && binding.from->bare.data() == channel->id
+                                 ? (binding.from->resource.size() ? binding.from->resource.data() : "")
+                                 : binding.from->full.data());
             auto status = binding.status();
             auto show = binding.show();
             auto idle = binding.idle_since();
@@ -211,20 +213,20 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
                 }
 
                 if (weechat_strcasecmp(role.data(), "none") == 0)
-                    channel__remove_member(account, channel, std::string(binding.from->full).data(), status ? status->data() : nullptr);
+                    channel__remove_member(account, channel, binding.from->full.data(), status ? status->data() : nullptr);
                 else
-                    channel__add_member(account, channel, std::string(binding.from->full).data(), jid.data());
+                    channel__add_member(account, channel, binding.from->full.data(), jid.data());
             }
         }
     }
     else
     {
-        user = user__search(account, std::string(binding.from->full).data());
+        user = user__search(account, binding.from->full.data());
         if (!user)
-            user = user__new(account, std::string(binding.from->full).data(),
-                            channel && std::string(binding.from->bare).data() == channel->id
-                             ? (binding.from->resource.size() ? std::string(binding.from->resource).data() : "")
-                                : std::string(binding.from->full).data());
+            user = user__new(account, binding.from->full.data(),
+                            channel && binding.from->bare.data() == channel->id
+                             ? (binding.from->resource.size() ? binding.from->resource.data() : "")
+                                : binding.from->full.data());
         auto status = binding.status();
         auto show = binding.show();
         auto idle = binding.idle_since();
@@ -244,9 +246,9 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
             }
 
             if (user->profile.role)
-                channel__remove_member(account, channel, std::string(binding.from->full).data(), status ? status->data() : nullptr);
+                channel__remove_member(account, channel, binding.from->full.data(), status ? status->data() : nullptr);
             else
-                channel__add_member(account, channel, std::string(binding.from->full).data(), clientid.data());
+                channel__add_member(account, channel, binding.from->full.data(), clientid.data());
         }
     }
 

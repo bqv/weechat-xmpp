@@ -94,6 +94,8 @@ weechat-xmpp: $(DEPS) xmpp.so
 
 xmpp.so: $(OBJS) $(DEPS) $(HDRS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(DEPS) $(LDLIBS)
+	git ls-files | xargs tar c | objcopy --add-section .source=/dev/stdin xmpp.so
+	#objcopy --dump-section .source=/dev/stdout xmpp.so | tar t
 
 .%.o: %.c
 	$(eval GIT_REF=$(shell git describe --abbrev=6 --always --dirty 2>/dev/null || true))
@@ -138,7 +140,7 @@ coverage: tests/run
 
 debug: xmpp.so
 	env LD_PRELOAD=$(DEBUG) gdb -ex "handle SIGPIPE nostop noprint pass" --args \
-		weechat -a -P 'alias,buflist,exec,irc' -r '/plugin load ./xmpp.so'
+		weechat -a -P 'alias,buflist,exec,irc,relay' -r '/plugin load ./xmpp.so'
 
 depend: $(SRCS) $(HDRS)
 	$(RM) -f ./.depend

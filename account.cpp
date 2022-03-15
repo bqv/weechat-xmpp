@@ -587,6 +587,7 @@ void account__free(struct t_account *account)
 
     account__free_data(account);
     delete account;
+    account = nullptr;
     accounts = new_accounts;
 }
 
@@ -692,12 +693,12 @@ struct t_gui_buffer *account__create_buffer(struct t_account *account)
                                          &buffer__close_cb, NULL, NULL);
     if (!account->buffer)
         return NULL;
+    weechat_printf(account->buffer, "xmpp: %s", account->name);
 
     if (!weechat_buffer_get_integer(account->buffer, "short_name_is_set"))
         weechat_buffer_set(account->buffer, "short_name", account->name);
     weechat_buffer_set(account->buffer, "localvar_set_type", "server");
-    weechat_buffer_set(account->buffer, "localvar_set_server", account->name);
-    weechat_buffer_set(account->buffer, "localvar_set_channel", account->name);
+    weechat_buffer_set(account->buffer, "localvar_set_account", account->name);
     snprintf(charset_modifier, sizeof (charset_modifier),
              "account.%s", account->name);
     weechat_buffer_set(account->buffer, "localvar_set_charset_modifier",

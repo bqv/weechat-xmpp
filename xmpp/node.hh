@@ -34,10 +34,11 @@ public:
     operator std::string&() { return full; }
 
     std::string full;
-    std::string_view bare;
-    std::string_view local;
-    std::string_view domain;
-    std::string_view resource;
+
+    std::string bare;
+    std::string local;
+    std::string domain;
+    std::string resource;
 
     bool is_bare() const;
 };

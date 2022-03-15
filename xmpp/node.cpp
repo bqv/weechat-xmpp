@@ -49,15 +49,16 @@ const std::regex jid::pattern(
     "^((?:([^@/<>'\"]+)@)?([^@/<>'\"]+))(?:/([^<>'\"]*))?$");
 
 jid::jid(xmpp_ctx_t *, std::string s) : full(s) {
-    auto as_sv = [](std::ssub_match m) {
-        if(!m.matched) return std::string_view();
-        return std::string_view { &*m.first, static_cast<size_t>(m.length()) };
-    };
-
     std::smatch match;
 
     if (std::regex_search(full, match, pattern))
     {
+        auto as_sv = [&](std::ssub_match m) {
+            if(!m.matched) return std::string_view();
+            size_t offset = &*m.first - &*match[0].first;
+            return std::string_view{full.data() + offset, static_cast<size_t>(m.length())};
+        };
+
         bare = as_sv(match[1]);
         local = as_sv(match[2]);
         domain = as_sv(match[3]);
