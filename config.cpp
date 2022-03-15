@@ -204,27 +204,11 @@ config__account_new_option (struct t_config_file *config_file,
                 callback_change_data,
                 NULL, NULL, NULL);
             break;
-        case ACCOUNT_OPTION_PGP_PUBRING_PATH:
+        case ACCOUNT_OPTION_PGP_PATH:
             new_option = weechat_config_new_option (
                 config_file, section,
                 option_name, "string",
-                N_("XMPP Account PGP Public Keyring Path"),
-                NULL, 0, 0,
-                default_value, value,
-                null_value_allowed,
-                callback_check_value,
-                callback_check_value_pointer,
-                callback_check_value_data,
-                callback_change,
-                callback_change_pointer,
-                callback_change_data,
-                NULL, NULL, NULL);
-            break;
-        case ACCOUNT_OPTION_PGP_SECRING_PATH:
-            new_option = weechat_config_new_option (
-                config_file, section,
-                option_name, "string",
-                N_("XMPP Account PGP Secure Keyring Path"),
+                N_("XMPP Account PGP Keyring Dir"),
                 NULL, 0, 0,
                 default_value, value,
                 null_value_allowed,

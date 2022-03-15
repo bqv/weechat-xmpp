@@ -19,7 +19,7 @@
 
 const char *PGP_ADVICE = "[PGP encrypted message (XEP-0027)]";
 
-void pgp__init(struct t_pgp **pgp, const char *pub, const char *sec)
+void pgp__init(struct t_pgp **pgp)
 {
     struct t_pgp *new_pgp;
     gpgme_error_t err;
@@ -31,35 +31,37 @@ void pgp__init(struct t_pgp **pgp, const char *pub, const char *sec)
 
     err = gpgme_new(&new_pgp->gpgme);
     if (err) {
+        weechat_printf(nullptr, "gpg (error): %s - %s",
+                gpgme_strsource(err), gpgme_strerror(err));
         return;
     }
     gpgme_set_armor(new_pgp->gpgme, true);
 
-    err = gpgme_data_new_from_file(&keydata, pub, true);
-    if (err) {
-        return;
-    }
+  //err = gpgme_data_new_from_file(&keydata, pub, true);
+  //if (err) {
+  //    return;
+  //}
 
-    err = gpgme_op_import(new_pgp->gpgme, keydata);
-    if (err) {
-        return;
-    }
+  //err = gpgme_op_import(new_pgp->gpgme, keydata);
+  //if (err) {
+  //    return;
+  //}
 
-    gpgme_import_result_t impRes = gpgme_op_import_result(new_pgp->gpgme);
-    weechat_printf(nullptr, "(gpg) imported %d keys", impRes->imported);
+  //gpgme_import_result_t impRes = gpgme_op_import_result(new_pgp->gpgme);
+  //weechat_printf(nullptr, "(gpg) imported %d keys", impRes->imported);
 
-    err = gpgme_data_new_from_file(&keydata, sec, true);
-    if (err) {
-        return;
-    }
+  //err = gpgme_data_new_from_file(&keydata, sec, true);
+  //if (err) {
+  //    return;
+  //}
 
-    err = gpgme_op_import(new_pgp->gpgme, keydata);
-    if (err) {
-        return;
-    }
+  //err = gpgme_op_import(new_pgp->gpgme, keydata);
+  //if (err) {
+  //    return;
+  //}
 
-    impRes = gpgme_op_import_result(new_pgp->gpgme);
-    weechat_printf(nullptr, "(gpg) imported %d secret keys", impRes->imported);
+  //impRes = gpgme_op_import_result(new_pgp->gpgme);
+  //weechat_printf(nullptr, "(gpg) imported %d secret keys", impRes->imported);
 
     *pgp = new_pgp;
 }

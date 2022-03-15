@@ -23,8 +23,7 @@ enum t_account_option
     ACCOUNT_OPTION_AUTOCONNECT,
     ACCOUNT_OPTION_RESOURCE,
     ACCOUNT_OPTION_STATUS,
-    ACCOUNT_OPTION_PGP_PUBRING_PATH,
-    ACCOUNT_OPTION_PGP_SECRING_PATH,
+    ACCOUNT_OPTION_PGP_PATH,
     ACCOUNT_OPTION_PGP_KEYID,
     ACCOUNT_NUM_OPTIONS,
 };
@@ -63,10 +62,8 @@ enum t_account_option
     weechat_config_string(account->options[ACCOUNT_OPTION_RESOURCE])
 #define account_status(account) \
     weechat_config_string(account->options[ACCOUNT_OPTION_STATUS])
-#define account_pgp_pubring_path(account) \
-    weechat_config_string(account->options[ACCOUNT_OPTION_PGP_PUBRING_PATH])
-#define account_pgp_secring_path(account) \
-    weechat_config_string(account->options[ACCOUNT_OPTION_PGP_SECRING_PATH])
+#define account_pgp_path(account) \
+    weechat_config_string(account->options[ACCOUNT_OPTION_PGP_PATH])
 #define account_pgp_keyid(account) \
     weechat_config_string(account->options[ACCOUNT_OPTION_PGP_KEYID])
 

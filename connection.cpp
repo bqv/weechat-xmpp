@@ -1218,11 +1218,7 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
         xmpp_handler_add(conn, &connection__iq_handler,
                          NULL, "iq", NULL, account);
 
-        pgp__init(&account->pgp,
-                  weechat_string_eval_expression(account_pgp_pubring_path(account),
-                                                 NULL, NULL, NULL),
-                  weechat_string_eval_expression(account_pgp_secring_path(account),
-                                                 NULL, NULL, NULL));
+        pgp__init(&account->pgp);
 
         /* Send initial <presence/> so that we appear online to contacts */
         children = (xmpp_stanza_t**)malloc(sizeof(*children) * (3 + 1));

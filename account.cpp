@@ -33,8 +33,7 @@ char *account_options[ACCOUNT_NUM_OPTIONS][2] =
   { (char*)"autoconnect", (char*)"" },
   { (char*)"resource", (char*)"" },
   { (char*)"status", (char*)"probably about to segfault" },
-  { (char*)"pgp_pubring_path", (char*)"${weechat_data_dir}/pubring.gpg" },
-  { (char*)"pgp_secring_path", (char*)"${weechat_data_dir}/secring.gpg" },
+  { (char*)"pgp_path", (char*)"" },
   { (char*)"pgp_keyid", (char*)"" },
 };
 

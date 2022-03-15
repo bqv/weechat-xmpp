@@ -14,7 +14,7 @@ struct t_pgp
     const char *keyid;
 };
 
-void pgp__init(struct t_pgp **pgp, const char *pub, const char *sec);
+void pgp__init(struct t_pgp **pgp);
 
 void pgp__free(struct t_pgp *pgp);
 
