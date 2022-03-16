@@ -123,6 +123,16 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
         channel = channel__new(account, CHANNEL_TYPE_PM, binding.from->bare.data(), binding.from->bare.data());
     }
 
+    if (binding.type && *binding.type == "error" && binding.muc() && channel)
+    {
+        if (auto error = binding.error())
+        {
+            weechat_printf(channel->buffer, "%sError joining MUC: %s",
+                           weechat_prefix("network"), error->reason());
+        }
+        return 1;
+    }
+
     if (auto x = binding.muc_user())
     {
         for (int& status : x->statuses)

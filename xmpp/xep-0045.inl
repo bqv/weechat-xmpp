@@ -217,9 +217,132 @@ namespace xml {
             std::vector<int> statuses;
         };
 
+        class error { // THIS IS RFC 6120 :(
+        private:
+            enum condition : int {
+                not_authorized,
+                registration_required,
+                forbidden,
+                not_allowed,
+                not_acceptable,
+                conflict,
+                service_unavailable,
+                item_not_found
+            };
+
+            enum class action {
+                auth,
+                cancel,
+                continue_,
+                modify,
+                wait
+            };
+
+            static action parse_action(std::string_view s) {
+                if (s == "auth")
+                    return action::auth;
+                else if (s == "cancel")
+                    return action::cancel;
+                else if (s == "continue")
+                    return action::continue_;
+                else if (s == "modify")
+                    return action::modify;
+                else if (s == "wait")
+                    return action::wait;
+                throw std::invalid_argument(
+                    fmt::format("Bad action: {}", s));
+            }
+
+            static std::string_view format_action(action e) {
+                switch (e) {
+                case action::auth:
+                    return "auth";
+                case action::cancel:
+                    return "cancel";
+                case action::continue_:
+                    return "continue";
+                case action::modify:
+                    return "modify";
+                case action::wait:
+                    return "wait";
+                default:
+                    return "";
+                }
+            }
+
+        public:
+            error(node& node) {
+                if (auto attr = node.get_attr("by"))
+                    by = jid(node.context, *attr);
+                if (auto attr = node.get_attr("type"))
+                    type = parse_action(*attr);
+
+                using xmpp_stanzas = urn::ietf::params::xml::ns::xmpp_stanzas;
+
+                for (auto& child : node.get_children<xmpp_stanzas>("not-authorized"))
+                    condition = not_authorized;
+                for (auto& child : node.get_children<xmpp_stanzas>("forbidden"))
+                    condition = forbidden;
+                for (auto& child : node.get_children<xmpp_stanzas>("item-not-found"))
+                    condition = item_not_found;
+                for (auto& child : node.get_children<xmpp_stanzas>("not-allowed"))
+                    condition = not_allowed;
+                for (auto& child : node.get_children<xmpp_stanzas>("not-acceptable"))
+                    condition = not_acceptable;
+                for (auto& child : node.get_children<xmpp_stanzas>("registration-required"))
+                    condition = registration_required;
+                for (auto& child : node.get_children<xmpp_stanzas>("conflict"))
+                    condition = conflict;
+                for (auto& child : node.get_children<xmpp_stanzas>("service-unavailable"))
+                    condition = service_unavailable;
+
+                for (auto& child : node.get_children("text"))
+                    description = child.get().text;
+            }
+
+            std::optional<jid> by;
+            std::optional<enum action> type;
+            std::optional<enum condition> condition;
+            std::optional<std::string> description;
+
+            const char* reason() {
+                switch (condition)
+                {
+                  case not_authorized:
+                    return "Password Required";
+                  case forbidden:
+                    return "Banned";
+                  case item_not_found:
+                    return "No such MUC";
+                  case not_allowed:
+                    return "MUC Creation Failed";
+                  case not_acceptable:
+                    return "Unacceptable Nickname";
+                  case registration_required:
+                    return "Not on Member List";
+                  case conflict:
+                    return "Nickname Conflict";
+                  case service_unavailable:
+                    return "Service Unavailable (MUC Full?)";
+                }
+                return "Unspecified";
+            }
+        };
+
     private:
+        std::optional<bool> _muc;
         std::optional<std::optional<x>> _muc_user;
+        std::optional<std::optional<error>> _error;
     public:
+        bool muc() {
+            if (!_muc)
+            {
+                auto child = get_children<jabber_org::protocol::muc>("x");
+                _muc = child.size() > 0;
+            }
+            return *_muc;
+        }
+
         std::optional<x>& muc_user() {
             if (!_muc_user)
             {
@@ -230,6 +353,18 @@ namespace xml {
                     _muc_user.emplace(std::nullopt);
             }
             return *_muc_user;
+        }
+
+        std::optional<error>& error() {
+            if (!_error)
+            {
+                auto child = get_children("error");
+                if (child.size() > 0)
+                    _error = child.front().get();
+                else
+                    _error.emplace(std::nullopt);
+            }
+            return *_error;
         }
     };
 

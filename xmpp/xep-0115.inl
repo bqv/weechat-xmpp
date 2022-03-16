@@ -44,7 +44,8 @@ namespace xml{
                 auto child = get_children<jabber_org::protocol::caps>("c");
                 if (child.size() > 0)
                     _capabilities = caps(child.front().get());
-                _capabilities.emplace(std::nullopt);
+                else
+                    _capabilities.emplace(std::nullopt);
             }
             return *_capabilities;
         }
