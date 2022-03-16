@@ -84,6 +84,8 @@ DEPS=deps/diff/libdiff.a \
 OBJS=$(patsubst %.cpp,.%.o,$(patsubst %.c,.%.o,$(patsubst xmpp/%.cpp,xmpp/.%.o,$(SRCS))))
 COVS=$(patsubst %.cpp,.%.cov.o,$(patsubst xmpp/%.cpp,xmpp/.%.cov.o,$(SRCS)))
 
+SUFFIX=$(shell date +%s)
+
 all:
 	make depend
 	make weechat-xmpp && make test
@@ -92,8 +94,10 @@ weechat-xmpp: $(DEPS) xmpp.so
 
 xmpp.so: $(OBJS) $(DEPS) $(HDRS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(DEPS) $(LDLIBS)
-	git ls-files | xargs tar c | objcopy --add-section .source=/dev/stdin xmpp.so
-	#objcopy --dump-section .source=/dev/stdout xmpp.so | tar t
+	git ls-files | xargs ls -d | xargs tar cz | objcopy --add-section .source=/dev/stdin xmpp.so
+	#objcopy --dump-section .source=/dev/stdout xmpp.so | tar tz
+	cp xmpp.so .xmpp.so.$(SUFFIX)
+	ln -sf .xmpp.so.$(SUFFIX) .xmpp.so
 
 .%.o: %.c
 	$(eval GIT_REF=$(shell git describe --abbrev=6 --always --dirty 2>/dev/null || true))
