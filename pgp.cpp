@@ -223,7 +223,7 @@ char *pgp__verify(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *ce
 	if (vrf_result = gpgme_op_verify_result(pgp->gpgme);
             !(vrf_result->signatures->summary & GPGME_SIGSUM_VALID))
 	{
-        goto verify_finish;
+      //goto verify_finish;
 	}
 
     result = strdup(vrf_result->signatures->fpr);

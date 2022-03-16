@@ -14,6 +14,7 @@
 
 namespace xml {
 
+    /* Current Jabber OpenPGP Usage */
     class xep0027 : virtual public node {
     private:
         std::optional<std::optional<std::string>> _signature;

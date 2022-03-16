@@ -14,6 +14,7 @@
 
 namespace xml{
 
+    /* Entity Capabilities */
     class xep0115  : virtual public node {
     public:
         struct caps {

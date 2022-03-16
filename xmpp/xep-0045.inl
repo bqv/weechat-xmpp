@@ -17,6 +17,7 @@
 
 namespace xml {
 
+    /* Multi-User Chat */
     class xep0045 : virtual public node {
     public:
         enum class affiliation {

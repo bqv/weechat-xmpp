@@ -16,6 +16,7 @@
 
 namespace xml {
 
+    /* Last User Interaction in Presence */
     class xep0319 : virtual public node {
     private:
         std::optional<std::optional<std::chrono::system_clock::time_point>> _idle_since;
