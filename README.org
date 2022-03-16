@@ -1,14 +1,14 @@
-#+TITLE:     weechat-xmpp
-#+AUTHOR:    Tony Olagbaiye
-#+EMAIL:     frony0@gmail.com
-#+DATE:      2018-05-09
-#+DESCRIPTION: Weechat plugin for XMPP
-#+KEYWORDS: weechat xmpp c api
-#+LANGUAGE:  en
-#+OPTIONS:   H:3 num:nil toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
-#+OPTIONS:   TeX:t LaTeX:nil skip:nil d:nil todo:t pri:t tags:not-in-toc
+#+TITLE:               weechat-xmpp
+#+AUTHOR:              Tony Olagbaiye
+#+EMAIL:               bqv@fron.io
+#+DATE:                2021-06-26
+#+DESCRIPTION:         Weechat plugin for XMPP
+#+KEYWORDS:            weechat xmpp c api
+#+LANGUAGE:            en
+#+OPTIONS:             H:3 num:nil toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:             TeX:t LaTeX:nil skip:nil d:nil todo:t pri:t tags:not-in-toc
 #+EXPORT_EXCLUDE_TAGS: exclude
-#+STARTUP:    showall
+#+STARTUP:             showall
 
 [[https://travis-ci.org/bqv/weechat-xmpp][file:https://api.travis-ci.org/bqv/weechat-xmpp.svg?branch=master]]
 [[https://coveralls.io/github/bqv/weechat-xmpp?branch=master][file:https://coveralls.io/repos/github/bqv/weechat-xmpp/badge.svg?branch=master]]
@@ -20,7 +20,7 @@
 
  | Status:     | XMPP for power users and digital masochists |
  | Location:   | [[http://github.com/bqv/weechat-xmpp]]      |
- | Version:    | 0.2.0                                       |
+ | Version:    | 0.2.1                                       |
  | Disclaimer: | I'm lazy and unashamedly clinically insane  |
 
 * Description
@@ -85,7 +85,7 @@
 
 * Tasks
 
-** DONE [#A] Implement basic functionality (milestone v0.1)
+** DONE Implement basic functionality (milestone v0.1)
    * [X] Connecting
    * [X] Pretty-printing stanzas
    * [X] Receiveing and formatting PMs to a dedicated buffer
@@ -93,34 +93,23 @@
    * [X] Opening PMs (/chat)
 ** TODO [#A] Implement essential functionality (milestone v0.2)
    * [X] Opening PMs with initial message
-   * [-] OOB messages
-     * [X] Single media on a line
-     * [ ] Multiple media inline (protocol?)
-     * [ ] [#D] Encrypted (pgp/omemo)
    * [X] Buffer autoswitch on enter/open
    * [X] Handle open/enter jids with a resource without breaking
    * [X] Allow /close without crashing
-   * [ ] [#B] Handle wide errors gracefully
-     * [ ] [#B] Event-driven MUC entrance
-   * [ ] [#C] XMPP Ping (xep-199)
-   * [X] [#A] Highlight
-   * [-] MUCs
-     * [X] Opening (/enter)
-     * [ ] [#B] Leave on /close
-     * [X] Receiving
-     * [X] Sending
-       * [X] With /msg
-     * [-] [#B] Edits
-       * [X] [#B] Displaying
-       * [X] [#B] Tagging
-       * [ ] [#B] Making (/edit)
-       * [X] [#C] Diff highlighting
-     * [ ] [#B] Handle errors gracefully
-     * [X] [#B] Presence/nicklist
-       * [X] [#B] Enters
-       * [X] [#B] Leaves
-       * [X] [#B] Tracking
-     * [X] [#B] Set/show topic
+   * [X] Highlight
+   * [X] MUC PMs
+   * [X] Send typing notifications
+   * [X] Recv typing notifications
+   * [X] Message Carbons
+   * [X] MAM Fetching
+   * [/] Read receipts
+     * [X] Message Delivery (XEP-0184)
+     * [X] Chat Markers (XEP-0333)
+       * [X] Composing
+       * [X] Paused
+       * [?] Active
+       * [#] Inactive
+       * [#] Gone
    * [X] OMEMO (libomemo-c)
      * [X] Presence
        * [X] Disco
@@ -132,40 +121,82 @@
            * [X] Device ID
            * [X] Bundles
      * [X] Messages
-   * [X] [#C] MUC PMs
-   * [X] [#A] Send typing notifications
-   * [X] [#A] Recv typing notifications
-   * [X] [#C] Read receipts
-     * [X] Chat Markers (XEP-0333)
-       * [X] Composing
-       * [X] Paused
-       * [?] Active
-       * [ ] Inactive
-       * [ ] Gone
-     * [X] Message Delivery (XEP-0184)
-   * [X] Message Carbons
-   * [ ] Service Disco
-     * [ ] /disco [domain]
-   * [ ] /whois [user|muc]
-     * [ ] User Avatars
-     * [ ] MUC Icons
-   * [X] MAM Fetching
-   * [-] Bookmarks / Roster
-     * [X] Autojoin bookmarks
-       * [ ] Except biboumi rooms
-     * [ ] Add bookmarks
-     * [ ] Delete bookmarks
-     * [ ] Roster
-   * [ ] OTR (libotr)
-   * [X] PGP (gpgme)
+   * [-] PGP (gpgme)
      * [X] Use keyrings (from gnupg)
      * [X] Presence
      * [X] Decryption
      * [X] Encryption
      * [X] Custom set/clear key (/pgp)
-     * [ ] Save pgp key set per jid/muc
-   * [ ] Room Explorer (https://search.jabber.network/docs/api)
-** TODO [#C] Adhere to CCS (milestone v0.3)
+     * [ ] [#B] Save pgp key set per jid/muc
+   * [ ] [#A] Account renaming
+   * [-] OOB messages
+     * [X] Single media on a line
+     * [ ] [#D] Multiple media inline (protocol?)
+     * [ ] [#C] Encrypted (pgp/omemo)
+   * [ ] Handle wide errors gracefully
+     * [ ] [#C] Event-driven MUC entrance
+   * [ ] XMPP Ping (xep-199)
+     * [ ] [#C] Respond to s2c and m2c
+     * [ ] [#B] /ping for c2s and c2c
+   * [-] MUCs
+     * [X] Presence/nicklist
+       * [X] Enters
+       * [X] Leaves
+       * [X] Tracking
+     * [X] Set/show topic
+     * [X] Opening (/enter)
+     * [X] Receiving
+     * [X] Sending
+       * [X] With /msg
+     * [X] Handle errors gracefully
+     * [-] Edits
+       * [X] Displaying
+       * [X] Tagging
+       * [X] Diff highlighting
+       * [ ] [#B] Making (/edit)
+     * [ ] [#A] Leave on /close
+   * [ ] Service Disco
+     * [ ] [#B] /disco [domain]
+   * [ ] /whois [user|muc]
+     * [ ] [#B] User Avatars
+     * [ ] [#B] MUC Icons
+   * [-] Bookmarks / Roster (xep-048)
+     * [X] Autojoin bookmarks
+       * [ ] [#A] Except biboumi rooms
+     * [ ] [#B] Add bookmarks
+     * [ ] [#B] Delete bookmarks
+     * [ ] [#B] Roster
+   * [ ] [#D] OTR (libotr)
+   * [ ] [#C] Room Explorer (https://search.jabber.network/docs/api)
+   * [ ] [#C] DOAP
+** TODO [#C] Adhere to CCS2022 (XEP-459) (milestone v0.3)
+   * [ ] Core
+     * [ ] Service Discovery (xep-030)
+     * [ ] Entity Capabilities (xep-115)
+     * [ ] Advanced
+       * [ ] Direct TLS (require secure connection)
+       * [ ] Personal Eventing Protocol (xep-163)
+   * [ ] IM
+     * [ ] File Upload (xep-363)
+     * [ ] VCard-temp (xep-054)
+     * [ ] MUC Invitations (xep-249)
+     * [ ] Advanced
+       * [ ] User Avatar (xep-084)
+       * [ ] User Avatar Compatibility (xep-398 xep-153)
+       * [ ] User Blocking (xep-191)
+       * [ ] PEP Native Bookmarks (xep-402)
+       * [ ] MUC Self-Ping (xep-410)
+       * [ ] Persistent Storage (xep-223)
+       * [ ] XML Storage (xep-049)
+       * [ ] Message Correction (xep-308)
+       * [ ] Direct File Transfer - Jingle (xep-234 xep-261)
+     * [ ] Extras
+       * [ ] Stateless Inline Media Sharing (xep-385)
+       * [ ] Consistent Color Generation (xep-392)
+       * [ ] Message Styling (xep-393)
+       * [ ] Extended Channel Search (xep-433)
+       * [ ] Message Retraction (xep-424)
+       * [ ] Message Moderation (xep-425)
 ** TODO [#D] Close all issues (milestone v1.0)
 
 * Contributing

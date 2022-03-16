@@ -130,26 +130,26 @@ void completion__init()
 
 
     weechat_hook_completion("nick",
-                            N_("nicks of current Slack channel"),
+                            N_("nicks of current buffer"),
                             &completion__channel_nicks_cb,
                             NULL, NULL);
 
-    weechat_hook_completion("account",
+    weechat_hook_completion("xmpp_account",
                             N_("xmpp accounts"),
                             &completion__accounts_cb,
                             NULL, NULL);
 
     option = weechat_config_get("weechat.completion.default_template");
     default_template = weechat_config_string(option);
-    if (!weechat_strcasestr(default_template, "%(account)"))
+    if (!weechat_strcasestr(default_template, "%(xmpp_account)"))
     {
         size_t length = snprintf(NULL, 0, "%s|%s",
                                 default_template,
-                                "%(account)") + 1;
+                                "%(xmpp_account)") + 1;
         char *new_template = (char*)malloc(length);
         snprintf(new_template, length, "%s|%s",
                  default_template,
-                 "%(account)");
+                 "%(xmpp_account)");
         weechat_config_option_set(option, new_template, 1);
         free(new_template);
     }

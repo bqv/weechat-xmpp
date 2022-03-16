@@ -564,6 +564,14 @@ int command__open(const void *pointer, void *data,
         for (int i = 0; i < n_jid; i++)
         {
             jid = xmpp_jid_bare(ptr_account->context, jids[i]);
+            if (ptr_channel && !strchr(jid, '@'))
+            {
+                jid = xmpp_jid_new(
+                    ptr_account->context,
+                    xmpp_jid_node(ptr_account->context, ptr_channel->name),
+                    xmpp_jid_domain(ptr_account->context, ptr_channel->name),
+                    jid);
+            }
 
             pres = xmpp_presence_new(ptr_account->context);
             xmpp_stanza_set_to(pres, jid);
@@ -571,19 +579,19 @@ int command__open(const void *pointer, void *data,
             xmpp_send(ptr_account->connection, pres);
             xmpp_stanza_release(pres);
 
-            ptr_channel = channel__search(ptr_account, jid);
-            if (!ptr_channel)
-                ptr_channel = channel__new(ptr_account, CHANNEL_TYPE_PM, jid, jid);
+            struct t_channel *channel = channel__search(ptr_account, jid);
+            if (!channel)
+                channel = channel__new(ptr_account, CHANNEL_TYPE_PM, jid, jid);
 
             if (argc > 2)
             {
                 text = argv_eol[2];
 
-                channel__send_message(ptr_account, ptr_channel, jid, text);
+                channel__send_message(ptr_account, channel, jid, text);
             }
 
             char buf[16];
-            int num = weechat_buffer_get_integer(ptr_channel->buffer, "number");
+            int num = weechat_buffer_get_integer(channel->buffer, "number");
             snprintf(buf, sizeof(buf), "/buffer %d", num);
             weechat_command(ptr_account->buffer, buf);
         }
@@ -968,7 +976,7 @@ void command__init()
         "open",
         N_("open a direct xmpp chat"),
         N_("<jid>"),
-        N_("jid: jid to target"),
+        N_("jid: jid to target, or nick from the current muc"),
         NULL, &command__open, NULL, NULL);
     if (!hook)
         weechat_printf(NULL, "Failed to setup command /open");
