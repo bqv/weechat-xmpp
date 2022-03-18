@@ -219,7 +219,7 @@ namespace xml {
 
         class error { // THIS IS RFC 6120 :(
         private:
-            enum condition : int {
+            enum condition {
                 not_authorized,
                 registration_required,
                 forbidden,
@@ -306,25 +306,26 @@ namespace xml {
             std::optional<std::string> description;
 
             const char* reason() {
-                switch (condition)
-                {
-                  case not_authorized:
-                    return "Password Required";
-                  case forbidden:
-                    return "Banned";
-                  case item_not_found:
-                    return "No such MUC";
-                  case not_allowed:
-                    return "MUC Creation Failed";
-                  case not_acceptable:
-                    return "Unacceptable Nickname";
-                  case registration_required:
-                    return "Not on Member List";
-                  case conflict:
-                    return "Nickname Conflict";
-                  case service_unavailable:
-                    return "Service Unavailable (MUC Full?)";
-                }
+                if (condition)
+                    switch (*condition)
+                    {
+                      case not_authorized:
+                        return "Password Required";
+                      case forbidden:
+                        return "Banned";
+                      case item_not_found:
+                        return "No such MUC";
+                      case not_allowed:
+                        return "MUC Creation Failed";
+                      case not_acceptable:
+                        return "Unacceptable Nickname";
+                      case registration_required:
+                        return "Not on Member List";
+                      case conflict:
+                        return "Nickname Conflict";
+                      case service_unavailable:
+                        return "Service Unavailable (MUC Full?)";
+                    }
                 return "Unspecified";
             }
         };

@@ -91,13 +91,14 @@ all:
 	make weechat-xmpp && make test
 
 weechat-xmpp: $(DEPS) xmpp.so
+release: xmpp.so
+	cp xmpp.so .xmpp.so.$(SUFFIX)
+	ln -sf .xmpp.so.$(SUFFIX) .xmpp.so
 
 xmpp.so: $(OBJS) $(DEPS) $(HDRS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(DEPS) $(LDLIBS)
 	git ls-files | xargs ls -d | xargs tar cz | objcopy --add-section .source=/dev/stdin xmpp.so
 	#objcopy --dump-section .source=/dev/stdout xmpp.so | tar tz
-	cp xmpp.so .xmpp.so.$(SUFFIX)
-	ln -sf .xmpp.so.$(SUFFIX) .xmpp.so
 
 .%.o: %.c
 	$(eval GIT_REF=$(shell git describe --abbrev=6 --always --dirty 2>/dev/null || true))
@@ -184,7 +185,7 @@ else
 	chmod 755 ~/.weechat/plugins/xmpp.so
 endif
 
-.PHONY: all weechat-xmpp test debug depend tidy clean distclean install check
+.PHONY: all weechat-xmpp release test debug depend tidy clean distclean install check
 
 check:
 	clang-check --analyze *.c *.cc *.cpp

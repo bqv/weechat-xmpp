@@ -753,7 +753,7 @@ int account__timer_cb(const void *pointer, void *data, int remaining_calls)
     (void) data;
     (void) remaining_calls;
 
-    try
+  //try
     {
         struct t_account *ptr_account;
 
@@ -776,9 +776,10 @@ int account__timer_cb(const void *pointer, void *data, int remaining_calls)
 
         return WEECHAT_RC_OK;
     }
-    catch (const std::exception& ex)
-    {
-        __asm__("int3");
-        return WEECHAT_RC_ERROR;
-    }
+  //catch (const std::exception& ex)
+  //{
+  //    auto what = ex.what();
+  //    __asm__("int3");
+  //    return WEECHAT_RC_ERROR;
+  //}
 }

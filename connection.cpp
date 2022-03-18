@@ -104,15 +104,14 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
         clientid = fmt::format("{}#{}", node, ver);
 
         std::string to = binding.to ? binding.to->full : "";
+        char *uuid = xmpp_uuid_gen(account->context);
 
         xmpp_stanza_t *children[2] = {NULL};
-        children[0] = stanza__iq_pubsub_items(account->context, NULL,
-                const_cast<char*>("eu.siacs.conversations.axolotl.devicelist"));
-        children[0] = stanza__iq_pubsub(account->context, NULL,
-                children, with_noop("http://jabber.org/protocol/pubsub"));
+        children[0] = stanza__iq_query(account->context, NULL,
+                with_noop("http://jabber.org/protocol/disco#info"), NULL);
         children[0] = stanza__iq(account->context, NULL, children, NULL,
-                                    strdup("fetch2"), to.size() ? strdup(to.data()) : NULL,
-                                    binding.from->bare.size() ? strdup(binding.from->bare.data()) : NULL, strdup("get"));
+                uuid, to.size() ? strdup(to.data()) : NULL,
+                binding.from ? strdup(binding.from->full.data()) : NULL, strdup("get"));
         xmpp_send(conn, children[0]);
         xmpp_stanza_release(children[0]);
     }
@@ -123,12 +122,13 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
         channel = channel__new(account, CHANNEL_TYPE_PM, binding.from->bare.data(), binding.from->bare.data());
     }
 
-    if (binding.type && *binding.type == "error" && binding.muc() && channel)
+    if (binding.type && *binding.type == "error" && channel)
     {
         if (auto error = binding.error())
         {
-            weechat_printf(channel->buffer, "%sError joining MUC: %s",
-                           weechat_prefix("network"), error->reason());
+            weechat_printf(channel->buffer, "[!]\t%s%sError: %s",
+                           weechat_color("gray"),
+                           binding.muc() ? "MUC " : "", error->reason());
         }
         return 1;
     }
@@ -972,6 +972,37 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
 
         if (weechat_strcasecmp(type, "result") == 0)
         {
+            xmpp_stanza_t *identity = xmpp_stanza_get_child_by_name(query, "identity");
+            std::string category;
+            std::string name;
+            std::string type;
+
+            if (const char *attr = xmpp_stanza_get_attribute(identity, "category"))
+                category = attr;
+            if (const char *attr = xmpp_stanza_get_attribute(identity, "name"))
+                name = attr;
+            if (const char *attr = xmpp_stanza_get_attribute(identity, "type"))
+                type = attr;
+
+            if (category == "conference")
+            {
+                struct t_channel *ptr_channel = channel__search(account, from);
+                weechat_printf(ptr_channel ? ptr_channel->buffer : nullptr, "%sname = %s",
+                               weechat_prefix("network"), name.data());
+            }
+            else if (category == "conference")
+            {
+                xmpp_stanza_t *children[2] = {NULL};
+                children[0] = stanza__iq_pubsub_items(account->context, NULL,
+                        const_cast<char*>("eu.siacs.conversations.axolotl.devicelist"));
+                children[0] = stanza__iq_pubsub(account->context, NULL,
+                        children, with_noop("http://jabber.org/protocol/pubsub"));
+                children[0] = stanza__iq(account->context, NULL, children, NULL,
+                        strdup("fetch2"), to.size() ? strdup(to.data()) : NULL,
+                        binding.from ? strdup(binding.from->bare.data()) : NULL, strdup("get"));
+                xmpp_send(conn, children[0]);
+                xmpp_stanza_release(children[0]);
+            }
         }
     }
 
@@ -1139,6 +1170,21 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
                                 intext = xmpp_stanza_get_text(text);
                             }
 
+                            {
+                                xmpp_stanza_t *children[2] = {0};
+                                char *uuid = xmpp_uuid_gen(account->context);
+
+                                children[0] = stanza__iq_query(account->context, NULL,
+                                        with_noop("http://jabber.org/protocol/disco#info"), NULL);
+                                children[0] =
+                                    stanza__iq(account->context, NULL, children,
+                                               NULL, uuid,
+                                               strdup(to), strdup(jid),
+                                               strdup("get"));
+
+                                xmpp_send(conn, children[0]);
+                                xmpp_stanza_release(children[0]);
+                            }
                             if (weechat_strcasecmp(autojoin, "true") == 0)
                             {
                                 char **command = weechat_string_dyn_alloc(256);

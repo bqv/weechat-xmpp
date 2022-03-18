@@ -169,6 +169,7 @@
    * [ ] [#D] OTR (libotr)
    * [ ] [#C] Room Explorer (https://search.jabber.network/docs/api)
    * [ ] [#C] DOAP
+   * [ ] [#C] Link sniffing for oob
 ** TODO [#C] Adhere to CCS2022 (XEP-459) (milestone v0.3)
    * [ ] Core
      * [ ] Service Discovery (xep-030)
