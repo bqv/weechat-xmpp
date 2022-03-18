@@ -279,21 +279,21 @@ namespace xml {
 
                 using xmpp_stanzas = urn::ietf::params::xml::ns::xmpp_stanzas;
 
-                for (auto& child : node.get_children<xmpp_stanzas>("not-authorized"))
+                if (node.get_children<xmpp_stanzas>("not-authorized").size() > 0)
                     condition = not_authorized;
-                for (auto& child : node.get_children<xmpp_stanzas>("forbidden"))
+                if (node.get_children<xmpp_stanzas>("forbidden").size() > 0)
                     condition = forbidden;
-                for (auto& child : node.get_children<xmpp_stanzas>("item-not-found"))
+                if (node.get_children<xmpp_stanzas>("item-not-found").size() > 0)
                     condition = item_not_found;
-                for (auto& child : node.get_children<xmpp_stanzas>("not-allowed"))
+                if (node.get_children<xmpp_stanzas>("not-allowed").size() > 0)
                     condition = not_allowed;
-                for (auto& child : node.get_children<xmpp_stanzas>("not-acceptable"))
+                if (node.get_children<xmpp_stanzas>("not-acceptable").size() > 0)
                     condition = not_acceptable;
-                for (auto& child : node.get_children<xmpp_stanzas>("registration-required"))
+                if (node.get_children<xmpp_stanzas>("registration-required").size() > 0)
                     condition = registration_required;
-                for (auto& child : node.get_children<xmpp_stanzas>("conflict"))
+                if (node.get_children<xmpp_stanzas>("conflict").size() > 0)
                     condition = conflict;
-                for (auto& child : node.get_children<xmpp_stanzas>("service-unavailable"))
+                if (node.get_children<xmpp_stanzas>("service-unavailable").size() > 0)
                     condition = service_unavailable;
 
                 for (auto& child : node.get_children("text"))

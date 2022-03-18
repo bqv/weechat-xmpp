@@ -562,7 +562,7 @@ int connection__message_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *
                 {
                     int tags_count = weechat_hdata_integer(weechat_hdata_get("line_data"),
                                                            line_data, "tags_count");
-                    char str_tag[20] = {0};
+                    char str_tag[24] = {0};
                     for (int n_tag = 0; n_tag < tags_count; n_tag++)
                     {
                         snprintf(str_tag, sizeof(str_tag), "%d|tags_array", n_tag);
