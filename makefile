@@ -3,8 +3,10 @@ ifdef DEBUG
 	DBGLDFLAGS=-lasan -lrt -lasan #-lubsan -llsan
 endif
 
-RM=rm -f
-FIND=find
+RM ?= rm -f
+FIND ?= find
+CC = $(if $(shell which gcc-12.0.1),gcc-12.0.1,cc)
+CXX = $(if $(shell which g++-12.0.1),g++-12.0.1,c++)
 
 INCLUDES=-Ilibstrophe -Ideps -Ideps/fmt/include \
 	 $(shell xml2-config --cflags) \

@@ -998,7 +998,7 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
                 children[0] = stanza__iq_pubsub(account->context, NULL,
                         children, with_noop("http://jabber.org/protocol/pubsub"));
                 children[0] = stanza__iq(account->context, NULL, children, NULL,
-                        strdup("fetch2"), to.size() ? strdup(to.data()) : NULL,
+                        strdup("fetch2"), to ? strdup(to) : NULL,
                         binding.from ? strdup(binding.from->bare.data()) : NULL, strdup("get"));
                 xmpp_send(conn, children[0]);
                 xmpp_stanza_release(children[0]);
