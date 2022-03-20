@@ -14,20 +14,20 @@
 
 namespace stanza {
 
-    /* Service Discovery */
-    struct xep0030 {
-        struct query : virtual public spec {
-            query() : spec("query") {
-                xmlns<jabber_org::protocol::disco::info>();
+    /* Message Carbons */
+    struct xep0280 {
+        struct enable : virtual public spec {
+            enable() : spec("enable") {
+                xmlns<urn::xmpp::carbons::_2>();
             }
         };
 
         struct iq : virtual public spec {
             iq() : spec("iq") {}
 
-            iq& xep0030() { return *this; }
+            iq& xep0280() { xmlns<jabber::client>(); return *this; }
 
-            iq& query(query q = xep0030::query()) { child(q); return *this; }
+            iq& enable(enable e = xep0280::enable()) { child(e); return *this; }
         };
     };
 

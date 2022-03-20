@@ -1254,7 +1254,7 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
     {
         account->disconnected = 0;
 
-        xmpp_stanza_t *pres, *pres__c, *pres__status, *pres__status__text,
+        xmpp_stanza_t *pres__c, *pres__status, *pres__status__text,
             *pres__x, *pres__x__text, **children;
 
         xmpp_handler_add(conn, &connection__version_handler,
@@ -1315,22 +1315,19 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
             children[3] = NULL;
         }
 
-        pres = stanza__presence(account->context, NULL,
-                                children, NULL, strdup(account_jid(account)),
-                                NULL, NULL);
-        xmpp_send(conn, pres);
-        xmpp_stanza_release(pres);
+        xmpp_send(conn, stanza::presence()
+                    .from(account_jid(account))
+                    .build(account->context)
+                    .get());
 
-        children[1] = NULL;
-        children[0] =
-            stanza__iq_enable(account->context, NULL, with_noop("urn:xmpp:carbons:2"));
-        children[0] =
-            stanza__iq(account->context, NULL, children,
-                       strdup("jabber:client"), strdup("enable1"),
-                       strdup(account_jid(account)), NULL, strdup("set"));
-
-        xmpp_send(conn, children[0]);
-        xmpp_stanza_release(children[0]);
+        xmpp_send(conn, stanza::iq()
+                    .from(account_jid(account))
+                    .type("set")
+                    .id(stanza::uuid(account->context))
+                    .xep0280()
+                    .enable()
+                    .build(account->context)
+                    .get());
 
         children[1] = NULL;
         children[0] =

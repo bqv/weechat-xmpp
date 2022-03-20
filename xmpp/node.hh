@@ -166,6 +166,7 @@ namespace stanza {
 #include "xep-0030.inl"
 #include "xep-0045.inl"
 #include "xep-0115.inl"
+#include "xep-0280.inl"
 #include "xep-0319.inl"
 
 namespace stanza {
@@ -190,10 +191,16 @@ namespace stanza {
 
     struct presence : virtual public spec {
         presence() : spec("presence") {}
+
+        presence& id(std::string_view s) { attr("id", s); return *this; }
+        presence& from(std::string_view s) { attr("from", s); return *this; }
+        presence& to(std::string_view s) { attr("to", s); return *this; }
+        presence& lang(std::string_view s) { attr("lang", s); return *this; }
     };
 
     struct iq : virtual public spec,
-                public xep0030::iq {
+                public xep0030::iq,
+                public xep0280::iq {
         iq() : spec("iq") {}
 
         iq& id(std::string_view s) { attr("id", s); return *this; }
