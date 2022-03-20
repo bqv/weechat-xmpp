@@ -9,6 +9,14 @@
 #include "ns.hh"
 #pragma GCC visibility pop
 
+std::string stanza::uuid(xmpp_ctx_t *context) {
+    std::shared_ptr<char> uuid {
+        xmpp_uuid_gen(context),
+        [=](auto x) { xmpp_free(context, x); }
+    };
+    return uuid.get();
+}
+
 std::string get_name(xmpp_stanza_t *stanza) {
     const char *result = NULL;
     result = xmpp_stanza_get_name(stanza);

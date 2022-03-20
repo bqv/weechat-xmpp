@@ -103,17 +103,16 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
 
         clientid = fmt::format("{}#{}", node, ver);
 
-        std::string to = binding.to ? binding.to->full : "";
-        char *uuid = xmpp_uuid_gen(account->context);
-
-        xmpp_stanza_t *children[2] = {NULL};
-        children[0] = stanza__iq_query(account->context, NULL,
-                with_noop("http://jabber.org/protocol/disco#info"), NULL);
-        children[0] = stanza__iq(account->context, NULL, children, NULL,
-                uuid, to.size() ? strdup(to.data()) : NULL,
-                binding.from ? strdup(binding.from->full.data()) : NULL, strdup("get"));
-        xmpp_send(conn, children[0]);
-        xmpp_stanza_release(children[0]);
+        xmpp_send(conn, stanza::iq()
+                    .from(binding.to ? binding.to->full : "")
+                    .to(binding.from
+                        .transform([](auto& x) { return x.full; })
+                        .value_or(std::string()))
+                    .type("get")
+                    .id(stanza::uuid(account->context))
+                    .query()
+                    .build(account->context)
+                    .get());
     }
 
     channel = channel__search(account, binding.from->bare.data());
@@ -1170,21 +1169,14 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
                                 intext = xmpp_stanza_get_text(text);
                             }
 
-                            {
-                                xmpp_stanza_t *children[2] = {0};
-                                char *uuid = xmpp_uuid_gen(account->context);
-
-                                children[0] = stanza__iq_query(account->context, NULL,
-                                        with_noop("http://jabber.org/protocol/disco#info"), NULL);
-                                children[0] =
-                                    stanza__iq(account->context, NULL, children,
-                                               NULL, uuid,
-                                               strdup(to), strdup(jid),
-                                               strdup("get"));
-
-                                xmpp_send(conn, children[0]);
-                                xmpp_stanza_release(children[0]);
-                            }
+                            xmpp_send(conn, stanza::iq()
+                                        .from(to)
+                                        .to(jid)
+                                        .type("get")
+                                        .id(stanza::uuid(account->context))
+                                        .query()
+                                        .build(account->context)
+                                        .get());
                             if (weechat_strcasecmp(autojoin, "true") == 0)
                             {
                                 char **command = weechat_string_dyn_alloc(256);
