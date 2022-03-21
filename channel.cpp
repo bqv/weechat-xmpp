@@ -20,6 +20,7 @@
 #include "buffer.hh"
 #include "pgp.hh"
 #include "util.hh"
+#include "xmpp/node.hh"
 
 const char *channel__transport_name(enum t_channel_transport transport)
 {
@@ -297,6 +298,14 @@ struct t_channel *channel__new(struct t_account *account,
     ptr_buffer = channel__create_buffer(account, type, name);
     if (!ptr_buffer)
         return NULL;
+    else if (type == CHANNEL_TYPE_PM)
+    {
+        ptr_channel = channel__search(account, jid(account->context, id).bare.data());
+        if (ptr_channel)
+        {
+            weechat_buffer_merge(ptr_buffer, ptr_channel->buffer);
+        }
+    }
 
     if ((new_channel = (struct t_channel*)malloc(sizeof(*new_channel))) == NULL)
         return NULL;
