@@ -110,6 +110,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
                         .value_or(std::string()))
                     .type("get")
                     .id(stanza::uuid(account->context))
+                    .xep0030()
                     .query()
                     .build(account->context)
                     .get());
@@ -1004,6 +1005,66 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
             }
         }
     }
+    query = xmpp_stanza_get_child_by_name_and_ns(
+        stanza, "query", "jabber:iq:private");
+    if (query && type)
+    {
+        storage = xmpp_stanza_get_child_by_name_and_ns(
+                query, "storage", "storage:bookmarks");
+        if (storage)
+        {
+            for (conference = xmpp_stanza_get_children(storage);
+                 conference; conference = xmpp_stanza_get_next(conference))
+            {
+                const char *name = xmpp_stanza_get_name(conference);
+                if (weechat_strcasecmp(name, "conference") != 0)
+                    continue;
+
+                const char *jid = xmpp_stanza_get_attribute(conference, "jid");
+                const char *autojoin = xmpp_stanza_get_attribute(conference, "autojoin");
+                name = xmpp_stanza_get_attribute(conference, "name");
+                nick = xmpp_stanza_get_child_by_name(conference, "nick");
+                char *intext;
+                if (nick)
+                {
+                    text = xmpp_stanza_get_children(nick);
+                    intext = xmpp_stanza_get_text(text);
+                }
+
+                xmpp_send(conn, stanza::iq()
+                            .from(to)
+                            .to(jid)
+                            .type("get")
+                            .id(stanza::uuid(account->context))
+                            .xep0030()
+                            .query()
+                            .build(account->context)
+                            .get());
+                if (weechat_strcasecmp(autojoin, "true") == 0)
+                {
+                    char **command = weechat_string_dyn_alloc(256);
+                    weechat_string_dyn_concat(command, "/enter ", -1);
+                    weechat_string_dyn_concat(command, jid, -1);
+                    if (nick)
+                    {
+                        weechat_string_dyn_concat(command, "/", -1);
+                        weechat_string_dyn_concat(command, intext, -1);
+                    }
+                    weechat_command(account->buffer, *command);
+                    struct t_channel *ptr_channel =
+                        channel__search(account, jid);
+                    struct t_gui_buffer *ptr_buffer =
+                        ptr_channel ? ptr_channel->buffer : NULL;
+                    if (ptr_buffer)
+                        weechat_buffer_set(ptr_buffer, "short_name", name);
+                    weechat_string_dyn_free(command, 1);
+                }
+
+                if (nick)
+                    free(intext);
+            }
+        }
+    }
 
     pubsub = xmpp_stanza_get_child_by_name_and_ns(
         stanza, "pubsub", "http://jabber.org/protocol/pubsub");
@@ -1139,70 +1200,6 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
                     }
                 }
             }
-            if (items_node
-                && weechat_strcasecmp(items_node, "storage:bookmarks") == 0)
-            {
-                item = xmpp_stanza_get_child_by_name(items, "item");
-                if (item)
-                    item_id = xmpp_stanza_get_id(item);
-                if (item && item_id && weechat_strcasecmp(item_id, "current") == 0)
-                {
-                    storage = xmpp_stanza_get_child_by_name_and_ns(
-                        item, "storage", "storage:bookmarks");
-                    if (storage)
-                    {
-                        for (conference = xmpp_stanza_get_children(storage);
-                             conference; conference = xmpp_stanza_get_next(conference))
-                        {
-                            const char *name = xmpp_stanza_get_name(conference);
-                            if (weechat_strcasecmp(name, "conference") != 0)
-                                continue;
-
-                            const char *jid = xmpp_stanza_get_attribute(conference, "jid");
-                            const char *autojoin = xmpp_stanza_get_attribute(conference, "autojoin");
-                            name = xmpp_stanza_get_attribute(conference, "name");
-                            nick = xmpp_stanza_get_child_by_name(conference, "nick");
-                            char *intext;
-                            if (nick)
-                            {
-                                text = xmpp_stanza_get_children(nick);
-                                intext = xmpp_stanza_get_text(text);
-                            }
-
-                            xmpp_send(conn, stanza::iq()
-                                        .from(to)
-                                        .to(jid)
-                                        .type("get")
-                                        .id(stanza::uuid(account->context))
-                                        .query()
-                                        .build(account->context)
-                                        .get());
-                            if (weechat_strcasecmp(autojoin, "true") == 0)
-                            {
-                                char **command = weechat_string_dyn_alloc(256);
-                                weechat_string_dyn_concat(command, "/enter ", -1);
-                                weechat_string_dyn_concat(command, jid, -1);
-                                if (nick)
-                                {
-                                    weechat_string_dyn_concat(command, "/", -1);
-                                    weechat_string_dyn_concat(command, intext, -1);
-                                }
-                                weechat_command(account->buffer, *command);
-                                struct t_channel *ptr_channel =
-                                    channel__search(account, jid);
-                                struct t_gui_buffer *ptr_buffer =
-                                    ptr_channel ? ptr_channel->buffer : NULL;
-                                if (ptr_buffer)
-                                    weechat_buffer_set(ptr_buffer, "short_name", name);
-                                weechat_string_dyn_free(command, 1);
-                            }
-
-                            if (nick)
-                                free(intext);
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -1329,20 +1326,15 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
                     .build(account->context)
                     .get());
 
-        children[1] = NULL;
-        children[0] =
-        stanza__iq_pubsub_items(account->context, NULL,
-                                strdup("storage:bookmarks"));
-        children[0] =
-        stanza__iq_pubsub(account->context, NULL, children,
-                          with_noop("http://jabber.org/protocol/pubsub"));
-        children[0] =
-        stanza__iq(account->context, NULL, children, NULL, strdup("retrieve1"),
-                   strdup(account_jid(account)), strdup(account_jid(account)),
-                   strdup("get"));
-
-        xmpp_send(conn, children[0]);
-        xmpp_stanza_release(children[0]);
+        xmpp_send(conn, stanza::iq()
+                    .from(account_jid(account))
+                    .to(account_jid(account))
+                    .type("get")
+                    .id(stanza::uuid(account->context))
+                    .xep0049()
+                    .query(stanza::xep0049::query().bookmarks())
+                    .build(account->context)
+                    .get());
 
         children[1] = NULL;
         children[0] =

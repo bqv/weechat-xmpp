@@ -165,6 +165,7 @@ namespace stanza {
 #include "xep-0027.inl"
 #include "xep-0030.inl"
 #include "xep-0045.inl"
+#include "xep-0049.inl"
 #include "xep-0115.inl"
 #include "xep-0280.inl"
 #include "xep-0319.inl"
@@ -200,6 +201,7 @@ namespace stanza {
 
     struct iq : virtual public spec,
                 public xep0030::iq,
+                public xep0049::iq,
                 public xep0280::iq {
         iq() : spec("iq") {}
 
