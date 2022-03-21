@@ -23,7 +23,7 @@ void pgp__init(struct t_pgp **pgp)
 {
     struct t_pgp *new_pgp;
     gpgme_error_t err;
-	gpgme_data_t keydata;
+  //gpgme_data_t keydata;
 
     gpgme_check_version(NULL);
 
@@ -86,24 +86,24 @@ char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *s
     gpgme_error_t err;
     gpgme_data_t in, out;
 
-	/* Initialize input buffer. */
-	err = gpgme_data_new_from_mem(&in, message, strlen(message), false);
+    /* Initialize input buffer. */
+    err = gpgme_data_new_from_mem(&in, message, strlen(message), false);
     if (err) {
         goto encrypt_finish;
     }
 
-	/* Initialize output buffer. */
-	err = gpgme_data_new(&out);
+    /* Initialize output buffer. */
+    err = gpgme_data_new(&out);
     if (err) {
         goto encrypt_finish;
     }
 
-	/* Encrypt data. */
-	err = gpgme_get_key(pgp->gpgme, target, &keys[0], false);
+    /* Encrypt data. */
+    err = gpgme_get_key(pgp->gpgme, target, &keys[0], false);
     if (err) {
         goto encrypt_finish;
     }
-	err = gpgme_get_key(pgp->gpgme, source, &keys[1], false);
+    err = gpgme_get_key(pgp->gpgme, source, &keys[1], false);
     if (err) {
         goto encrypt_finish;
     }
@@ -111,11 +111,11 @@ char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *s
     if (err) {
         goto encrypt_finish;
     }
-	if (gpgme_encrypt_result_t enc_result = gpgme_op_encrypt_result(pgp->gpgme);
+    if (gpgme_encrypt_result_t enc_result = gpgme_op_encrypt_result(pgp->gpgme);
             enc_result->invalid_recipients)
-	{
+    {
         goto encrypt_finish;
-	}
+    }
     gpgme_data_seek(out, 0, SEEK_SET);
     char data[512 + 1];
     while ((ret = gpgme_data_read(out, data, 512)) > 0)
@@ -123,12 +123,16 @@ char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *s
         encrypted += std::string_view(data, ret);
     }
 
-	gpgme_data_release(in);
-	gpgme_data_release(out);
+    gpgme_data_release(in);
+    gpgme_data_release(out);
 
     result = strndup(encrypted.data() + strlen(PGP_MESSAGE_HEADER),
                      encrypted.size() - strlen(PGP_MESSAGE_HEADER) - strlen(PGP_MESSAGE_FOOTER));
 encrypt_finish:
+    if (err) {
+        weechat_printf(buffer, "[PGP]\t%s - %s",
+                gpgme_strsource(err), gpgme_strerror(err));
+    }
     return result;
 }
 
@@ -149,28 +153,28 @@ char *pgp__decrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *c
     gpgme_error_t err;
     gpgme_data_t in, out;
 
-	/* Initialize input buffer. */
-	err = gpgme_data_new_from_mem(&in, (char *)buf, buf_len, false);
+    /* Initialize input buffer. */
+    err = gpgme_data_new_from_mem(&in, (char *)buf, buf_len, false);
     if (err) {
         goto decrypt_finish;
     }
 
-	/* Initialize output buffer. */
-	err = gpgme_data_new(&out);
+    /* Initialize output buffer. */
+    err = gpgme_data_new(&out);
     if (err) {
         goto decrypt_finish;
     }
 
-	/* Decrypt data. */
+    /* Decrypt data. */
     err = gpgme_op_decrypt(pgp->gpgme, in, out);
     if (err) {
         goto decrypt_finish;
     }
-	if (gpgme_decrypt_result_t dec_result = gpgme_op_decrypt_result(pgp->gpgme);
+    if (gpgme_decrypt_result_t dec_result = gpgme_op_decrypt_result(pgp->gpgme);
             dec_result->unsupported_algorithm)
-	{
+    {
         goto decrypt_finish;
-	}
+    }
     gpgme_data_seek(out, 0, SEEK_SET);
     char data[512 + 1];
     while ((ret = gpgme_data_read(out, data, 512)) > 0)
@@ -178,11 +182,15 @@ char *pgp__decrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *c
         decrypted += std::string_view(data, ret);
     }
 
-	gpgme_data_release(in);
-	gpgme_data_release(out);
+    gpgme_data_release(in);
+    gpgme_data_release(out);
 
     result = strndup(decrypted.data(), decrypted.size());
 decrypt_finish:
+    if (err) {
+        weechat_printf(buffer, "[PGP]\t%s - %s",
+                gpgme_strsource(err), gpgme_strerror(err));
+    }
     return result;
 }
 
@@ -190,53 +198,59 @@ char *pgp__verify(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *ce
 {
     uint8_t *       buf = NULL;
     size_t          buf_len = 0;
-    size_t          sigcount = 0;
     char *          result = NULL;
-
-    int ret;
 
     buf_len = strlen(PGP_SIGNATURE_HEADER) + strlen(certificate) + strlen(PGP_SIGNATURE_FOOTER) + 1;
     buf = (uint8_t*)malloc(sizeof(char) * buf_len);
     buf_len = snprintf((char *)buf, buf_len, PGP_SIGNATURE_HEADER "%s" PGP_SIGNATURE_FOOTER, certificate);
 
-	gpgme_verify_result_t vrf_result;
+    gpgme_verify_result_t vrf_result;
     gpgme_error_t err;
     gpgme_data_t in, out;
+    gpgme_key_t key;
 
-	/* Initialize input buffer. */
-	err = gpgme_data_new_from_mem(&in, (char *)buf, buf_len, false);
+    /* Initialize input buffer. */
+    err = gpgme_data_new_from_mem(&in, (char *)buf, buf_len, false);
     if (err) {
         goto verify_finish;
     }
 
-	/* Initialize output buffer. */
-	err = gpgme_data_new(&out);
+    /* Initialize output buffer. */
+    err = gpgme_data_new(&out);
     if (err) {
         goto verify_finish;
     }
 
-	/* Verify data. */
+    /* Verify data. */
     err = gpgme_op_verify(pgp->gpgme, in, out, nullptr);
     if (err) {
         goto verify_finish;
     }
-	if (vrf_result = gpgme_op_verify_result(pgp->gpgme);
+    if (vrf_result = gpgme_op_verify_result(pgp->gpgme);
             !(vrf_result->signatures->summary & GPGME_SIGSUM_VALID))
-	{
+    {
       //goto verify_finish;
-	}
+    }
 
     result = strdup(vrf_result->signatures->fpr);
 
+    err = gpgme_get_key(pgp->gpgme, result, &key, false);
+    if (err) {
+        const char *keyids[2] = { result, nullptr };
+        err = gpgme_op_receive_keys(pgp->gpgme, keyids);
+    }
+
 verify_finish:
+    if (err) {
+        weechat_printf(buffer, "[PGP]\t%s - %s",
+                gpgme_strsource(err), gpgme_strerror(err));
+    }
     return result;
 }
 
 char *pgp__sign(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *source, const char *message)
 {
     std::string signature;
-    uint8_t *        buf = NULL;
-    size_t           buf_len = 0;
     char *           result = NULL;
     int ret;
 
@@ -244,14 +258,14 @@ char *pgp__sign(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *sour
     gpgme_data_t in, out;
     gpgme_key_t key;
 
-	/* Initialize input buffer. */
-	err = gpgme_data_new_from_mem(&in, (char *)message, strlen(message), false);
+    /* Initialize input buffer. */
+    err = gpgme_data_new_from_mem(&in, (char *)message, strlen(message), false);
     if (err) {
         goto sign_finish;
     }
 
-	/* Initialize output buffer. */
-	err = gpgme_data_new(&out);
+    /* Initialize output buffer. */
+    err = gpgme_data_new(&out);
     if (err) {
         goto sign_finish;
     }
@@ -259,6 +273,7 @@ char *pgp__sign(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *sour
     /* Include signature within key. */
     {
         gpgme_keylist_mode_t kmode = gpgme_get_keylist_mode(pgp->gpgme);
+        kmode |= GPGME_KEYLIST_MODE_LOCATE;
         kmode |= GPGME_KEYLIST_MODE_SIGS;
         err = gpgme_set_keylist_mode(pgp->gpgme, kmode);
     }
@@ -266,28 +281,28 @@ char *pgp__sign(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *sour
         goto sign_finish;
     }
 
-	err = gpgme_get_key(pgp->gpgme, source, &key, false);
+    err = gpgme_get_key(pgp->gpgme, source, &key, false);
     if (err) {
         weechat_printf(nullptr, "(gpg) get key fail for %s", source);
         goto sign_finish;
     }
-	err = gpgme_signers_add(pgp->gpgme, key);
+    err = gpgme_signers_add(pgp->gpgme, key);
     if (err) {
         weechat_printf(nullptr, "(gpg) add key fail for %s", source);
         goto sign_finish;
     }
 
-	/* Sign data. */
+    /* Sign data. */
     err = gpgme_op_sign(pgp->gpgme, in, out, GPGME_SIG_MODE_DETACH);
     if (err) {
         weechat_printf(nullptr, "(gpg) sign fail for %s", source);
         goto sign_finish;
     }
-	if (gpgme_sign_result_t sgn_result = gpgme_op_sign_result(pgp->gpgme);
+    if (gpgme_sign_result_t sgn_result = gpgme_op_sign_result(pgp->gpgme);
             !sgn_result->signatures)
-	{
+    {
         weechat_printf(nullptr, "(gpg) signature fail for %s", source);
-	}
+    }
     gpgme_data_seek(out, 0, SEEK_SET);
     char data[512 + 1];
     while ((ret = gpgme_data_read(out, data, 512)) > 0)
@@ -295,11 +310,15 @@ char *pgp__sign(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *sour
         signature += std::string_view(data, ret);
     }
 
-	gpgme_data_release(in);
-	gpgme_data_release(out);
+    gpgme_data_release(in);
+    gpgme_data_release(out);
 
     result = strndup(signature.data() + strlen(PGP_SIGNATURE_HEADER),
                      signature.size() - strlen(PGP_SIGNATURE_HEADER) - strlen(PGP_SIGNATURE_FOOTER));
 sign_finish:
+    if (err) {
+        weechat_printf(buffer, "[PGP]\t%s - %s",
+                gpgme_strsource(err), gpgme_strerror(err));
+    }
     return result;
 }
