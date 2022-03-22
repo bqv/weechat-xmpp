@@ -10,6 +10,7 @@
 #include <sys/utsname.h>
 #include <fmt/core.h>
 #include <fmt/chrono.h>
+#include <libxml/uri.h>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
@@ -980,15 +981,16 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
             if (const char *attr = xmpp_stanza_get_attribute(identity, "category"))
                 category = attr;
             if (const char *attr = xmpp_stanza_get_attribute(identity, "name"))
-                name = attr;
+                name = unescape(attr);
             if (const char *attr = xmpp_stanza_get_attribute(identity, "type"))
                 type = attr;
 
             if (category == "conference")
             {
                 struct t_channel *ptr_channel = channel__search(account, from);
-                weechat_printf(ptr_channel ? ptr_channel->buffer : nullptr, "%sname = %s",
-                               weechat_prefix("network"), name.data());
+
+                if (ptr_channel)
+                    channel__update_name(ptr_channel, name.data());
             }
             else if (category == "conference")
             {

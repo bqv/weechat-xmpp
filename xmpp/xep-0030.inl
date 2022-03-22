@@ -27,7 +27,7 @@ namespace stanza {
 
             iq& xep0030() { return *this; }
 
-            iq& query(query q = xep0030::query()) { child(q); return *this; }
+            iq& query(xep0030::query q = {}) { child(q); return *this; }
         };
     };
 

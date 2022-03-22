@@ -2,6 +2,9 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include <regex>
+#include <string>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,4 +50,26 @@ char *stanza_xml(xmpp_stanza_t *stanza)
     size_t len;
     xmpp_stanza_to_text(stanza, &result, &len);
     return result;
+}
+
+std::string unescape(const std::string& str)
+{
+    std::regex regex("\\&\\#(\\d+);");
+    std::sregex_iterator begin(str.begin(), str.end(), regex), end;
+    if (begin != end)
+    {
+        std::ostringstream output;
+        do {
+            std::smatch const& m = *begin;
+            if (m[1].matched)
+            {
+                auto ch = static_cast<char>(std::stoul(m.str(1)));
+                output << m.prefix() << ch;
+            }
+            else output << m.prefix() << m.str(0);
+        } while (++begin != end);
+        output << str.substr(str.size() - begin->position());
+        return output.str();
+    }
+    return str;
 }

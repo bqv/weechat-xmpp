@@ -890,6 +890,19 @@ void channel__update_topic(struct t_channel *channel,
         weechat_buffer_set(channel->buffer, "title", "");
 }
 
+void channel__update_name(struct t_channel *channel,
+                          const char* name)
+{
+    if (channel->name)
+        free(channel->name);
+    channel->name = (name) ? strdup(name) : NULL;
+
+    if (channel->name)
+        weechat_buffer_set(channel->buffer, "short_name", name);
+    else
+        weechat_buffer_set(channel->buffer, "short_name", "");
+}
+
 struct t_channel_member *channel__add_member(struct t_account *account,
                                              struct t_channel *channel,
                                              const char *id, const char *client)

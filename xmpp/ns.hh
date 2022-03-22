@@ -16,6 +16,19 @@ public:
     inline operator const char *() { return _uri; }
 };
 
+struct eu {
+    struct siacs {
+        struct conversations {
+            struct axolotl : public xmlns { axolotl() : xmlns("eu.siacs.conversations.axolotl") {}
+                struct bundles : public xmlns { bundles() : xmlns("eu.siacs.conversations.axolotl.bundles") {} };
+                struct devicelist : public xmlns { devicelist() : xmlns("eu.siacs.conversations.axolotl.devicelist") {}
+                    struct notify : public xmlns { notify() : xmlns("eu.siacs.conversations.axolotl.devicelist+notify") {} };
+                };
+            };
+        };
+    };
+};
+
 struct etherx_jabber_org {
     struct streams : public xmlns { streams() : xmlns("http://etherx.jabber.org/streams") {} };
 };

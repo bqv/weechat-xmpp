@@ -180,6 +180,9 @@ void channel__update_topic(struct t_channel *channel,
                            const char* creator,
                            int last_set);
 
+void channel__update_name(struct t_channel *channel,
+                          const char* name);
+
 void channel__update_purpose(struct t_channel *channel,
                              const char* purpose,
                              const char* creator,

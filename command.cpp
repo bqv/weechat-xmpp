@@ -905,7 +905,11 @@ int command__xml(const void *pointer, void *data,
         stanza = xmpp_stanza_new_from_string(ptr_account->context,
                                              argv_eol[1]);
         if (!stanza)
+        {
+            weechat_printf(nullptr, _("%s%s: Bad XML"),
+                    weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME);
             return WEECHAT_RC_ERROR;
+        }
 
         xmpp_send(ptr_account->connection, stanza);
         xmpp_stanza_release(stanza);
