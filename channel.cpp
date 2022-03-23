@@ -282,7 +282,7 @@ struct t_channel *channel__new(struct t_account *account,
                                enum t_channel_type type,
                                const char *id, const char *name)
 {
-    struct t_channel *new_channel, *ptr_channel;
+    struct t_channel *new_channel, *ptr_channel, *muc_channel;
     struct t_gui_buffer *ptr_buffer;
     struct t_hook *typing_timer, *self_typing_timer;
 
@@ -300,10 +300,10 @@ struct t_channel *channel__new(struct t_account *account,
         return NULL;
     else if (type == CHANNEL_TYPE_PM)
     {
-        ptr_channel = channel__search(account, jid(account->context, id).bare.data());
-        if (ptr_channel)
+        muc_channel = channel__search(account, jid(account->context, id).bare.data());
+        if (muc_channel)
         {
-            weechat_buffer_merge(ptr_buffer, ptr_channel->buffer);
+            weechat_buffer_merge(ptr_buffer, muc_channel->buffer);
         }
     }
 
@@ -893,11 +893,7 @@ void channel__update_topic(struct t_channel *channel,
 void channel__update_name(struct t_channel *channel,
                           const char* name)
 {
-    if (channel->name)
-        free(channel->name);
-    channel->name = (name) ? strdup(name) : NULL;
-
-    if (channel->name)
+    if (name)
         weechat_buffer_set(channel->buffer, "short_name", name);
     else
         weechat_buffer_set(channel->buffer, "short_name", "");
@@ -1148,6 +1144,23 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
             && match[0].matched && !match.prefix().length())
     {
         std::string url { &*match[0].first, static_cast<size_t>(match[0].length()) };
+
+      //struct t_hashtable *options = weechat_hashtable_new (8,
+      //        WEECHAT_HASHTABLE_STRING,
+      //        WEECHAT_HASHTABLE_STRING,
+      //        NULL,
+      //        NULL);
+      //if (!options) { return; }
+      //weechat_hashtable_set(options, "nobody", "1");
+      //auto command = "url:" + url;
+      //const int timeout = 30000;
+      //struct t_hook *process_hook =
+      //    weechat_hook_process_hashtable(command, options, timeout,
+      //        int (*callback)(const void *pointer, void *data,
+      //            const char *command,
+      //            int return_code, const char *out, const char *err),
+      //        const void *callback_pointer, void *callback_data);
+      //weechat_hashtable_free(options);
 
         xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
         xmpp_stanza_set_name(message__x, "x");

@@ -39,28 +39,28 @@ LDLIBS=-lstrophe \
 	   $(shell pkg-config --libs gpgme) \
 	   $(shell pkg-config --libs libsignal-protocol-c) \
 	   -lgcrypt \
-	   -llmdb
+	   -llmdb -lfl
 
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
 
 HDRS=plugin.hh \
-     account.hh \
-     buffer.hh \
-     channel.hh \
-     command.hh \
-     completion.hh \
-     config.hh \
-     connection.hh \
-     input.hh \
-     message.hh \
-     omemo.hh \
-     pgp.hh \
-     user.hh \
-     util.hh \
-     xmpp/stanza.hh \
-     xmpp/ns.hh \
-     xmpp/node.hh \
+	 account.hh \
+	 buffer.hh \
+	 channel.hh \
+	 command.hh \
+	 completion.hh \
+	 config.hh \
+	 connection.hh \
+	 input.hh \
+	 message.hh \
+	 omemo.hh \
+	 pgp.hh \
+	 user.hh \
+	 util.hh \
+	 xmpp/stanza.hh \
+	 xmpp/ns.hh \
+	 xmpp/node.hh \
 
 SRCS=plugin.cpp \
 	 account.cpp \
@@ -82,16 +82,19 @@ SRCS=plugin.cpp \
 
 DEPS=deps/diff/libdiff.a \
 	 deps/fmt/libfmt.a \
+	 sexp/sexp.a \
 
 OBJS=$(patsubst %.cpp,.%.o,$(patsubst %.c,.%.o,$(patsubst xmpp/%.cpp,xmpp/.%.o,$(SRCS))))
 COVS=$(patsubst %.cpp,.%.cov.o,$(patsubst xmpp/%.cpp,xmpp/.%.cov.o,$(SRCS)))
 
 SUFFIX=$(shell date +%s)
 
+.PHONY: all
 all:
 	make depend
 	make weechat-xmpp && make test
 
+.PHONY: weechat-xmpp release
 weechat-xmpp: $(DEPS) xmpp.so
 release: xmpp.so
 	cp xmpp.so .xmpp.so.$(SUFFIX)
@@ -101,6 +104,20 @@ xmpp.so: $(OBJS) $(DEPS) $(HDRS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(DEPS) $(LDLIBS)
 	git ls-files | xargs ls -d | xargs tar cz | objcopy --add-section .source=/dev/stdin xmpp.so
 	#objcopy --dump-section .source=/dev/stdout xmpp.so | tar tz
+
+sexp/sexp.a: sexp/driver.o sexp/parser.o sexp/lexer.o
+	ar -r $@ $^
+
+sexp/parser.o: sexp/parser.yy
+	cd sexp && bison -t -d -v parser.yy
+	$(CXX) $(CPPFLAGS) -c sexp/parser.tab.cc -o $@
+
+sexp/lexer.o: sexp/lexer.l
+	cd sexp && flex -d --outfile=lexer.yy.cc lexer.l
+	$(CXX) $(CPPFLAGS) -c sexp/lexer.yy.cc -o $@
+
+sexp/driver.o: sexp/driver.cpp
+	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 .%.o: %.c
 	$(eval GIT_REF=$(shell git describe --abbrev=6 --always --dirty 2>/dev/null || true))
@@ -119,6 +136,7 @@ xmpp/.%.o: xmpp/%.cpp
 xmpp/.%.cov.o: xmpp/%.cpp
 	@$(CXX) --coverage $(CPPFLAGS) -O0 -c $< -o $@
 
+.PHONY: diff fmt
 deps/diff/libdiff.a:
 	git submodule update --init --recursive
 	cd deps/diff && env -u MAKEFLAGS ./configure
@@ -137,16 +155,20 @@ tests/xmpp.cov.so: $(COVS) $(DEPS) $(HDRS)
 tests/run: $(COVS) tests/main.cc tests/xmpp.cov.so
 	env --chdir tests $(CXX) $(CPPFLAGS) -o run ./xmpp.cov.so main.cc $(LDLIBS)
 
+.PHONY: test
 test: tests/run
 	env --chdir tests ./run -s
 
+.PHONY: coverage
 coverage: tests/run
 	gcov -m -abcfu -rqk -i .*.gcda xmpp/.*.gcda
 
+.PHONY: debug
 debug: xmpp.so
 	env LD_PRELOAD=$(DEBUG) gdb -ex "handle SIGPIPE nostop noprint pass" --args \
 		weechat -a -P 'alias,buflist,exec,irc,relay' -r '/plugin load ./xmpp.so'
 
+.PHONY: depend
 depend: $(SRCS) $(HDRS)
 	$(RM) -f ./.depend
 	echo > ./.depend
@@ -161,21 +183,29 @@ depend: $(SRCS) $(HDRS)
 	done
 	sed -i 's/\.\([a-z]*\/\)/\1./' .depend
 
+.PHONY: tidy
 tidy:
 	$(FIND) . -name "*.o" -delete
 	$(FIND) . -name "*.gcno" -delete
 	$(FIND) . -name "*.gcda" -delete
 
+.PHONY: clean
 clean:
-	$(RM) -f $(OBJS) $(COVS)
+	$(RM) -f $(OBJS) $(COVS) \
+		sexp/parser.tab.cc sexp/parser.tab.hh \
+		sexp/location.hh sexp/position.hh \
+		sexp/stack.hh sexp/parser.output sexp/parser.o \
+		sexp/lexer.o sexp/lexer.yy.cc sexp/sexp.a
 	$(MAKE) -C deps/diff clean || true
 	$(MAKE) -C deps/fmt clean || true
 	git submodule foreach --recursive git clean -xfd || true
 	git submodule foreach --recursive git reset --hard || true
 
+.PHONY: distclean
 distclean: clean
 	$(RM) *~ .depend
 
+.PHONY: install
 install: xmpp.so
 ifeq ($(shell id -u),0)
 	mkdir -p $(DESTDIR)$(LIBDIR)/weechat/plugins
@@ -187,8 +217,7 @@ else
 	chmod 755 ~/.weechat/plugins/xmpp.so
 endif
 
-.PHONY: all weechat-xmpp release test debug depend tidy clean distclean install check
-
+.PHONY: check
 check:
 	clang-check --analyze *.c *.cc *.cpp
 

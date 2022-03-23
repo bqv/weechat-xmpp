@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <iostream>
+#include <sstream>
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
@@ -17,6 +19,7 @@
 #include "buffer.hh"
 #include "message.hh"
 #include "command.hh"
+#include "sexp/driver.hh"
 
 #define MAM_DEFAULT_DAYS 2
 #define STR(X) #X
@@ -902,17 +905,41 @@ int command__xml(const void *pointer, void *data,
 
     if (argc > 1)
     {
-        stanza = xmpp_stanza_new_from_string(ptr_account->context,
-                                             argv_eol[1]);
-        if (!stanza)
+        auto parse = [&](sexp::driver& sxml) {
+            std::stringstream ss;
+            std::string line;
+            try {
+                return sxml.parse(argv_eol[1], &ss);
+            }
+            catch (const std::invalid_argument& ex) {
+                while (std::getline(ss, line))
+                    weechat_printf(nullptr, "%ssxml: %s", weechat_prefix("info"), line.data());
+                weechat_printf(nullptr, "%ssxml: %s", weechat_prefix("error"), ex.what());
+                return false;
+            }
+        };
+        if (sexp::driver sxml(ptr_account->context); parse(sxml))
         {
-            weechat_printf(nullptr, _("%s%s: Bad XML"),
-                    weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME);
-            return WEECHAT_RC_ERROR;
+            for (auto *stanza : sxml.elements)
+            {
+                xmpp_send(ptr_account->connection, stanza);
+                xmpp_stanza_release(stanza);
+            }
         }
+        else
+        {
+            stanza = xmpp_stanza_new_from_string(ptr_account->context,
+                                                argv_eol[1]);
+            if (!stanza)
+            {
+                weechat_printf(nullptr, _("%s%s: Bad XML"),
+                        weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME);
+                return WEECHAT_RC_ERROR;
+            }
 
-        xmpp_send(ptr_account->connection, stanza);
-        xmpp_stanza_release(stanza);
+            xmpp_send(ptr_account->connection, stanza);
+            xmpp_stanza_release(stanza);
+        }
     }
 
     return WEECHAT_RC_OK;

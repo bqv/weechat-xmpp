@@ -974,36 +974,40 @@ int connection__iq_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void *userd
         if (weechat_strcasecmp(type, "result") == 0)
         {
             xmpp_stanza_t *identity = xmpp_stanza_get_child_by_name(query, "identity");
-            std::string category;
-            std::string name;
-            std::string type;
 
-            if (const char *attr = xmpp_stanza_get_attribute(identity, "category"))
-                category = attr;
-            if (const char *attr = xmpp_stanza_get_attribute(identity, "name"))
-                name = unescape(attr);
-            if (const char *attr = xmpp_stanza_get_attribute(identity, "type"))
-                type = attr;
-
-            if (category == "conference")
+            if (identity)
             {
-                struct t_channel *ptr_channel = channel__search(account, from);
+                std::string category;
+                std::string name;
+                std::string type;
 
-                if (ptr_channel)
-                    channel__update_name(ptr_channel, name.data());
-            }
-            else if (category == "conference")
-            {
-                xmpp_stanza_t *children[2] = {NULL};
-                children[0] = stanza__iq_pubsub_items(account->context, NULL,
-                        const_cast<char*>("eu.siacs.conversations.axolotl.devicelist"));
-                children[0] = stanza__iq_pubsub(account->context, NULL,
-                        children, with_noop("http://jabber.org/protocol/pubsub"));
-                children[0] = stanza__iq(account->context, NULL, children, NULL,
-                        strdup("fetch2"), to ? strdup(to) : NULL,
-                        binding.from ? strdup(binding.from->bare.data()) : NULL, strdup("get"));
-                xmpp_send(conn, children[0]);
-                xmpp_stanza_release(children[0]);
+                if (const char *attr = xmpp_stanza_get_attribute(identity, "category"))
+                    category = attr;
+                if (const char *attr = xmpp_stanza_get_attribute(identity, "name"))
+                    name = unescape(attr);
+                if (const char *attr = xmpp_stanza_get_attribute(identity, "type"))
+                    type = attr;
+
+                if (category == "conference")
+                {
+                    struct t_channel *ptr_channel = channel__search(account, from);
+
+                    if (ptr_channel)
+                        channel__update_name(ptr_channel, name.data());
+                }
+                else if (category == "conference")
+                {
+                    xmpp_stanza_t *children[2] = {NULL};
+                    children[0] = stanza__iq_pubsub_items(account->context, NULL,
+                            const_cast<char*>("eu.siacs.conversations.axolotl.devicelist"));
+                    children[0] = stanza__iq_pubsub(account->context, NULL,
+                            children, with_noop("http://jabber.org/protocol/pubsub"));
+                    children[0] = stanza__iq(account->context, NULL, children, NULL,
+                            strdup("fetch2"), to ? strdup(to) : NULL,
+                            binding.from ? strdup(binding.from->bare.data()) : NULL, strdup("get"));
+                    xmpp_send(conn, children[0]);
+                    xmpp_stanza_release(children[0]);
+                }
             }
         }
     }
