@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <regex>
+#include <fmt/core.h>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
@@ -1052,6 +1053,77 @@ struct t_channel_member *channel__remove_member(struct t_account *account,
 }
 
 int channel__send_message(struct t_account *account, struct t_channel *channel,
+                          std::string to, std::string body,
+                          std::optional<std::string> oob = {})
+{
+    xmpp_stanza_t *message = xmpp_message_new(account->context,
+                    channel->type == CHANNEL_TYPE_MUC
+                    ? "groupchat" : "chat",
+                    to.data(), NULL);
+
+    char *id = xmpp_uuid_gen(account->context);
+    xmpp_stanza_set_id(message, id);
+    xmpp_free(account->context, id);
+    xmpp_message_set_body(message, body.data());
+
+    if (oob)
+    {
+        xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(message__x, "x");
+        xmpp_stanza_set_ns(message__x, "jabber:x:oob");
+
+        xmpp_stanza_t *message__x__url = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_name(message__x__url, "url");
+
+        xmpp_stanza_t *message__x__url__text = xmpp_stanza_new(account->context);
+        xmpp_stanza_set_text(message__x__url__text, oob->data());
+        xmpp_stanza_add_child(message__x__url, message__x__url__text);
+        xmpp_stanza_release(message__x__url__text);
+
+        xmpp_stanza_add_child(message__x, message__x__url);
+        xmpp_stanza_release(message__x__url);
+
+        xmpp_stanza_add_child(message, message__x);
+        xmpp_stanza_release(message__x);
+    }
+
+    xmpp_stanza_t *message__active = xmpp_stanza_new(account->context);
+    xmpp_stanza_set_name(message__active, "active");
+    xmpp_stanza_set_ns(message__active, "http://jabber.org/protocol/chatstates");
+    xmpp_stanza_add_child(message, message__active);
+    xmpp_stanza_release(message__active);
+
+    xmpp_stanza_t *message__request = xmpp_stanza_new(account->context);
+    xmpp_stanza_set_name(message__request, "request");
+    xmpp_stanza_set_ns(message__request, "urn:xmpp:receipts");
+    xmpp_stanza_add_child(message, message__request);
+    xmpp_stanza_release(message__request);
+
+    xmpp_stanza_t *message__markable = xmpp_stanza_new(account->context);
+    xmpp_stanza_set_name(message__markable, "markable");
+    xmpp_stanza_set_ns(message__markable, "urn:xmpp:chat-markers:0");
+    xmpp_stanza_add_child(message, message__markable);
+    xmpp_stanza_release(message__markable);
+
+    xmpp_stanza_t *message__store = xmpp_stanza_new(account->context);
+    xmpp_stanza_set_name(message__store, "store");
+    xmpp_stanza_set_ns(message__store, "urn:xmpp:hints");
+    xmpp_stanza_add_child(message, message__store);
+    xmpp_stanza_release(message__store);
+
+    xmpp_send(account->connection, message);
+    xmpp_stanza_release(message);
+    if (channel->type != CHANNEL_TYPE_MUC)
+        weechat_printf_date_tags(channel->buffer, 0,
+                                 "xmpp_message,message,private,notify_none,self_msg,log1",
+                                 "%s\t%s",
+                                 user__as_prefix_raw(account, account_jid(account)),
+                                 body);
+
+    return WEECHAT_RC_OK;
+}
+
+int channel__send_message(struct t_account *account, struct t_channel *channel,
                           const char *to, const char *body)
 {
     channel__send_reads(account, channel);
@@ -1145,40 +1217,68 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
     {
         std::string url { &*match[0].first, static_cast<size_t>(match[0].length()) };
 
-      //struct t_hashtable *options = weechat_hashtable_new (8,
-      //        WEECHAT_HASHTABLE_STRING,
-      //        WEECHAT_HASHTABLE_STRING,
-      //        NULL,
-      //        NULL);
-      //if (!options) { return; }
-      //weechat_hashtable_set(options, "nobody", "1");
-      //auto command = "url:" + url;
-      //const int timeout = 30000;
-      //struct t_hook *process_hook =
-      //    weechat_hook_process_hashtable(command, options, timeout,
-      //        int (*callback)(const void *pointer, void *data,
-      //            const char *command,
-      //            int return_code, const char *out, const char *err),
-      //        const void *callback_pointer, void *callback_data);
-      //weechat_hashtable_free(options);
+        do {
+            struct t_hashtable *options = weechat_hashtable_new(8,
+                    WEECHAT_HASHTABLE_STRING, WEECHAT_HASHTABLE_STRING,
+                    NULL, NULL);
+            if (!options) { return WEECHAT_RC_ERROR; };
+            weechat_hashtable_set(options, "header", "1");
+            weechat_hashtable_set(options, "nobody", "1");
+            auto command = "url:" + url;
+            const int timeout = 30000;
+            struct message_task {
+                struct t_account *account;
+                struct t_channel *channel;
+                std::string to;
+                std::string body;
+                std::string url;
+            };
+            auto *task = new message_task { account, channel, to, body, url };
+            auto callback = [](const void *pointer, void *,
+                    const char *, int ret, const char *out, const char *err) {
+                auto task = static_cast<const message_task*>(pointer);
+                if (!task) return WEECHAT_RC_ERROR;
+                
+                if (ret == 0)
+                {
+                    const std::string_view prefix = "content-type: ";
+                    std::istringstream ss(out ? out : "");
+                    std::string line;
+                    while (std::getline(ss, line)) {
+                        std::transform(line.begin(), line.end(), line.begin(),
+                                [](char c) -> char { return std::tolower(c); });
+                        if (line.starts_with(prefix)) break;
+                    }
+                    std::string mime = line.substr(prefix.size());
+                    if (mime.starts_with("image") || mime.starts_with("video"))
+                    {
+                        weechat_printf_date_tags(task->channel->buffer, 0,
+                                "notify_none,no_log", "[oob]\t%s%s",
+                                weechat_color("gray"), mime.data());
+                        channel__send_message(task->account, task->channel,
+                                task->to, task->body, { task->url });
+                    }
+                    else
+                        channel__send_message(task->account, task->channel,
+                                task->to, task->body);
+                }
+                else
+                {
+                    auto result = fmt::format("[nohttp] {}", err ? err : "NULL");
+                    channel__send_message(task->account, task->channel,
+                            task->to.data(), result.data());
+                }
 
-        xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(message__x, "x");
-        xmpp_stanza_set_ns(message__x, "jabber:x:oob");
-
-        xmpp_stanza_t *message__x__url = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_name(message__x__url, "url");
-
-        xmpp_stanza_t *message__x__url__text = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_text(message__x__url__text, url.data());
-        xmpp_stanza_add_child(message__x__url, message__x__url__text);
-        xmpp_stanza_release(message__x__url__text);
-
-        xmpp_stanza_add_child(message__x, message__x__url);
-        xmpp_stanza_release(message__x__url);
-
-        xmpp_stanza_add_child(message, message__x);
-        xmpp_stanza_release(message__x);
+                delete task;
+                return WEECHAT_RC_OK;
+            };
+            struct t_hook *process_hook =
+                weechat_hook_process_hashtable(command.data(), options, timeout,
+                    callback, task, nullptr);
+            weechat_hashtable_free(options);
+            (void) process_hook;
+            return WEECHAT_RC_OK;
+        } while(0);
     }
 
     xmpp_stanza_t *message__active = xmpp_stanza_new(account->context);

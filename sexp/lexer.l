@@ -29,11 +29,11 @@
 "("                 {
                         return token::LPAREN;
                     }
-                 
+
 ")"                 {
                         return token::RPAREN;
                     }
-                 
+
 [\n \t\r]+          {
                         // Update line number
                         loc->lines();
@@ -44,13 +44,13 @@
                         yylval->build<std::string>(yytext);
                         return token::STRING;
                     }
-                    
+
 [^ "(:@)]+          {
                         yylval->build<std::string>(yytext);
                         return token::NAME;
                     }
-                    
+
 .                   {
                         return *yytext;
                     }
-%%               
+%%

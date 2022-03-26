@@ -169,6 +169,7 @@ namespace stanza {
 #include "xep-0115.inl"
 #include "xep-0280.inl"
 #include "xep-0319.inl"
+#include "rfc-6121.inl"
 
 namespace stanza {
     struct body : virtual public spec {
@@ -202,7 +203,8 @@ namespace stanza {
     struct iq : virtual public spec,
                 public xep0030::iq,
                 public xep0049::iq,
-                public xep0280::iq {
+                public xep0280::iq,
+                public rfc6121::iq {
         iq() : spec("iq") {}
 
         iq& id(std::string_view s) { attr("id", s); return *this; }

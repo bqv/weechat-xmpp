@@ -1337,6 +1337,16 @@ void connection__handler(xmpp_conn_t *conn, xmpp_conn_event_t status,
                     .to(account_jid(account))
                     .type("get")
                     .id(stanza::uuid(account->context))
+                    .rfc6121()
+                    .query(stanza::rfc6121::query())
+                    .build(account->context)
+                    .get());
+
+        xmpp_send(conn, stanza::iq()
+                    .from(account_jid(account))
+                    .to(account_jid(account))
+                    .type("get")
+                    .id(stanza::uuid(account->context))
                     .xep0049()
                     .query(stanza::xep0049::query().bookmarks())
                     .build(account->context)

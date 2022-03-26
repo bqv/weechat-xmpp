@@ -53,3 +53,12 @@ cscope*
 
 # Symbolic links
 mdb.c
+
+# Generated
+sexp/lexer.yy.cc
+sexp/location.hh
+sexp/parser.output
+sexp/parser.tab.cc
+sexp/parser.tab.hh
+sexp/position.hh
+sexp/stack.hh
