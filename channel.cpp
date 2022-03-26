@@ -1264,9 +1264,8 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
                 }
                 else
                 {
-                    auto result = fmt::format("[nohttp] {}", err ? err : "NULL");
                     channel__send_message(task->account, task->channel,
-                            task->to.data(), result.data());
+                            task->to, task->body);
                 }
 
                 delete task;
