@@ -1243,13 +1243,15 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
                 {
                     const std::string_view prefix = "content-type: ";
                     std::istringstream ss(out ? out : "");
-                    std::string line;
+                    std::string line, mime;
                     while (std::getline(ss, line)) {
                         std::transform(line.begin(), line.end(), line.begin(),
                                 [](char c) -> char { return std::tolower(c); });
-                        if (line.starts_with(prefix)) break;
+                        if (line.starts_with(prefix)) {
+                            mime = line.substr(prefix.size());
+                            break;
+                        }
                     }
-                    std::string mime = line.substr(prefix.size());
                     if (mime.starts_with("image") || mime.starts_with("video"))
                     {
                         weechat_printf_date_tags(task->channel->buffer, 0,
@@ -1259,8 +1261,13 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
                                 task->to, task->body, { task->url });
                     }
                     else
+                    {
+                        weechat_printf_date_tags(task->channel->buffer, 0,
+                                "notify_none,no_log", "[curl]\t%s%s",
+                                weechat_color("red"), err);
                         channel__send_message(task->account, task->channel,
                                 task->to, task->body);
+                    }
                 }
                 else
                 {
