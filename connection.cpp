@@ -209,7 +209,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
             auto idle = binding.idle_since();
             user->profile.status_text = status ? strdup(status->data()) : NULL;
             user->profile.status = show ? strdup(show->data()) : NULL;
-            user->profile.idle = idle ? strdup("2000-01-01T00:00:00.000z") : NULL;
+            user->profile.idle = idle ? fmt::format("{}", *idle) : std::string();
             user->is_away = show ? *show == "away" : false;
             user->profile.role = role.size() ? strdup(role.data()) : NULL;
             user->profile.affiliation = affiliation.size() && affiliation == "none"
@@ -243,7 +243,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
         auto idle = binding.idle_since();
         user->profile.status_text = status ? strdup(status->data()) : NULL;
         user->profile.status = show ? strdup(show->data()) : NULL;
-        user->profile.idle = idle ? strdup("2000-01-01T00:00:00.000z") : NULL;
+        user->profile.idle = idle ? fmt::format("{}", *idle) : std::string();
         user->is_away = show ? *show == "away" : false;
         user->profile.role = NULL;
         user->profile.affiliation = NULL;

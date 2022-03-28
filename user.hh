@@ -4,12 +4,15 @@
 
 #pragma once
 
+#include <optional>
+#include <string>
+
 struct t_user_profile
 {
     char *avatar_hash;
     char *status_text;
     char *status;
-    char *idle;
+    std::optional<std::string> idle;
     char *display_name;
     char *email;
     char *role;

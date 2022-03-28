@@ -166,10 +166,7 @@ struct t_user *user__new(struct t_account *account,
         return ptr_user;
     }
 
-    if ((new_user = (struct t_user*)malloc(sizeof(*new_user))) == NULL)
-    {
-        return NULL;
-    }
+    new_user = new struct t_user;
 
     new_user->prev_user = account->last_user;
     new_user->next_user = NULL;
@@ -185,7 +182,6 @@ struct t_user *user__new(struct t_account *account,
     new_user->profile.avatar_hash = NULL;
     new_user->profile.status_text = NULL;
     new_user->profile.status = NULL;
-    new_user->profile.idle = NULL;
     new_user->profile.display_name = display_name ?
         strdup(display_name) : strdup("");
     new_user->profile.affiliation = NULL;
@@ -234,8 +230,6 @@ void user__free(struct t_account *account,
         free(user->profile.status_text);
     if (user->profile.status)
         free(user->profile.status);
-    if (user->profile.idle)
-        free(user->profile.idle);
     if (user->profile.display_name)
         free(user->profile.display_name);
     if (user->profile.affiliation)
@@ -245,7 +239,7 @@ void user__free(struct t_account *account,
     if (user->profile.role)
         free(user->profile.role);
 
-    free(user);
+    delete user;
 
     account->users = new_users;
 }
