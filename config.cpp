@@ -361,13 +361,12 @@ int config__account_write_cb(const void *pointer, void *data,
     if (!weechat_config_write_line(config_file, section_name, NULL))
         return WEECHAT_CONFIG_WRITE_ERROR;
 
-    for (ptr_account = accounts; ptr_account;
-         ptr_account = ptr_account->next_account)
+    for (auto ptr_account : accounts)
     {
         for (i = 0; i < ACCOUNT_NUM_OPTIONS; i++)
         {
             if (!weechat_config_write_option(config_file,
-                                             ptr_account->options[i]))
+                                             ptr_account.second->options[i]))
                 return WEECHAT_CONFIG_WRITE_ERROR;
         }
     }

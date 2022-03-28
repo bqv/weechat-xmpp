@@ -22,8 +22,7 @@
 #include "channel.hh"
 #include "buffer.hh"
 
-struct t_account *accounts = NULL;
-struct t_account *last_account = NULL;
+std::unordered_map<std::string, struct t_account *> accounts;
 
 char *account_options[ACCOUNT_NUM_OPTIONS][2] =
 { { (char*)"jid", (char*)"" },
@@ -39,34 +38,28 @@ char *account_options[ACCOUNT_NUM_OPTIONS][2] =
 
 struct t_account *account__search(const char *name)
 {
-    struct t_account *ptr_account;
-
     if (!name)
         return NULL;
 
-    for (ptr_account = accounts; ptr_account;
-         ptr_account = ptr_account->next_account)
+    auto ptr_account = accounts.find(name);
+    if (ptr_account != accounts.end())
     {
-        if (strcmp(ptr_account->name, name) == 0)
-            return ptr_account;
+        return ptr_account->second;
     }
 
     /* account not found */
     return NULL;
 }
 
-struct t_account *account__casesearch (const char *name)
+struct t_account *account__casesearch(const char *name)
 {
-    struct t_account *ptr_account;
-
     if (!name)
         return NULL;
 
-    for (ptr_account = accounts; ptr_account;
-         ptr_account = ptr_account->next_account)
+    for (auto ptr_account : accounts)
     {
-        if (weechat_strcasecmp (ptr_account->name, name) == 0)
-            return ptr_account;
+        if (weechat_strcasecmp(ptr_account.second->name, name) == 0)
+            return ptr_account.second;
     }
 
     /* account not found */
@@ -416,14 +409,7 @@ struct t_account *account__alloc(const char *name)
         return NULL;
     }
 
-    /* add new account to queue */
-    new_account->prev_account = last_account;
-    new_account->next_account = NULL;
-    if (last_account)
-        last_account->next_account = new_account;
-    else
-        accounts = new_account;
-    last_account = new_account;
+    accounts[name] = new_account;
 
     /* set name */
     new_account->name = strdup(name);
@@ -557,8 +543,6 @@ void account__free_data(struct t_account *account)
 
 void account__free(struct t_account *account)
 {
-    struct t_account *new_accounts;
-
     if (!account)
         return;
 
@@ -570,32 +554,17 @@ void account__free(struct t_account *account)
     if (account->buffer)
         weechat_buffer_close(account->buffer);
 
-    /* remove account from queue */
-    if (last_account == account)
-        last_account = account->prev_account;
-    if (account->prev_account)
-    {
-        (account->prev_account)->next_account = account->next_account;
-        new_accounts = accounts;
-    }
-    else
-        new_accounts = account->next_account;
-
-    if (account->next_account)
-        (account->next_account)->prev_account = account->prev_account;
+    accounts.erase(account->name);
 
     account__free_data(account);
     delete account;
-    account = nullptr;
-    accounts = new_accounts;
 }
 
 void account__free_all()
 {
-    /* for each account in memory, remove it */
-    while (accounts)
+    for (auto account : accounts)
     {
-        account__free(accounts);
+        account__free(account.second);
     }
 }
 
@@ -672,12 +641,9 @@ void account__disconnect(struct t_account *account, int reconnect)
 
 void account__disconnect_all()
 {
-    struct t_account *ptr_account;
-
-    for (ptr_account = accounts; ptr_account;
-         ptr_account = ptr_account->next_account)
+    for (auto ptr_account : accounts)
     {
-        account__disconnect(ptr_account, 0);
+        account__disconnect(ptr_account.second, 0);
     }
 }
 
@@ -755,22 +721,19 @@ int account__timer_cb(const void *pointer, void *data, int remaining_calls)
 
   //try
     {
-        struct t_account *ptr_account;
+        if (accounts.empty()) return WEECHAT_RC_ERROR;
 
-        if (!accounts) return WEECHAT_RC_ERROR;
-
-        for (ptr_account = accounts; ptr_account;
-             ptr_account = ptr_account ? ptr_account->next_account : NULL)
+        for (auto ptr_account : accounts)
         {
-            if (ptr_account->is_connected
-                && (xmpp_conn_is_connecting(ptr_account->connection)
-                    || xmpp_conn_is_connected(ptr_account->connection)))
-                connection__process(ptr_account->context, ptr_account->connection, 10);
-            else if (ptr_account->disconnected);
-            else if (ptr_account->reconnect_start > 0
-                     && ptr_account->reconnect_start < time(NULL))
+            if (ptr_account.second->is_connected
+                && (xmpp_conn_is_connecting(ptr_account.second->connection)
+                    || xmpp_conn_is_connected(ptr_account.second->connection)))
+                connection__process(ptr_account.second->context, ptr_account.second->connection, 10);
+            else if (ptr_account.second->disconnected);
+            else if (ptr_account.second->reconnect_start > 0
+                     && ptr_account.second->reconnect_start < time(NULL))
             {
-                account__connect(ptr_account);
+                account__connect(ptr_account.second);
             }
         }
 

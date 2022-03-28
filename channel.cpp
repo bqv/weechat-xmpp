@@ -77,14 +77,13 @@ struct t_account *channel__account(struct t_channel *channel)
     if (!channel)
         return NULL;
 
-    for (ptr_account = accounts; ptr_account;
-         ptr_account = ptr_account->next_account)
+    for (auto ptr_account : accounts)
     {
-        for (ptr_channel = ptr_account->channels; ptr_channel;
+        for (ptr_channel = ptr_account.second->channels; ptr_channel;
              ptr_channel = ptr_channel->next_channel)
         {
             if (ptr_channel == channel)
-                return ptr_account;
+                return ptr_account.second;
         }
     }
 

@@ -7,12 +7,12 @@
 #include <ctime>
 #include <cstdint>
 #include <memory>
+#include <unordered_map>
 #include <strophe.h>
 
 #include "omemo.hh"
 
-extern struct t_account *accounts;
-extern struct t_account *last_account;
+extern std::unordered_map<std::string, struct t_account *> accounts;
 
 enum t_account_option
 {

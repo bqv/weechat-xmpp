@@ -113,10 +113,9 @@ int completion__accounts_cb(const void *pointer, void *data,
     (void) completion_item;
     (void) buffer;
 
-    for (ptr_account = accounts; ptr_account;
-         ptr_account = ptr_account->next_account)
+    for (auto ptr_account : accounts)
     {
-        weechat_hook_completion_list_add(completion, account_jid(ptr_account),
+        weechat_hook_completion_list_add(completion, account_jid(ptr_account.second),
                                          0, WEECHAT_LIST_POS_SORT);
     }
 

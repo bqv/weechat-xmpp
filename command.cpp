@@ -80,14 +80,13 @@ void command__account_list(int argc, char **argv)
     }
     if (!account_name)
     {
-        if (accounts)
+        if (!accounts.empty())
         {
             weechat_printf(NULL, "");
             weechat_printf(NULL, _("All accounts:"));
-            for (ptr_account2 = accounts; ptr_account2;
-                 ptr_account2 = ptr_account2->next_account)
+            for (auto ptr_account2 : accounts)
             {
-                command__display_account(ptr_account2);
+                command__display_account(ptr_account2.second);
             }
         }
         else
@@ -96,10 +95,9 @@ void command__account_list(int argc, char **argv)
     else
     {
         one_account_found = 0;
-        for (ptr_account2 = accounts; ptr_account2;
-             ptr_account2 = ptr_account2->next_account)
+        for (auto ptr_account2 : accounts)
         {
-            if (weechat_strcasestr(ptr_account2->name, account_name))
+            if (weechat_strcasestr(ptr_account2.second->name, account_name))
             {
                 if (!one_account_found)
                 {
@@ -109,7 +107,7 @@ void command__account_list(int argc, char **argv)
                                    account_name);
                 }
                 one_account_found = 1;
-                command__display_account(ptr_account2);
+                command__display_account(ptr_account2.second);
             }
         }
         if (!one_account_found)

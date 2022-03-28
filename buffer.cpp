@@ -26,23 +26,22 @@ void buffer__get_account_and_channel(struct t_gui_buffer *buffer,
     *channel = NULL;
 
     /* look for a account or channel using this buffer */
-    for (ptr_account = accounts; ptr_account;
-         ptr_account = ptr_account->next_account)
+    for (auto ptr_account : accounts)
     {
-        if (ptr_account->buffer == buffer)
+        if (ptr_account.second->buffer == buffer)
         {
             if (account)
-                *account = ptr_account;
+                *account = ptr_account.second;
             return;
         }
 
-        for (ptr_channel = ptr_account->channels; ptr_channel;
+        for (ptr_channel = ptr_account.second->channels; ptr_channel;
              ptr_channel = ptr_channel->next_channel)
         {
             if (ptr_channel->buffer == buffer)
             {
                 if (account)
-                    *account = ptr_account;
+                    *account = ptr_account.second;
                 if (channel)
                     *channel = ptr_channel;
                 return;
