@@ -220,7 +220,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
                 {
                     user->profile.pgp_id = pgp__verify(channel->buffer, account->pgp, signature->data());
                     if (channel->type != CHANNEL_TYPE_MUC)
-                        channel->pgp.id = user->profile.pgp_id;
+                        channel->pgp.ids->emplace(user->profile.pgp_id);
                 }
 
                 if (weechat_strcasecmp(role.data(), "none") == 0)
@@ -253,7 +253,7 @@ int connection__presence_handler(xmpp_conn_t *conn, xmpp_stanza_t *stanza, void 
             {
                 user->profile.pgp_id = pgp__verify(channel->buffer, account->pgp, signature->data());
                 if (channel->type != CHANNEL_TYPE_MUC)
-                    channel->pgp.id = user->profile.pgp_id;
+                    channel->pgp.ids->emplace(user->profile.pgp_id);
             }
 
             if (user->profile.role)

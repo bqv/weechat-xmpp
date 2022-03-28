@@ -5,6 +5,8 @@
 #pragma once
 
 #include <ctime>
+#include <unordered_set>
+#include <string>
 
 #define CHANNEL_MEMBERS_SPEAKING_LIMIT 128
 
@@ -73,7 +75,7 @@ struct t_channel
     } omemo;
     struct {
         int enabled;
-        char *id;
+        std::unordered_set<std::string> *ids;
     } pgp;
     struct {
         int enabled;

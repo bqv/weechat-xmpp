@@ -76,7 +76,7 @@ void pgp__free(struct t_pgp *pgp)
     }
 }
 
-char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *source, const char *target, const char *message)
+char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *source, std::vector<std::string>&& targets, const char *message)
 {
     std::string encrypted;
     gpgme_key_t keys[3] = {NULL,NULL,NULL};
@@ -99,9 +99,12 @@ char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *s
     }
 
     /* Encrypt data. */
-    err = gpgme_get_key(pgp->gpgme, target, &keys[0], false);
-    if (err) {
-        goto encrypt_finish;
+    for (const std::string& target : targets)
+    {
+        err = gpgme_get_key(pgp->gpgme, target.data(), &keys[0], false);
+        if (err) {
+            goto encrypt_finish;
+        }
     }
     err = gpgme_get_key(pgp->gpgme, source, &keys[1], false);
     if (err) {

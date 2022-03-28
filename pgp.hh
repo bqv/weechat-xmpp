@@ -5,6 +5,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 extern const char *PGP_ADVICE;
 
@@ -20,7 +21,7 @@ void pgp__free(struct t_pgp *pgp);
 
 char *pgp__decrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *ciphertext);
 
-char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *source, const char *target, const char *message);
+char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *source, std::vector<std::string>&& target, const char *message);
 
 char *pgp__verify(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *certificate);
 

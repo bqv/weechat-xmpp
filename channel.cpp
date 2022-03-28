@@ -329,7 +329,7 @@ struct t_channel *channel__new(struct t_account *account,
     new_channel->omemo.bundle_requests = weechat_hashtable_new(64,
             WEECHAT_HASHTABLE_STRING, WEECHAT_HASHTABLE_POINTER, NULL, NULL);
     new_channel->pgp.enabled = 1;
-    new_channel->pgp.id = NULL;
+    new_channel->pgp.ids = new std::remove_pointer<decltype(new_channel->pgp.ids)>::type;
     new_channel->otr.enabled = 0;
 
     new_channel->topic.value = NULL;
@@ -846,8 +846,11 @@ void channel__free(struct t_account *account,
         free(channel->id);
     if (channel->name)
         free(channel->name);
-    if (channel->pgp.id)
-        free(channel->pgp.id);
+    if (channel->pgp.ids)
+    {
+        delete channel->pgp.ids;
+        channel->pgp.ids = nullptr;
+    }
     if (channel->topic.value)
         free(channel->topic.value);
     if (channel->topic.creator)
@@ -1164,14 +1167,14 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
 
         channel__set_transport(channel, CHANNEL_TRANSPORT_OMEMO, 0);
     }
-    else if (channel->pgp.enabled && channel->pgp.id)
+    else if (channel->pgp.enabled && channel->pgp.ids)
     {
         xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
         xmpp_stanza_set_name(message__x, "x");
         xmpp_stanza_set_ns(message__x, "jabber:x:encrypted");
 
         xmpp_stanza_t *message__x__text = xmpp_stanza_new(account->context);
-        char *ciphertext = pgp__encrypt(channel->buffer, account->pgp, account_pgp_keyid(account), channel->pgp.id, body);
+        char *ciphertext = pgp__encrypt(channel->buffer, account->pgp, account_pgp_keyid(account), std::vector(channel->pgp.ids->begin(), channel->pgp.ids->end()), body);
         if (ciphertext)
             xmpp_stanza_set_text(message__x__text, ciphertext);
         else
@@ -1238,7 +1241,7 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
                     const char *, int ret, const char *out, const char *err) {
                 auto task = static_cast<const message_task*>(pointer);
                 if (!task) return WEECHAT_RC_ERROR;
-                
+
                 if (ret == 0)
                 {
                     const std::string_view prefix = "content-type: ";

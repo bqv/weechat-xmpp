@@ -833,7 +833,7 @@ int command__pgp(const void *pointer, void *data,
     {
         keyid = argv_eol[1];
 
-        ptr_channel->pgp.id = strdup(keyid);
+        ptr_channel->pgp.ids->emplace(keyid);
     }
     ptr_channel->omemo.enabled = 0;
     ptr_channel->pgp.enabled = 1;
