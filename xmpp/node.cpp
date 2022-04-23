@@ -26,7 +26,7 @@ std::string get_name(xmpp_stanza_t *stanza) {
         return {};
 }
 
-std::optional<std::string> get_attribute(xmpp_stanza_t *stanza, const char *name) {
+tl::optional<std::string> get_attribute(xmpp_stanza_t *stanza, const char *name) {
     const char *result = NULL;
     result = xmpp_stanza_get_attribute(stanza, name);
     if (result)
@@ -124,14 +124,14 @@ void xml::message::bind(xmpp_ctx_t *context, xmpp_stanza_t *stanza) {
     node::bind(context, stanza);
 }
 
-std::optional<std::string> xml::presence::show() {
+tl::optional<std::string> xml::presence::show() {
     auto child = get_children("show");
     if (child.size() > 0)
         return child.front().get().text;
     return {};
 }
 
-std::optional<std::string> xml::presence::status() {
+tl::optional<std::string> xml::presence::status() {
     auto child = get_children("status");
     if (child.size() > 0)
         return child.front().get().text;

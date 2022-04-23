@@ -29,23 +29,23 @@ namespace xml{
                     verification = *attr;
             };
 
-            std::optional<std::string> ext;
+            tl::optional<std::string> ext;
             std::string hashalgo;
             std::string node;
             std::string verification;
         };
 
     private:
-        std::optional<std::optional<caps>> _capabilities;
+        tl::optional<tl::optional<caps>> _capabilities;
     public:
-        std::optional<caps> capabilities() {
+        tl::optional<caps> capabilities() {
             if (!_capabilities)
             {
                 auto child = get_children<jabber_org::protocol::caps>("c");
                 if (child.size() > 0)
                     _capabilities = caps(child.front().get());
                 else
-                    _capabilities.emplace(std::nullopt);
+                    _capabilities.emplace(tl::nullopt);
             }
             return *_capabilities;
         }

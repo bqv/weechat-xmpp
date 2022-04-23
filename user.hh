@@ -6,13 +6,14 @@
 
 #include <optional>
 #include <string>
+#include <tl/optional.hpp>
 
 struct t_user_profile
 {
     char *avatar_hash;
     char *status_text;
     char *status;
-    std::optional<std::string> idle;
+    tl::optional<std::string> idle;
     char *display_name;
     char *email;
     char *role;

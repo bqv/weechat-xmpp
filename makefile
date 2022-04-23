@@ -5,10 +5,10 @@ endif
 
 RM ?= rm -f
 FIND ?= find
-CC = $(if $(shell which gcc-12.0.1),gcc-12.0.1,cc)
-CXX = $(if $(shell which g++-12.0.1),g++-12.0.1,c++)
+CC = gcc
+CXX = g++
 
-INCLUDES=-Ilibstrophe -Ideps -Ideps/fmt/include \
+INCLUDES=-Ilibstrophe -Ideps -Ideps/optional/include -Ideps/fmt/include \
 	 $(shell xml2-config --cflags) \
 	 $(shell pkg-config --cflags gpgme) \
 	 $(shell pkg-config --cflags libsignal-protocol-c)
@@ -25,7 +25,7 @@ CFLAGS+=$(DBGCFLAGS) \
 CPPFLAGS+=$(DBGCFLAGS) -O0 \
 	  -fno-omit-frame-pointer -fPIC \
 	  -fvisibility=hidden -fvisibility-inlines-hidden \
-	  -std=c++23 -gdwarf-4 -fkeep-inline-functions  \
+	  -std=c++20 -gdwarf-4 -fkeep-inline-functions  \
 	  -Wall -Wextra -pedantic \
 	  -Wno-missing-field-initializers \
 	  $(INCLUDES)

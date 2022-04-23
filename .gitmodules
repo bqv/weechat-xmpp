@@ -4,3 +4,6 @@
 [submodule "diff"]
 	path = deps/diff
 	url = https://github.com/kristapsdz/libdiff
+[submodule "deps/optional"]
+	path = deps/optional
+	url = https://github.com/TartanLlama/optional
