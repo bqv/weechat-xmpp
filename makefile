@@ -5,8 +5,6 @@ endif
 
 RM ?= rm -f
 FIND ?= find
-CC = gcc
-CXX = g++
 
 INCLUDES=-Ilibstrophe -Ideps -Ideps/optional/include -Ideps/range-v3/include -Ideps/fmt/include \
 	 $(shell xml2-config --cflags) \
@@ -16,20 +14,30 @@ CFLAGS+=$(DBGCFLAGS) \
 	-fno-omit-frame-pointer -fPIC \
 	-fvisibility=hidden -fvisibility-inlines-hidden \
 	-fdebug-prefix-map=.=$(shell readlink -f .) \
-	-std=gnu99 -gdwarf-4 -fkeep-inline-functions  \
+	-std=gnu99 -gdwarf-4 \
 	-Wall -Wextra -pedantic \
 	-Werror-implicit-function-declaration \
 	-Wno-missing-field-initializers \
 	-D_XOPEN_SOURCE=700 \
 	$(INCLUDES)
+ifeq ($(CC),gcc)
+	CFLAGS+= -fkeep-inline-functions
+else ifeq ($(CC),clang)
+	CFLAGS+=
+endif
 CPPFLAGS+=$(DBGCFLAGS) -O0 \
 	  -fno-omit-frame-pointer -fPIC \
 	  -fvisibility=hidden -fvisibility-inlines-hidden \
-	  -std=c++20 -gdwarf-4 -fkeep-inline-functions  \
+	  -std=c++20 -gdwarf-4 \
 	  -Wall -Wextra -pedantic \
 	  -Wno-missing-field-initializers \
 	  $(INCLUDES)
 # -DDOCTEST_CONFIG_DISABLE
+ifeq ($(CXX),g++)
+	CPPFLAGS+= -fkeep-inline-functions
+else ifeq ($(CXX),clang)
+	CPPFLAGS+=
+endif
 LDFLAGS+=$(DBGLDFLAGS) \
 	 -shared -gdwarf-4 \
 	 $(DBGCFLAGS)
@@ -150,7 +158,7 @@ deps/fmt/libfmt.a:
 fmt: deps/fmt/libfmt.a
 
 tests/xmpp.cov.so: $(COVS) $(DEPS) $(HDRS)
-	$(CXX) --coverage -O0 $(LDFLAGS) -o tests/xmpp.cov.so $(COVS) $(DEPS) $(LDLIBS)
+	$(CXX) --coverage -O0 $(LDFLAGS) -o tests/xmpp.cov.so $(COVS) $(DEPS) $(LDLIBS) -lstdc++
 
 tests/run: $(COVS) tests/main.cc tests/xmpp.cov.so
 	env --chdir tests $(CXX) $(CPPFLAGS) -o run ./xmpp.cov.so main.cc $(LDLIBS)
