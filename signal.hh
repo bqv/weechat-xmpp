@@ -48,7 +48,7 @@ namespace libsignal {
 
         template<typename Fun, Fun &func, typename... Args,
             typename = std::enable_if_t<!std::is_same_v<int, std::invoke_result_t<Fun, pointer_type, Args...>>>>
-        inline std::invoke_result<Fun, pointer_type, Args...>::type
+        inline typename std::invoke_result<Fun, pointer_type, Args...>::type
         call(Args&&... args) {
             return func(*this, std::forward<Args>(args)...);
         }

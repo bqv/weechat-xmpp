@@ -108,7 +108,12 @@ namespace xml {
 }
 
 namespace stanza {
-    template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+    template<class... Fs> struct overloaded : Fs... {
+        overloaded(const Fs& ...ts) : Fs{ts}... {}
+        overloaded(Fs&& ...ts) : Fs{ts}... {}
+        using Fs::operator()...;
+    };
+    template<class... Ts> overloaded(Ts&&...) -> overloaded<std::decay_t<Ts>...>;
 
     extern std::string uuid(xmpp_ctx_t *context);
 
@@ -150,7 +155,7 @@ namespace stanza {
                     [&](spec& child) {
                         xmpp_stanza_add_child(stanza, child.build(context).get());
                     },
-                    [&](std::string s) {
+                    [&](std::string& s) {
                         auto child = xmpp_stanza_new(context);
                         xmpp_stanza_set_text(child, s.data());
                         xmpp_stanza_add_child(stanza, child);

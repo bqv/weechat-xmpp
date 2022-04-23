@@ -8,7 +8,7 @@ FIND ?= find
 CC = gcc
 CXX = g++
 
-INCLUDES=-Ilibstrophe -Ideps -Ideps/optional/include -Ideps/fmt/include \
+INCLUDES=-Ilibstrophe -Ideps -Ideps/optional/include -Ideps/range-v3/include -Ideps/fmt/include \
 	 $(shell xml2-config --cflags) \
 	 $(shell pkg-config --cflags gpgme) \
 	 $(shell pkg-config --cflags libsignal-protocol-c)
@@ -174,11 +174,11 @@ depend: $(SRCS) $(HDRS)
 	echo > ./.depend
 	for src in $(SRCS) ; do \
 		if [[ $$src == *.cpp ]]; then \
-			$(CXX) $(CPPFLAGS) -MM -MMD -MP -MF - \
-				-MT .$${src/.cpp/.o} $$src >> ./.depend ; \
+			g++ $(CPPFLAGS) -MM -MMD -MP -MF - \
+				-MT .$${src/.cpp/.o} $$src >> ./.depend || true ; \
 		elif [[ $$src == *.c ]]; then \
-			$(CC) $(CFLAGS) -MM -MMD -MP -MF - \
-				-MT .$${src/.c/.o} $$src >> ./.depend ; \
+			gcc $(CFLAGS) -MM -MMD -MP -MF - \
+				-MT .$${src/.c/.o} $$src >> ./.depend || true ; \
 		fi \
 	done
 	sed -i 's/\.\([a-z]*\/\)/\1./' .depend

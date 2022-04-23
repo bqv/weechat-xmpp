@@ -5,8 +5,6 @@
 #include <fmt/core.h>
 #include <memory>
 #include <numeric>
-#include <optional>
-#include <ranges>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -17,6 +15,7 @@
 #include <math.h>
 #include <limits.h>
 #include <tl/optional.hpp>
+#include <range/v3/all.hpp>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
@@ -1614,9 +1613,9 @@ int dls_load_devicelist(signal_int_list **devicelist, const char *jid, t_omemo *
     omemo->dbi.omemo.get(transaction, k_devicelist, v_devicelist);
 
     auto devices = v_devicelist
-        | std::ranges::views::split(';')
-        | std::ranges::views::transform([](auto&& str) {
-            return std::stoul(std::string(&*str.begin(), std::ranges::distance(str)));
+        | ranges::views::split(';')
+        | ranges::views::transform([](auto&& str) {
+            return std::stoul(std::string(&*str.begin(), ranges::distance(str)));
         });
 
     *devicelist = signal_int_list_alloc();
@@ -1718,9 +1717,9 @@ tl::optional<libsignal::pre_key_bundle> bks_load_bundle(struct signal_protocol_a
     omemo->dbi.omemo.get(transaction, k_bundle_ik, v_bundle_ik);
 
     auto r_bundle_pks = v_bundle_pk
-        | std::ranges::views::split(';')
-        | std::ranges::views::transform([](auto&& str) {
-            return std::string_view(&*str.begin(), std::ranges::distance(str));
+        | ranges::views::split(';')
+        | ranges::views::transform([](auto&& str) {
+            return std::string_view(&*str.begin(), ranges::distance(str));
         });
     auto bundle_pks = std::vector<std::string>{r_bundle_pks.begin(), r_bundle_pks.begin()};
     if (bundle_pks.size() > 0)
@@ -1739,9 +1738,9 @@ tl::optional<libsignal::pre_key_bundle> bks_load_bundle(struct signal_protocol_a
     libsignal::public_key pre_key(key_buf, key_len, omemo->context);
 
     auto r_bundle_sks = v_bundle_sk
-        | std::ranges::views::split(';')
-        | std::ranges::views::transform([](auto&& str) {
-            return std::string_view(&*str.begin(), std::ranges::distance(str));
+        | ranges::views::split(';')
+        | ranges::views::transform([](auto&& str) {
+            return std::string_view(&*str.begin(), ranges::distance(str));
         });
     auto bundle_sks = std::vector<std::string>{r_bundle_sks.begin(), r_bundle_sks.begin()};
     if (bundle_sks.size() > 0)

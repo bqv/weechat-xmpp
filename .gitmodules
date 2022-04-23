@@ -7,3 +7,6 @@
 [submodule "deps/optional"]
 	path = deps/optional
 	url = https://github.com/TartanLlama/optional
+[submodule "deps/range-v3"]
+	path = deps/range-v3
+	url = https://github.com/ericniebler/range-v3
