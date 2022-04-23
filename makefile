@@ -105,7 +105,7 @@ xmpp.so: $(OBJS) $(DEPS) $(HDRS)
 	git ls-files | xargs ls -d | xargs tar cz | objcopy --add-section .source=/dev/stdin xmpp.so
 	#objcopy --dump-section .source=/dev/stdout xmpp.so | tar tz
 
-sexp/sexp.a: sexp/driver.o sexp/parser.o sexp/lexer.o
+sexp/sexp.a: sexp/parser.o sexp/lexer.o sexp/driver.o
 	ar -r $@ $^
 
 sexp/parser.o: sexp/parser.yy
