@@ -1121,7 +1121,7 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
                                  "xmpp_message,message,private,notify_none,self_msg,log1",
                                  "%s\t%s",
                                  user__as_prefix_raw(account, account_jid(account)),
-                                 body);
+                                 body.data());
 
     return WEECHAT_RC_OK;
 }
