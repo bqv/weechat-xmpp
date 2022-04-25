@@ -1043,7 +1043,8 @@ signal.hh:
 /usr/include/signal/curve.h:
 gcrypt.hh:
 util.hh:
-.pgp.o: pgp.cpp plugin.hh pgp.hh
+.pgp.o: pgp.cpp deps/fmt/include/fmt/core.h plugin.hh pgp.hh
+deps/fmt/include/fmt/core.h:
 plugin.hh:
 pgp.hh:
 .user.o: user.cpp plugin.hh account.hh omemo.hh \

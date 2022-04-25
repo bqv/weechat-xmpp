@@ -2,15 +2,52 @@
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <time.h>
+#include <cstdlib>
+#include <cstdint>
+#include <cstring>
+#include <ctime>
+#include <string_view>
+#include <numeric>
+#include <fmt/core.h>
 #include <gpgme.h>
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
 #include "pgp.hh"
+
+std::string format_key(struct t_pgp *pgp, std::string_view keyid)
+{
+    gpgme_key_t key = nullptr;
+    gpgme_error_t err = gpgme_get_key(pgp->gpgme, keyid.data(), &key, false);
+    if (err) {
+        return fmt::format("{} (none)", keyid);
+    }
+    std::string result(keyid);
+    result += '{';
+    {
+        std::string keyids;
+        for (auto subkey = key->subkeys; subkey; subkey = subkey->next)
+        {
+            if (!keyids.empty()) keyids += ", ";
+            std::string keyid(subkey->keyid);
+            if (keyid.length() > 8) keyid = keyid.substr(keyid.length()-8, 8);
+            keyids += keyid;
+        }
+        result += keyids;
+    }
+    result += "}[";
+    {
+        std::string userids;
+        for (auto uid = key->uids; uid; uid = uid->next)
+        {
+            if (!userids.empty()) userids += ", ";
+            userids += fmt::format("{} ({})", uid->name, uid->email);
+        }
+        result += userids;
+    }
+    result += ']';
+    return result;
+}
 
 #define PGP_MESSAGE_HEADER "-----BEGIN PGP MESSAGE-----\r\n"
 #define PGP_MESSAGE_FOOTER "\r\n-----END PGP MESSAGE-----"
@@ -153,6 +190,7 @@ char *pgp__decrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *c
     buf = (uint8_t*)malloc(sizeof(char) * buf_len);
     buf_len = snprintf((char *)buf, buf_len, PGP_MESSAGE_HEADER "%s" PGP_MESSAGE_FOOTER, ciphertext);
 
+    std::string keyids;
     gpgme_error_t err;
     gpgme_data_t in, out;
 
@@ -170,12 +208,20 @@ char *pgp__decrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *c
 
     /* Decrypt data. */
     err = gpgme_op_decrypt(pgp->gpgme, in, out);
-    if (err) {
-        goto decrypt_finish;
-    }
     if (gpgme_decrypt_result_t dec_result = gpgme_op_decrypt_result(pgp->gpgme);
-            dec_result->unsupported_algorithm)
+            dec_result)
     {
+        for (auto recip = dec_result->recipients; recip; recip = recip->next)
+        {
+            if (!keyids.empty()) keyids += ", ";
+            keyids += format_key(pgp, recip->keyid);
+        }
+        if (dec_result->unsupported_algorithm)
+        {
+            goto decrypt_finish;
+        }
+    }
+    if (err) {
         goto decrypt_finish;
     }
     gpgme_data_seek(out, 0, SEEK_SET);
@@ -191,8 +237,8 @@ char *pgp__decrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *c
     result = strndup(decrypted.data(), decrypted.size());
 decrypt_finish:
     if (err) {
-        weechat_printf(buffer, "[PGP]\t%s - %s",
-                gpgme_strsource(err), gpgme_strerror(err));
+        weechat_printf(buffer, "[PGP]\t%s - %s (%s)",
+                gpgme_strsource(err), gpgme_strerror(err), keyids.data());
     }
     return result;
 }
