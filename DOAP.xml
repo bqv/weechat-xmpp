@@ -1,0 +1,61 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<rdf:RDF xmlns='http://usefulinc.com/ns/doap#'
+         xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+         xmlns:xmpp='https://linkmauve.fr/ns/xmpp-doap#'
+         xmlns:schema='https://schema.org'>
+  <Project>
+    <name>weechat-xmpp</name>
+
+    <created>2021-06-26</created>
+
+    <shortdesc xml:lang='en'>Weechat XMPP client</shortdesc>
+    <shortdesc xml:lang='fr'>Client XMPP pour Weechat</shortdesc>
+
+    <description xml:lang='en'>Weechat plugin for accessing XMPP, written in C++</description>
+
+    <homepage rdf:resource='https://github.com/bqv/weechat-xmpp/'/>
+    <bug-database rdf:resource='https://github.com/bqv/weechat-xmpp/issues'/>
+    <developer-forum rdf:resource='xmpp:weechat@muc.xa0.uk?join'/>
+    <support-forum rdf:resource='xmpp:weechat@muc.xa0.uk?join'/>
+
+    <license rdf:resource='https://github.com/bqv/weechat-xmpp/blob/master/LICENSE'/>
+
+    <language>en</language>
+
+    <programming-language>C++</programming-language>
+
+    <os>Linux</os>
+
+    <category rdf:resource='https://linkmauve.fr/ns/xmpp-doap#category-client'/>
+
+    <repository>
+      <GitRepository>
+        <browse rdf:resource='https://github.com/bqv/weechat-xmpp/'/>
+        <location rdf:resource='https://github.com/bqv/weechat-xmpp.git'/>
+      </GitRepository>
+    </repository>
+
+    <implements rdf:resource='https://xmpp.org/rfcs/rfc6120.html'/>
+    <implements rdf:resource='https://xmpp.org/rfcs/rfc6121.html'/>
+    <implements rdf:resource='https://xmpp.org/rfcs/rfc6122.html'/>
+    <implements rdf:resource='https://xmpp.org/rfcs/rfc7590.html'/>
+
+    <implements>
+      <xmpp:SupportedXep>
+        <xmpp:xep rdf:resource='https://xmpp.org/extensions/xep-0028.html'/>
+        <xmpp:status>complete</xmpp:status>
+        <xmpp:version>0.2.1</xmpp:version>
+        <xmpp:since>0.1.0</xmpp:since>
+        <xmpp:note xml:lang='en'>PGP</xmpp:note>
+      </xmpp:SupportedXep>
+    </implements>
+
+    <release>
+      <Version>
+        <revision>0.2.1</revision>
+        <created>2022-03-16</created>
+        <!--file-release rdf:resource=''/-->
+      </Version>
+    </release>
+  </Project>
+</rdf:RDF>
