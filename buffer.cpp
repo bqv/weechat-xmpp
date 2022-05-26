@@ -13,37 +13,33 @@
 #include "buffer.hh"
 
 void buffer__get_account_and_channel(struct t_gui_buffer *buffer,
-                                     struct t_account **account,
-                                     struct t_channel **channel)
+                                     weechat::account **account,
+                                     weechat::channel **channel)
 {
-    struct t_account *ptr_account;
-    struct t_channel *ptr_channel;
-
     if (!buffer)
         return;
 
-    *account = NULL;
-    *channel = NULL;
+    *account = nullptr;
+    *channel = nullptr;
 
     /* look for a account or channel using this buffer */
-    for (auto ptr_account : accounts)
+    for (auto& ptr_account : weechat::accounts)
     {
-        if (ptr_account.second->buffer == buffer)
+        if (ptr_account.second.buffer == buffer)
         {
             if (account)
-                *account = ptr_account.second;
+                *account = &ptr_account.second;
             return;
         }
 
-        for (ptr_channel = ptr_account.second->channels; ptr_channel;
-             ptr_channel = ptr_channel->next_channel)
+        for (auto& ptr_channel : ptr_account.second.channels)
         {
-            if (ptr_channel->buffer == buffer)
+            if (ptr_channel.second.buffer == buffer)
             {
                 if (account)
-                    *account = ptr_account.second;
+                    *account = &ptr_account.second;
                 if (channel)
-                    *channel = ptr_channel;
+                    *channel = &ptr_channel.second;
                 return;
             }
         }
@@ -56,9 +52,8 @@ char *buffer__typing_bar_cb(const void *pointer, void *data,
                             struct t_gui_buffer *buffer,
                             struct t_hashtable *extra_info)
 {
-    struct t_channel_typing *ptr_typing;
-    struct t_account *account;
-    struct t_channel *channel;
+    weechat::account *account;
+    weechat::channel *channel;
     char notification[256];
     unsigned typecount;
 
@@ -78,17 +73,16 @@ char *buffer__typing_bar_cb(const void *pointer, void *data,
 
     typecount = 0;
 
-    for (ptr_typing = channel->typings; ptr_typing;
-         ptr_typing = ptr_typing->next_typing)
+    for (auto& ptr_typing : channel->typings)
     {
         switch (++typecount)
         {
             case 1:
-                strcpy(notification, ptr_typing->name);
+                strcpy(notification, ptr_typing.name);
                 break;
             case 2:
                 strcat(notification, ", ");
-                strcat(notification, ptr_typing->name);
+                strcat(notification, ptr_typing.name);
                 break;
             case 3:
             default:
@@ -115,12 +109,12 @@ int buffer__nickcmp_cb(const void *pointer, void *data,
                        const char *nick1,
                        const char *nick2)
 {
-    struct t_account *account;
+    weechat::account *account;
 
     (void) data;
 
     if (pointer)
-        account = (struct t_account *)pointer;
+        account = (weechat::account *)pointer;
     else
         buffer__get_account_and_channel(buffer, &account, NULL);
 
@@ -138,8 +132,8 @@ int buffer__close_cb(const void *pointer, void *data,
                      struct t_gui_buffer *buffer)
 {
     struct t_weechat_plugin *buffer_plugin = NULL;
-    struct t_account *ptr_account = NULL;
-    struct t_channel *ptr_channel = NULL;
+    weechat::account *ptr_account = NULL;
+    weechat::channel *ptr_channel = NULL;
 
     (void) pointer;
     (void) data;
@@ -155,9 +149,9 @@ int buffer__close_cb(const void *pointer, void *data,
     {
         if (ptr_account)
         {
-            if (ptr_account->is_connected)
+            if (ptr_account->connected())
             {
-                account__disconnect(ptr_account, 0);
+                ptr_account->disconnect(0);
             }
 
             ptr_account->buffer = NULL;
@@ -167,9 +161,9 @@ int buffer__close_cb(const void *pointer, void *data,
     {
         if (ptr_account && ptr_channel)
         {
-            if (ptr_account->is_connected)
+            if (ptr_account->connected())
             {
-                channel__free(ptr_account, ptr_channel);
+                ptr_account->channels.erase(ptr_channel->name);
             }
         }
     }
@@ -177,9 +171,9 @@ int buffer__close_cb(const void *pointer, void *data,
     {
         if (ptr_account && ptr_channel)
         {
-            if (ptr_account->is_connected)
+            if (ptr_account->connected())
             {
-                channel__free(ptr_account, ptr_channel);
+                ptr_account->channels.erase(ptr_channel->name);
             }
         }
     }

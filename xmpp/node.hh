@@ -15,8 +15,8 @@
 #include <chrono>
 #include <variant>
 #include <fmt/core.h>
-#include <strophe.h>
 #include <tl/optional.hpp>
+#include <strophe.h>
 
 std::string get_name(xmpp_stanza_t *stanza);
 

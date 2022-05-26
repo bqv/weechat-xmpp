@@ -4,60 +4,67 @@
 
 #pragma once
 
-#include <optional>
+#include <memory>
 #include <string>
 #include <tl/optional.hpp>
 
-struct t_user_profile
+namespace weechat
 {
-    char *avatar_hash;
-    char *status_text;
-    char *status;
-    tl::optional<std::string> idle;
-    char *display_name;
-    char *email;
-    char *role;
-    char *affiliation;
-    char *pgp_id;
-    int omemo;
-};
+    class account;
+    class channel;
 
-struct t_user
-{
-    char *id;
-    char *name;
+    class user
+    {
+    private:
+        struct profile
+        {
+            char *avatar_hash = nullptr;
+            char *status_text = nullptr;
+            char *status = nullptr;
+            tl::optional<std::string> idle;
+            char *display_name = nullptr;
+            char *email = nullptr;
+            char *role = nullptr;
+            char *affiliation = nullptr;
+            char *pgp_id = nullptr;
+            int omemo = 0;
+        };
 
-    struct t_user_profile profile;
-    int updated;
-    int is_away;
+    private:
+        char *name = nullptr;
 
-    struct t_user *prev_user;
-    struct t_user *next_user;
-};
+        bool updated = false;
 
-struct t_channel;
+    public:
+        char *id = nullptr;
+        bool is_away = false;
+        struct profile profile;
 
-const char *user__get_colour(struct t_user *user);
+    public:
+        user(weechat::account *account, const char *id, const char *display_name);
 
-const char *user__as_prefix_raw(struct t_account *account,
-                                const char *name);
+        static std::string get_colour(const char *name);
+        static std::string get_colour_for_nicklist(const char *name);
+        std::string get_colour();
+        std::string get_colour_for_nicklist();
+        static std::string as_prefix_raw(const char *name);
+        static std::string as_prefix(const char *name);
+        std::string as_prefix_raw();
+        std::string as_prefix();
 
-const char *user__as_prefix(struct t_account *account,
-                            struct t_user *user,
-                            const char *name);
+        static std::string as_prefix_raw(weechat::account *account, const char *id) {
+            auto found = std::unique_ptr<user>(search(account, id));
+            return found ? found->as_prefix_raw() : "";
+        }
+        static std::string as_prefix(weechat::account *account, const char *id) {
+            auto found = std::unique_ptr<user>(search(account, id));
+            return found ? found->as_prefix() : "";
+        }
 
-struct t_user *user__search(struct t_account *account,
-                            const char *id);
+        static weechat::user *bot_search(weechat::account *account, const char *pgp_id);
+        static weechat::user *search(weechat::account *account, const char *id);
 
-struct t_user *user__new(struct t_account *account,
-                         const char *id, const char *display_name);
-
-void user__free_all(struct t_account *account);
-
-void user__nicklist_add(struct t_account *account,
-                        struct t_channel *channel,
-                        struct t_user *user);
-
-void user__nicklist_remove(struct t_account *account,
-                           struct t_channel *channel,
-                           struct t_user *user);
+        void nicklist_add(weechat::account *account, weechat::channel *channel);
+        void nicklist_remove(weechat::account *account, weechat::channel *channel);
+    };
+}

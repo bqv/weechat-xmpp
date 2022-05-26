@@ -19,11 +19,11 @@
 static const char format_regex[] = "<([^>]*?)>";
 static const size_t max_groups = 2;
 
-char *message__translate_code(struct t_account *account,
+char *message__translate_code(weechat::account *account,
                                    const char *code)
 {
-    struct t_channel *channel;
-    struct t_user *user;
+    decltype(account->channels)::iterator channel;
+    weechat::user *user;
     size_t resultlen;
     char *identifier, *alttext, *result, *symbol, *prefix;
 
@@ -42,11 +42,11 @@ char *message__translate_code(struct t_account *account,
             }
             else
             {
-                channel = channel__search(account, identifier+1);
-                if (channel)
+                channel = account->channels.find(identifier+1);
+                if (channel != account->channels.end())
                 {
                     prefix = (char*)"#";
-                    symbol = strdup(channel->name);
+                    symbol = strdup(channel->second.name.data());
                 }
                 else
                 {
@@ -63,7 +63,7 @@ char *message__translate_code(struct t_account *account,
             }
             else
             {
-                user = user__search(account, identifier+1);
+                user = weechat::user::search(account, identifier+1);
                 if (user)
                 {
                     prefix = (char*)"@";
@@ -148,7 +148,7 @@ void message__htmldecode(char *dest, const char *src, size_t n)
     return;
 }
 
-char *message__decode(struct t_account *account,
+char *message__decode(weechat::account *account,
                            const char *text)
 {
     int rc;

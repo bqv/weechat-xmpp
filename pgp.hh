@@ -7,22 +7,27 @@
 #include <string>
 #include <vector>
 
-extern const char *PGP_ADVICE;
-
-struct t_pgp
+namespace weechat::xmpp
 {
-    struct gpgme_context *gpgme;
-    const char *keyid;
-};
+    extern const char *PGP_ADVICE;
 
-void pgp__init(struct t_pgp **pgp);
+    class pgp
+    {
+    public:
+        struct gpgme_context *gpgme;
+        const char *keyid;
 
-void pgp__free(struct t_pgp *pgp);
+    public:
+        pgp();
 
-char *pgp__decrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *ciphertext);
+        ~pgp();
 
-char *pgp__encrypt(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *source, std::vector<std::string>&& target, const char *message);
+        char *decrypt(struct t_gui_buffer *buffer, const char *ciphertext);
 
-char *pgp__verify(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *certificate);
+        char *encrypt(struct t_gui_buffer *buffer, const char *source, std::vector<std::string>&& target, const char *message);
 
-char *pgp__sign(struct t_gui_buffer *buffer, struct t_pgp *pgp, const char *source, const char *message);
+        char *verify(struct t_gui_buffer *buffer, const char *certificate);
+
+        char *sign(struct t_gui_buffer *buffer, const char *source, const char *message);
+    };
+}

@@ -18,11 +18,11 @@
 #include "completion.hh"
 
 void completion__channel_nicks_add_speakers(struct t_gui_completion *completion,
-                                            struct t_account *account,
-                                            struct t_channel *channel,
+                                            weechat::account *account,
+                                            weechat::channel *channel,
                                             int highlight)
 {
-    struct t_user *user;
+    weechat::user *user;
     const char *member;
     int list_size, i;
 
@@ -35,7 +35,7 @@ void completion__channel_nicks_add_speakers(struct t_gui_completion *completion,
                 weechat_list_get(channel->members_speaking[highlight], i));
             if (member)
             {
-                user = user__search(account, member);
+                user = weechat::user::search(account, member);
                 if (user)
                     weechat_hook_completion_list_add(completion,
                                                      user->profile.display_name,
@@ -50,10 +50,9 @@ int completion__channel_nicks_cb(const void *pointer, void *data,
                                  struct t_gui_buffer *buffer,
                                  struct t_gui_completion *completion)
 {
-    struct t_account *ptr_account;
-    struct t_channel *ptr_channel;
-    struct t_channel_member *ptr_member;
-    struct t_user *ptr_user;
+    weechat::account *ptr_account;
+    weechat::channel *ptr_channel;
+    weechat::user *ptr_user;
 
     /* make C compiler happy */
     (void) pointer;
@@ -68,30 +67,29 @@ int completion__channel_nicks_cb(const void *pointer, void *data,
     {
         switch (ptr_channel->type)
         {
-        case CHANNEL_TYPE_MUC:
-        case CHANNEL_TYPE_PM:
-            for (ptr_member = ptr_channel->members; ptr_member;
-                 ptr_member = ptr_member->next_member)
+        case weechat::channel::chat_type::MUC:
+        case weechat::channel::chat_type::PM:
+            for (auto& ptr_member : ptr_channel->members)
             {
-                ptr_user = user__search(ptr_account, ptr_member->id);
+                ptr_user = weechat::user::search(ptr_account, ptr_member.second.id);
                 if (ptr_user)
                     weechat_hook_completion_list_add(completion,
                                                      ptr_user->profile.display_name,
                                                      1, WEECHAT_LIST_POS_SORT);
             }
             /* add recent speakers on channel */
-            if (weechat_config_integer(config_look_nick_completion_smart) == CONFIG_NICK_COMPLETION_SMART_SPEAKERS)
+            if (weechat_config_integer(weechat::config::instance->look.nick_completion_smart) == static_cast<int>(weechat::config::nick_completion::SMART_SPEAKERS))
             {
                 completion__channel_nicks_add_speakers(completion, ptr_account, ptr_channel, 0);
             }
             /* add members whose make highlights on me recently on this channel */
-            if (weechat_config_integer(config_look_nick_completion_smart) == CONFIG_NICK_COMPLETION_SMART_SPEAKERS_HIGHLIGHTS)
+            if (weechat_config_integer(weechat::config::instance->look.nick_completion_smart) == static_cast<int>(weechat::config::nick_completion::SMART_SPEAKERS_HIGHLIGHTS))
             {
                 completion__channel_nicks_add_speakers(completion, ptr_account, ptr_channel, 1);
             }
             /* add self member at the end */
             weechat_hook_completion_list_add(completion,
-                                             ptr_account->name,
+                                             ptr_account->name.data(),
                                              1, WEECHAT_LIST_POS_END);
             break;
         }
@@ -105,17 +103,15 @@ int completion__accounts_cb(const void *pointer, void *data,
                             struct t_gui_buffer *buffer,
                             struct t_gui_completion *completion)
 {
-    struct t_account *ptr_account;
-
     /* make C compiler happy */
     (void) pointer;
     (void) data;
     (void) completion_item;
     (void) buffer;
 
-    for (auto ptr_account : accounts)
+    for (auto& ptr_account : weechat::accounts)
     {
-        weechat_hook_completion_list_add(completion, account_jid(ptr_account.second),
+        weechat_hook_completion_list_add(completion, ptr_account.second.jid().data(),
                                          0, WEECHAT_LIST_POS_SORT);
     }
 

@@ -108,7 +108,7 @@ release: xmpp.so
 	cp xmpp.so .xmpp.so.$(SUFFIX)
 	ln -sf .xmpp.so.$(SUFFIX) .xmpp.so
 
-xmpp.so: $(OBJS) $(DEPS) $(HDRS)
+xmpp.so: $(DEPS) $(OBJS) $(HDRS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(DEPS) $(LDLIBS)
 	git ls-files | xargs ls -d | xargs tar cz | objcopy --add-section .source=/dev/stdin xmpp.so
 	#objcopy --dump-section .source=/dev/stdout xmpp.so | tar tz

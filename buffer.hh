@@ -5,8 +5,8 @@
 #pragma once
 
 void buffer__get_account_and_channel(struct t_gui_buffer *buffer,
-                                     struct t_account **account,
-                                     struct t_channel **channel);
+                                     weechat::account **account,
+                                     weechat::channel **channel);
 
 char *buffer__typing_bar_cb(const void *pointer, void *data,
                             struct t_gui_bar_item *item,

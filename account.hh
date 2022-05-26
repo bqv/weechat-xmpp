@@ -7,155 +7,144 @@
 #include <ctime>
 #include <cstdint>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <unordered_map>
-#include <strophe.h>
+#include <tl/optional.hpp>
 
+#include "fmt/core.h"
+#include "strophe.h"
+#include "pgp.hh"
 #include "omemo.hh"
+#include "config.hh"
+#include "channel.hh"
+#include "connection.hh"
+#include "user.hh"
 
-extern std::unordered_map<std::string, struct t_account *> accounts;
-
-enum t_account_option
+namespace weechat
 {
-    ACCOUNT_OPTION_JID,
-    ACCOUNT_OPTION_PASSWORD,
-    ACCOUNT_OPTION_TLS,
-    ACCOUNT_OPTION_NICKNAME,
-    ACCOUNT_OPTION_AUTOCONNECT,
-    ACCOUNT_OPTION_RESOURCE,
-    ACCOUNT_OPTION_STATUS,
-    ACCOUNT_OPTION_PGP_PATH,
-    ACCOUNT_OPTION_PGP_KEYID,
-    ACCOUNT_NUM_OPTIONS,
-};
+    class channel;
+    class user;
 
-#define account__option_string(account, option) \
-    weechat_config_string(account->options[ACCOUNT_OPTION_ ## option])
-#define account__option_integer(account, option) \
-    weechat_config_integer(account->options[ACCOUNT_OPTION_ ## option])
-#define account__option_boolean(account, option) \
-    weechat_config_boolean(account->options[ACCOUNT_OPTION_ ## option])
-#define account_option_set(account, option, value) \
-    weechat_config_option_set(account->options[option], value, 1)
+    void log_emit(void *const userdata, const xmpp_log_level_t level,
+                  const char *const area, const char *const msg);
 
-#define account_jid(account) \
-    account->connection && xmpp_conn_is_connected(account->connection) ? \
-        xmpp_jid_bare(account->context, xmpp_conn_get_bound_jid(account->connection)) : \
-        weechat_config_string(account->options[ACCOUNT_OPTION_JID])
-#define account_jid_device(account) \
-    account->connection && xmpp_conn_is_connected(account->connection) ? \
-        xmpp_conn_get_bound_jid(account->connection) : \
-        xmpp_jid_new(account->context, \
-                     xmpp_jid_node(account->context, \
-                                   weechat_config_string(account->options[ACCOUNT_OPTION_JID])), \
-                     xmpp_jid_domain(account->context, \
-                                     weechat_config_string(account->options[ACCOUNT_OPTION_JID])), \
-                     "weechat")
-#define account_password(account) \
-    weechat_config_string(account->options[ACCOUNT_OPTION_PASSWORD])
-#define account_tls(account) \
-    weechat_config_integer(account->options[ACCOUNT_OPTION_TLS])
-#define account_nickname(account) \
-    weechat_config_string(account->options[ACCOUNT_OPTION_NICKNAME])
-#define account_autoconnect(account) \
-    weechat_config_boolean(account->options[ACCOUNT_OPTION_AUTOCONNECT])
-#define account_resource(account) \
-    weechat_config_string(account->options[ACCOUNT_OPTION_RESOURCE])
-#define account_status(account) \
-    weechat_config_string(account->options[ACCOUNT_OPTION_STATUS])
-#define account_pgp_path(account) \
-    weechat_config_string(account->options[ACCOUNT_OPTION_PGP_PATH])
-#define account_pgp_keyid(account) \
-    weechat_config_string(account->options[ACCOUNT_OPTION_PGP_KEYID])
+    class account : public config_account
+    {
+    public:
+        struct device
+        {
+            std::uint32_t id;
+            std::string name;
+            std::string label;
+        };
 
-struct t_account_device
-{
-    uint32_t id;
-    char *name;
-    char *label;
+        struct mam_query
+        {
+            std::string id;
+            std::string with;
+            tl::optional<time_t> start;
+            tl::optional<time_t> end;
+        };
 
-    struct t_account_device *prev_device;
-    struct t_account_device *next_device;
-};
+    public:
+        bool disconnected = false;
 
-struct t_account_mam_query
-{
-    char *id;
-    char *with;
-    int has_start;
-    time_t start;
-    int has_end;
-    time_t end;
+        std::unordered_map<std::uint32_t, device> devices;
+        std::unordered_map<std::string, mam_query> mam_queries;
 
-    struct t_account_mam_query *prev_mam_query;
-    struct t_account_mam_query *next_mam_query;
-};
+    private:
+        bool is_connected = false;
 
-struct t_account
-{
-    char *name;
-    struct t_config_option *options[ACCOUNT_NUM_OPTIONS];
+        int current_retry = 0;
+        int reconnect_delay = 0;
+        int reconnect_start = 0;
 
-    int reloading_from_config;
+        xmpp_mem_t memory = { nullptr };
+        xmpp_log_t logger = { nullptr };
 
-    int is_connected;
-    int disconnected;
+        std::string buffer_as_string;
 
-    int current_retry;
-    int reconnect_delay;
-    int reconnect_start;
+        friend void log_emit(void *const userdata, const xmpp_log_level_t level,
+                             const char *const area, const char *const msg);
 
-    xmpp_mem_t memory;
-    xmpp_log_t logger;
-    xmpp_ctx_t *context;
-    xmpp_conn_t *connection;
+    public:
+        std::string name;
+        weechat::xmpp::pgp pgp;
+        weechat::xmpp::omemo omemo;
+        libstrophe::context context;
+        weechat::connection connection;
+        struct t_gui_buffer *buffer = nullptr;
+        std::unordered_map<std::string, weechat::channel> channels;
+        std::unordered_map<std::string, weechat::user> users;
 
-    struct t_gui_buffer *buffer;
-    char *buffer_as_string;
+        std::unordered_map<std::string, struct t_config_option *> options;
 
-    weechat::xmpp::omemo omemo;
-    struct t_pgp *pgp;
+        int reloading_from_config = 0;
 
-    struct t_account_device *devices;
-    struct t_account_device *last_device;
-    struct t_account_mam_query *mam_queries;
-    struct t_account_mam_query *last_mam_query;
-    struct t_user *users;
-    struct t_user *last_user;
-    struct t_channel *channels;
-    struct t_channel *last_channel;
+    public:
+        account(config_file& config_file, const std::string name);
+        ~account();
 
-    struct t_account *prev_account;
-    struct t_account *next_account;
-};
+        static bool search(account* &out,
+                           const std::string name, bool casesensitive = false);
+        static int timer_cb(const void *pointer, void *data, int remaining_calls);
+        static void disconnect_all();
 
-extern char *account_options[][2];
+        bool connected() { return is_connected; }
 
-struct t_account *account__search(const char *account_name);
-struct t_account *account__casesearch (const char *account_name);
-int account__search_option(const char *option_name);
-struct t_account_device *account__search_device(struct t_account *account,
-                                                uint32_t id);
-void account__add_device(struct t_account *account,
-                         struct t_account_device *device);
-void account__free_device(struct t_account *account,
-                          struct t_account_device *device);
-void account__free_device_all(struct t_account *account);
-xmpp_stanza_t *account__get_devicelist(struct t_account *account);
-struct t_account_mam_query *account__add_mam_query(struct t_account *account,
-                                                   struct t_channel *channel,
-                                                   const char *id,
-                                                   time_t *start, time_t *end);
-struct t_account_mam_query *account__mam_query_search(struct t_account *account,
-                                                      const char *id);
-void account__mam_query_free(struct t_account *account,
-                             struct t_account_mam_query *mam_query);
-void account__mam_query_free_all(struct t_account *account);
-struct t_account *account__alloc(const char *name);
-void account__free_data(struct t_account *account);
-void account__free(struct t_account *account);
-void account__free_all();
-void account__disconnect(struct t_account *account, int reconnect);
-void account__disconnect_all();
-void account__close_connection(struct t_account *account);
-int account__connect(struct t_account *account);
-int account__timer_cb(const void *pointer, void *data, int remaining_calls);
+        bool search_device(device* out, std::uint32_t id);
+        void add_device(device *device);
+        void device_free_all();
+        xmpp_stanza_t *get_devicelist();
+
+        void add_mam_query(const std::string id, const std::string with,
+                           tl::optional<time_t> start, tl::optional<time_t> end);
+        bool mam_query_search(mam_query* out, const std::string id);
+        void mam_query_remove(const std::string id);
+        void mam_query_free_all();
+
+        struct t_gui_buffer* create_buffer();
+
+        void disconnect(int reconnect);
+        void reset();
+        int connect();
+
+        std::string_view jid() {
+            if (connection && xmpp_conn_is_connected(connection))
+                return xmpp_jid_bare(context, xmpp_conn_get_bound_jid(connection));
+            else
+                return this->option_jid.string();
+        }
+        void jid(std::string jid) { this->option_jid = jid; }
+        std::string_view jid_device() {
+            if (connection && xmpp_conn_is_connected(connection))
+                return xmpp_conn_get_bound_jid(connection);
+            else
+                return xmpp_jid_new(context,
+                                    xmpp_jid_node(context, this->option_jid.string().data()),
+                                    xmpp_jid_domain(context, this->option_jid.string().data()),
+                                    "weechat");
+        }
+        std::string_view password() { return this->option_password.string(); }
+        void password(std::string password) { this->option_password = password; }
+        tls_policy tls() { return static_cast<tls_policy>(this->option_tls.integer()); }
+        void tls(tls_policy tls) { this->option_tls = fmt::format("%d", static_cast<int>(tls)); }
+        void tls(std::string tls) { this->option_tls = tls; }
+        std::string_view nickname() { return this->option_nickname.string(); }
+        void nickname(std::string nickname) { this->option_nickname = nickname; }
+        bool autoconnect() { return this->option_autoconnect.boolean(); }
+        void autoconnect(bool autoconnect) { this->option_autoconnect = autoconnect ? "on" : "off"; }
+        void autoconnect(std::string autoconnect) { this->option_autoconnect = autoconnect; }
+        std::string_view resource() { return this->option_resource.string(); }
+        void resource(std::string resource) { this->option_resource = resource; }
+        std::string_view status() { return this->option_status.string(); }
+        void status(std::string status) { this->option_status = status; }
+        std::string_view pgp_path() { return this->option_pgp_path.string(); }
+        void pgp_path(std::string pgp_path) { this->option_pgp_path = pgp_path; }
+        std::string_view pgp_keyid() { return this->option_pgp_keyid.string(); }
+        void pgp_keyid(std::string pgp_keyid) { this->option_pgp_keyid = pgp_keyid; }
+    };
+
+    extern std::unordered_map<std::string, account> accounts;
+}

@@ -24,95 +24,38 @@
 #include "util.hh"
 #include "xmpp/node.hh"
 
-const char *channel__transport_name(enum t_channel_transport transport)
-{
-    switch (transport)
-    {
-        case CHANNEL_TRANSPORT_PLAIN:
-            return "PLAINTEXT";
-        case CHANNEL_TRANSPORT_OMEMO:
-            return "OMEMO";
-        case CHANNEL_TRANSPORT_PGP:
-            return "PGP";
-        case CHANNEL_TRANSPORT_OTR:
-            return "OTR";
-        default:
-            return NULL;
-    }
-}
-
-void channel__set_transport(struct t_channel *channel, enum t_channel_transport transport, int force)
+void weechat::channel::set_transport(enum weechat::channel::transport transport, int force)
 {
     if (force)
         switch (transport)
         {
-            case CHANNEL_TRANSPORT_PLAIN:
-                channel->omemo.enabled = 0;
-                channel->pgp.enabled = 0;
+            case weechat::channel::transport::PLAIN:
+                omemo.enabled = 0;
+                pgp.enabled = 0;
                 break;
-            case CHANNEL_TRANSPORT_OMEMO:
-                channel->omemo.enabled = 1;
-                channel->pgp.enabled = 0;
+            case weechat::channel::transport::OMEMO:
+                omemo.enabled = 1;
+                pgp.enabled = 0;
                 break;
-            case CHANNEL_TRANSPORT_PGP:
-                channel->omemo.enabled = 0;
-                channel->pgp.enabled = 1;
+            case weechat::channel::transport::PGP:
+                omemo.enabled = 0;
+                pgp.enabled = 1;
                 break;
             default:
                 break;
         }
-    if (channel->transport != transport)
+
+    if (this->transport != transport)
     {
-        channel->transport = transport;
-        weechat_printf_date_tags(channel->buffer, 0, NULL, "%s%sTransport: %s",
+        this->transport = transport;
+        weechat_printf_date_tags(buffer, 0, NULL, "%s%sTransport: %s",
                                  weechat_prefix("network"), weechat_color("gray"),
-                                 channel__transport_name(channel->transport));
+                                 weechat::channel::transport_name(this->transport));
     }
 }
 
-struct t_account *channel__account(struct t_channel *channel)
-{
-    struct t_account *ptr_account;
-    struct t_channel *ptr_channel;
-
-    if (!channel)
-        return NULL;
-
-    for (auto ptr_account : accounts)
-    {
-        for (ptr_channel = ptr_account.second->channels; ptr_channel;
-             ptr_channel = ptr_channel->next_channel)
-        {
-            if (ptr_channel == channel)
-                return ptr_account.second;
-        }
-    }
-
-    /* account not found */
-    return NULL;
-}
-
-struct t_channel *channel__search(struct t_account *account,
-                                  const char *id)
-{
-    struct t_channel *ptr_channel;
-
-    if (!account || !id)
-        return NULL;
-
-    for (ptr_channel = account->channels; ptr_channel;
-         ptr_channel = ptr_channel->next_channel)
-    {
-        if (weechat_strcasecmp(ptr_channel->id, id) == 0)
-            return ptr_channel;
-    }
-
-    return NULL;
-}
-
-struct t_gui_buffer *channel__search_buffer(struct t_account *account,
-                                            enum t_channel_type type,
-                                            const char *name)
+struct t_gui_buffer *weechat::channel::search_buffer(weechat::channel::chat_type type,
+                                                     const char *name)
 {
     struct t_hdata *hdata_buffer;
     struct t_gui_buffer *ptr_buffer;
@@ -133,11 +76,11 @@ struct t_gui_buffer *channel__search_buffer(struct t_account *account,
             if (ptr_type && ptr_type[0]
                 && ptr_account_name && ptr_account_name[0]
                 && ptr_remote_jid && ptr_remote_jid[0]
-                && (   ((  (type == CHANNEL_TYPE_MUC))
+                && (   ((  (type == weechat::channel::chat_type::MUC))
                         && (strcmp(ptr_type, "room") == 0))
-                    || ((  (type == CHANNEL_TYPE_PM))
+                    || ((  (type == weechat::channel::chat_type::PM))
                         && (strcmp(ptr_type, "private") == 0)))
-                && (strcmp(ptr_account_name, account->name) == 0)
+                && (ptr_account_name == account.name)
                 && (weechat_strcasecmp(ptr_remote_jid, name) == 0))
             {
                 return ptr_buffer;
@@ -149,28 +92,25 @@ struct t_gui_buffer *channel__search_buffer(struct t_account *account,
     return NULL;
 }
 
-struct t_gui_buffer *channel__create_buffer(struct t_account *account,
-                                            enum t_channel_type type,
-                                            const char *name)
+struct t_gui_buffer *weechat::channel::create_buffer(weechat::channel::chat_type type,
+                                                     const char *name)
 {
     struct t_gui_buffer *ptr_buffer;
     int buffer_created;
     const char *short_name = NULL, *localvar_remote_jid = NULL;
-    char buffer_name[1024] = {0};
 
     buffer_created = 0;
 
-    snprintf(buffer_name, sizeof(buffer_name),
-             "%s.%s", account->name, name);
+    std::string buffer_name = fmt::format("{}.{}", account.name, name);
 
-    ptr_buffer = channel__search_buffer(account, type, name);
+    ptr_buffer = weechat::channel::search_buffer(type, name);
     if (ptr_buffer)
     {
         weechat_nicklist_remove_all(ptr_buffer);
     }
     else
     {
-        ptr_buffer = weechat_buffer_new(buffer_name,
+        ptr_buffer = weechat_buffer_new(buffer_name.data(),
                                         &input__data_cb, NULL, NULL,
                                         &buffer__close_cb, NULL, NULL);
         if (!ptr_buffer)
@@ -196,24 +136,23 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
             (localvar_remote_jid && (strcmp(localvar_remote_jid, short_name) == 0)))
         {
             weechat_buffer_set(ptr_buffer, "short_name",
-                               xmpp_jid_node(account->context, name));
+                               xmpp_jid_node(account.context, name));
         }
     }
-    if(!(account_nickname(account) && strlen(account_nickname(account))))
-        account_option_set(account, ACCOUNT_OPTION_NICKNAME,
-                           xmpp_jid_node(account->context, account_jid(account)));
+    if(!(account.nickname().size()))
+        account.nickname(xmpp_jid_node(account.context, account.jid().data()));
 
     // Set notify level for buffer: "0" = never add to hotlist
     //                              "1" = add for highlights only
     //                              "2" = add for highlights and messages
     //                              "3" = add for all messages.
     weechat_buffer_set(ptr_buffer, "notify",
-                       (type == CHANNEL_TYPE_PM) ? "3" : "2");
+                       (type == weechat::channel::chat_type::PM) ? "3" : "2");
     weechat_buffer_set(ptr_buffer, "localvar_set_type",
-                       (type == CHANNEL_TYPE_PM) ? "private" : "channel");
+                       (type == weechat::channel::chat_type::PM) ? "private" : "channel");
     weechat_buffer_set(ptr_buffer, "localvar_set_nick",
-                       account_nickname(account));
-    weechat_buffer_set(ptr_buffer, "localvar_set_account", account->name);
+                       account.nickname().data());
+    weechat_buffer_set(ptr_buffer, "localvar_set_account", account.name.data());
     weechat_buffer_set(ptr_buffer, "localvar_set_remote_jid", name);
     weechat_buffer_set(ptr_buffer, "input_multiline", "1");
 
@@ -223,18 +162,18 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
                                         WEECHAT_HOOK_SIGNAL_POINTER,
                                         ptr_buffer);
         weechat_buffer_set(ptr_buffer, "input_get_unknown_commands", "1");
-        if (type != CHANNEL_TYPE_PM)
+        if (type != weechat::channel::chat_type::PM)
         {
             weechat_buffer_set(ptr_buffer, "nicklist", "1");
             weechat_buffer_set(ptr_buffer, "nicklist_display_groups", "0");
             weechat_buffer_set_pointer(ptr_buffer, "nicklist_callback",
                                        (void*)&buffer__nickcmp_cb);
             weechat_buffer_set_pointer(ptr_buffer, "nicklist_callback_pointer",
-                                       account);
+                                       &account);
         }
 
         weechat_buffer_set(ptr_buffer, "highlight_words_add",
-                           account_nickname(account));
+                           account.nickname().data());
         weechat_buffer_set(ptr_buffer, "highlight_tags_restrict",
                            "message");
     }
@@ -242,223 +181,151 @@ struct t_gui_buffer *channel__create_buffer(struct t_account *account,
     return ptr_buffer;
 }
 
-void channel__add_nicklist_groups(struct t_account *account,
-                                  struct t_channel *channel)
+void weechat::channel::add_nicklist_groups()
 {
-    struct t_gui_buffer *ptr_buffer;
-    char str_group[32];
-
-    if (channel && channel->type == CHANNEL_TYPE_PM)
+    if (type == weechat::channel::chat_type::PM)
         return;
 
-    ptr_buffer = channel ? channel->buffer : account->buffer;
-
-    snprintf(str_group, sizeof(str_group), "%03d|%s", 000, "~");
-    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 000, "~").data(),
                                "weechat.color.nicklist_group", 1);
-    snprintf(str_group, sizeof(str_group), "%03d|%s", 001, "&");
-    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 001, "&").data(),
                                "weechat.color.nicklist_group", 1);
-    snprintf(str_group, sizeof(str_group), "%03d|%s", 002, "@");
-    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 002, "@").data(),
                                "weechat.color.nicklist_group", 1);
-    snprintf(str_group, sizeof(str_group), "%03d|%s", 003, "%");
-    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 003, "%").data(),
                                "weechat.color.nicklist_group", 1);
-    snprintf(str_group, sizeof(str_group), "%03d|%s", 004, "+");
-    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 004, "+").data(),
                                "weechat.color.nicklist_group", 1);
-    snprintf(str_group, sizeof(str_group), "%03d|%s", 005, "?");
-    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 005, "?").data(),
                                "weechat.color.nicklist_group", 1);
-    snprintf(str_group, sizeof(str_group), "%03d|%s", 006, "!");
-    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 006, "!").data(),
                                "weechat.color.nicklist_group", 1);
-    snprintf(str_group, sizeof(str_group), "%03d|%s", 999, "...");
-    weechat_nicklist_add_group(ptr_buffer, NULL, str_group,
+    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 999, "...").data(),
                                "weechat.color.nicklist_group", 1);
 }
 
-struct t_channel *channel__new(struct t_account *account,
-                               enum t_channel_type type,
-                               const char *id, const char *name)
+weechat::channel::channel(weechat::account& account,
+                          weechat::channel::chat_type type,
+                          const char *id, const char *name) : id(id), name(name), type(type), account(account)
 {
-    struct t_channel *new_channel, *ptr_channel, *muc_channel;
-    struct t_gui_buffer *ptr_buffer;
-    struct t_hook *typing_timer, *self_typing_timer;
+    if (!id || !name || !name[0])
+        throw std::invalid_argument("channel()");
 
-    if (!account || !id || !name || !name[0])
-        return NULL;
+    //if (weechat::channel::search(&account, id))
+    //    throw std::invalid_argument("duplicate");
 
-    ptr_channel = channel__search(account, id);
-    if (ptr_channel)
+    buffer = weechat::channel::create_buffer(type, name);
+    if (!buffer)
+        throw std::invalid_argument("buffer fail");
+    else if (type == weechat::channel::chat_type::PM)
     {
-        return ptr_channel;
-    }
-
-    ptr_buffer = channel__create_buffer(account, type, name);
-    if (!ptr_buffer)
-        return NULL;
-    else if (type == CHANNEL_TYPE_PM)
-    {
-        muc_channel = channel__search(account, jid(account->context, id).bare.data());
-        if (muc_channel)
+        auto muc_channel = account.channels.find(jid(account.context,
+                                                                               id).bare.data());
+        if (muc_channel != account.channels.end())
         {
-            weechat_buffer_merge(ptr_buffer, muc_channel->buffer);
+            weechat_buffer_merge(buffer, muc_channel->second.buffer);
         }
     }
 
-    if ((new_channel = (struct t_channel*)malloc(sizeof(*new_channel))) == NULL)
-        return NULL;
+    typing_hook_timer = weechat_hook_timer(1 * 1000, 0, 0,
+                                           &weechat::channel::typing_cb,
+                                           this, nullptr);
 
-    typing_timer = weechat_hook_timer(1 * 1000, 0, 0,
-                                      &channel__typing_cb,
-                                      new_channel, NULL);
+    self_typing_hook_timer = weechat_hook_timer(1 * 1000, 0, 0,
+                                                &weechat::channel::self_typing_cb,
+                                                this, nullptr);
 
-    self_typing_timer = weechat_hook_timer(1 * 1000, 0, 0,
-                                           &channel__self_typing_cb,
-                                           new_channel, NULL);
+    omemo.enabled = type == weechat::channel::chat_type::PM ? 1 : 0;
+    omemo.devicelist_requests = weechat_hashtable_new(64,
+            WEECHAT_HASHTABLE_STRING, WEECHAT_HASHTABLE_POINTER, nullptr, nullptr);
+    omemo.bundle_requests = weechat_hashtable_new(64,
+            WEECHAT_HASHTABLE_STRING, WEECHAT_HASHTABLE_POINTER, nullptr, nullptr);
 
-    new_channel->type = type;
-    new_channel->id = strdup(id);
-    new_channel->name = strdup(name);
-    new_channel->transport = CHANNEL_TRANSPORT_PLAIN;
-    new_channel->omemo.enabled = type == CHANNEL_TYPE_PM ? 1 : 0;
-    new_channel->omemo.devicelist_requests = weechat_hashtable_new(64,
-            WEECHAT_HASHTABLE_STRING, WEECHAT_HASHTABLE_POINTER, NULL, NULL);
-    new_channel->omemo.bundle_requests = weechat_hashtable_new(64,
-            WEECHAT_HASHTABLE_STRING, WEECHAT_HASHTABLE_POINTER, NULL, NULL);
-    new_channel->pgp.enabled = 1;
-    new_channel->pgp.ids = new std::remove_pointer<decltype(new_channel->pgp.ids)>::type;
-    new_channel->otr.enabled = 0;
+    add_nicklist_groups();
 
-    new_channel->topic.value = NULL;
-    new_channel->topic.creator = NULL;
-    new_channel->topic.last_set = 0;
-
-    new_channel->creator = NULL;
-    new_channel->last_read = 0.0;
-    new_channel->unread_count = 0;
-    new_channel->unread_count_display = 0;
-
-    new_channel->typing_hook_timer = typing_timer;
-    new_channel->self_typing_hook_timer = self_typing_timer;
-    new_channel->members_speaking[0] = NULL;
-    new_channel->members_speaking[1] = NULL;
-    new_channel->unreads = NULL;
-    new_channel->self_typings = NULL;
-    new_channel->last_self_typing = NULL;
-    new_channel->typings = NULL;
-    new_channel->last_typing = NULL;
-    new_channel->members = NULL;
-    new_channel->last_member = NULL;
-    new_channel->buffer = ptr_buffer;
-    new_channel->buffer_as_string = NULL;
-
-    new_channel->prev_channel = account->last_channel;
-    new_channel->next_channel = NULL;
-    if (account->last_channel)
-        (account->last_channel)->next_channel = new_channel;
-    else
-        account->channels = new_channel;
-    account->last_channel = new_channel;
-
-    channel__add_nicklist_groups(account, new_channel);
-
-    if (type != CHANNEL_TYPE_MUC)
+    if (type != weechat::channel::chat_type::MUC)
     {
         time_t start = time(NULL);
         struct tm *ago = gmtime(&start);
         ago->tm_mday -= 7;
         start = mktime(ago);
-        channel__fetch_mam(account, new_channel, NULL, &start, NULL, NULL);
+        fetch_mam(nullptr, &start, nullptr, nullptr);
     }
-
-    return new_channel;
 }
 
-void channel__member_speaking_add_to_list(struct t_channel *channel,
-                                          const char *nick,
-                                          int highlight)
+void weechat::channel::member_speaking_add_to_list(const char *nick, int highlight)
 {
     int size, to_remove, i;
     struct t_weelist_item *ptr_item;
 
     /* create list if it does not exist */
-    if (!channel->members_speaking[highlight])
-        channel->members_speaking[highlight] = weechat_list_new();
+    if (!members_speaking[highlight])
+        members_speaking[highlight] = weechat_list_new();
 
     /* remove item if it was already in list */
-    ptr_item = weechat_list_casesearch(channel->members_speaking[highlight], nick);
+    ptr_item = weechat_list_casesearch(members_speaking[highlight], nick);
     if (ptr_item)
-        weechat_list_remove(channel->members_speaking[highlight], ptr_item);
+        weechat_list_remove(members_speaking[highlight], ptr_item);
 
     /* add nick in list */
-    weechat_list_add(channel->members_speaking[highlight], nick,
+    weechat_list_add(members_speaking[highlight], nick,
                      WEECHAT_LIST_POS_END, NULL);
 
     /* reduce list size if it's too big */
-    size = weechat_list_size(channel->members_speaking[highlight]);
+    size = weechat_list_size(members_speaking[highlight]);
     if (size > CHANNEL_MEMBERS_SPEAKING_LIMIT)
     {
         to_remove = size - CHANNEL_MEMBERS_SPEAKING_LIMIT;
         for (i = 0; i < to_remove; i++)
         {
             weechat_list_remove(
-                channel->members_speaking[highlight],
-                weechat_list_get(channel->members_speaking[highlight], 0));
+                members_speaking[highlight],
+                weechat_list_get(members_speaking[highlight], 0));
         }
     }
 }
 
-void channel__member_speaking_add(struct t_channel *channel,
-                                  const char *nick, int highlight)
+void weechat::channel::member_speaking_add(const char *nick, int highlight)
 {
     if (highlight < 0)
         highlight = 0;
     if (highlight > 1)
         highlight = 1;
     if (highlight)
-        channel__member_speaking_add_to_list(channel, nick, 1);
+        weechat::channel::member_speaking_add_to_list(nick, 1);
 
-    channel__member_speaking_add_to_list(channel, nick, 0);
+    weechat::channel::member_speaking_add_to_list(nick, 0);
 }
 
-void channel__member_speaking_rename(struct t_channel *channel,
-                                     const char *old_nick,
-                                     const char *new_nick)
+void weechat::channel::member_speaking_rename(const char *old_nick, const char *new_nick)
 {
     struct t_weelist_item *ptr_item;
     int i;
 
     for (i = 0; i < 2; i++)
     {
-        if (channel->members_speaking[i])
+        if (members_speaking[i])
         {
-            ptr_item = weechat_list_search(channel->members_speaking[i], old_nick);
+            ptr_item = weechat_list_search(members_speaking[i], old_nick);
             if (ptr_item)
                 weechat_list_set(ptr_item, new_nick);
         }
     }
 }
 
-void channel__member_speaking_rename_if_present(struct t_account *account,
-                                                struct t_channel *channel,
-                                                const char *nick)
+void weechat::channel::member_speaking_rename_if_present(const char *nick)
 {
     struct t_weelist_item *ptr_item;
     int i, j, list_size;
 
-    (void) account;
-
     for (i = 0; i < 2; i++)
     {
-        if (channel->members_speaking[i])
+        if (members_speaking[i])
         {
-            list_size = weechat_list_size(channel->members_speaking[i]);
+            list_size = weechat_list_size(members_speaking[i]);
             for (j = 0; j < list_size; j++)
             {
-                ptr_item = weechat_list_get(channel->members_speaking[i], j);
+                ptr_item = weechat_list_get(members_speaking[i], j);
                 if (ptr_item && (weechat_strcasecmp(weechat_list_string(ptr_item),
                                                     nick) == 0))
                     weechat_list_set(ptr_item, nick);
@@ -467,51 +334,9 @@ void channel__member_speaking_rename_if_present(struct t_account *account,
     }
 }
 
-void channel__typing_free(struct t_channel *channel,
-                          struct t_channel_typing *typing)
+int weechat::channel::typing_cb(const void *pointer, void *data, int remaining_calls)
 {
-    struct t_channel_typing *new_typings;
-
-    if (!channel || !typing)
-        return;
-
-    /* remove typing from typings list */
-    if (channel->last_typing == typing)
-        channel->last_typing = typing->prev_typing;
-    if (typing->prev_typing)
-    {
-        (typing->prev_typing)->next_typing = typing->next_typing;
-        new_typings = channel->typings;
-    }
-    else
-        new_typings = typing->next_typing;
-
-    if (typing->next_typing)
-        (typing->next_typing)->prev_typing = typing->prev_typing;
-
-    /* free typing data */
-    if (typing->id)
-        free(typing->id);
-    if (typing->name)
-        free(typing->name);
-
-    free(typing);
-
-    channel->typings = new_typings;
-}
-
-void channel__typing_free_all(struct t_channel *channel)
-{
-    while (channel->typings)
-        channel__typing_free(channel, channel->typings);
-}
-
-int channel__typing_cb(const void *pointer,
-                       void *data,
-                       int remaining_calls)
-{
-    struct t_channel_typing *ptr_typing, *next_typing;
-    struct t_channel *channel;
+    weechat::channel *channel;
     const char *localvar;
     unsigned typecount;
     time_t now;
@@ -522,133 +347,69 @@ int channel__typing_cb(const void *pointer,
     if (!pointer)
         return WEECHAT_RC_ERROR;
 
-    channel = (struct t_channel *)pointer;
+    channel = (weechat::channel *)pointer;
 
     now = time(NULL);
 
     typecount = 0;
 
-    for (ptr_typing = channel->typings; ptr_typing;
-         ptr_typing = ptr_typing->next_typing)
+    for (auto ptr_typing = channel->typings.begin();
+         ptr_typing != channel->typings.end(); ptr_typing++)
     {
-        next_typing = ptr_typing->next_typing;
-
-        while (ptr_typing && now - ptr_typing->ts > 5)
+        if (now - ptr_typing->ts > 5)
         {
-            channel__typing_free(channel, ptr_typing);
-            ptr_typing = next_typing;
-            if (ptr_typing)
-                next_typing = ptr_typing->next_typing;
+            channel->typings.erase(ptr_typing);
         }
-
-        if (!ptr_typing)
-            break;
 
         typecount++;
     }
 
     localvar = weechat_buffer_get_string(channel->buffer, "localvar_typing");
     if (!localvar || strncmp(localvar, typecount > 0 ? "1" : "0", 1) != 0)
-        weechat_buffer_set(channel->buffer,
-                           "localvar_set_typing",
+        weechat_buffer_set(channel->buffer, "localvar_set_typing",
                            typecount > 0 ? "1" : "0");
     weechat_bar_item_update("typing");
 
     return WEECHAT_RC_OK;
 }
 
-struct t_channel_typing *channel__typing_search(struct t_channel *channel,
-                                                const char *id)
+weechat::channel::typing *weechat::channel::typing_search(const char *id)
 {
-    struct t_channel_typing *ptr_typing;
+    if (!id)
+        return nullptr;
 
-    if (!channel || !id)
-        return NULL;
-
-    for (ptr_typing = channel->typings; ptr_typing;
-         ptr_typing = ptr_typing->next_typing)
+    for (auto& ptr_typing : typings)
     {
-        if (weechat_strcasecmp(ptr_typing->id, id) == 0)
-            return ptr_typing;
+        if (weechat_strcasecmp(ptr_typing.id, id) == 0)
+            return &ptr_typing;
     }
 
-    return NULL;
+    return nullptr;
 }
 
-int channel__add_typing(struct t_channel *channel,
-                        struct t_user *user)
+int weechat::channel::add_typing(weechat::user *user)
 {
-    struct t_channel_typing *new_typing;
+    weechat::channel::typing *new_typing;
     int ret = 0;
 
-    new_typing = channel__typing_search(channel, user->id);
+    new_typing = weechat::channel::typing_search(user->id);
     if (!new_typing)
     {
-        new_typing = (struct t_channel_typing*)malloc(sizeof(*new_typing));
+        new_typing = (weechat::channel::typing*)malloc(sizeof(*new_typing));
         new_typing->id = strdup(user->id);
         new_typing->name = strdup(user->profile.display_name);
 
-        new_typing->prev_typing = channel->last_typing;
-        new_typing->next_typing = NULL;
-        if (channel->last_typing)
-            (channel->last_typing)->next_typing = new_typing;
-        else
-            channel->typings = new_typing;
-        channel->last_typing = new_typing;
-
         ret = 1;
     }
-    new_typing->ts = time(NULL);
+    new_typing->ts = time(nullptr);
 
-    channel__typing_cb(channel, NULL, 0);
+    weechat::channel::typing_cb(this, nullptr, 0);
 
     return ret;
 }
 
-void channel__self_typing_free(struct t_channel *channel,
-                               struct t_channel_typing *typing)
+int weechat::channel::self_typing_cb(const void *pointer, void *data, int remaining_calls)
 {
-    struct t_channel_typing *new_typings;
-
-    if (!channel || !typing)
-        return;
-
-    /* remove typing from typings list */
-    if (channel->last_self_typing == typing)
-        channel->last_self_typing = typing->prev_typing;
-    if (typing->prev_typing)
-    {
-        (typing->prev_typing)->next_typing = typing->next_typing;
-        new_typings = channel->self_typings;
-    }
-    else
-        new_typings = typing->next_typing;
-
-    if (typing->next_typing)
-        (typing->next_typing)->prev_typing = typing->prev_typing;
-
-    /* free typing data */
-    if (typing->name)
-        free(typing->name);
-
-    free(typing);
-
-    channel->self_typings = new_typings;
-}
-
-void channel__self_typing_free_all(struct t_channel *channel)
-{
-    while (channel->self_typings)
-        channel__self_typing_free(channel, channel->self_typings);
-}
-
-int channel__self_typing_cb(const void *pointer,
-                            void *data,
-                            int remaining_calls)
-{
-    struct t_channel_typing *ptr_typing, *next_typing;
-    struct t_account *account;
-    struct t_channel *channel;
     time_t now;
 
     (void) data;
@@ -657,299 +418,128 @@ int channel__self_typing_cb(const void *pointer,
     if (!pointer)
         return WEECHAT_RC_ERROR;
 
-    channel = (struct t_channel *)pointer;
-    account = channel__account(channel);
+    weechat::channel *channel = (weechat::channel *)pointer;
 
     now = time(NULL);
 
-    for (ptr_typing = channel->self_typings; ptr_typing;
-         ptr_typing = ptr_typing->next_typing)
+    for (auto ptr_typing = channel->self_typings.begin();
+         ptr_typing != channel->self_typings.end(); ptr_typing++)
     {
-        next_typing = ptr_typing->next_typing;
-
-        while (ptr_typing && now - ptr_typing->ts > 10)
+        if (now - ptr_typing->ts > 10)
         {
-            channel__send_paused(account, channel, ptr_typing->user);
-            channel__self_typing_free(channel, ptr_typing);
-            ptr_typing = next_typing;
-            if (ptr_typing)
-                next_typing = ptr_typing->next_typing;
+            channel->send_paused(ptr_typing->user);
+            channel->self_typings.erase(ptr_typing);
         }
-
-        if (!ptr_typing)
-            break;
     }
 
     return WEECHAT_RC_OK;
 }
 
-struct t_channel_typing *channel__self_typing_search(struct t_channel *channel,
-                                                     struct t_user *user)
+weechat::channel::typing *weechat::channel::self_typing_search(weechat::user *user)
 {
-    struct t_channel_typing *ptr_typing;
-
-    if (!channel)
-        return NULL;
-
-    for (ptr_typing = channel->self_typings; ptr_typing;
-         ptr_typing = ptr_typing->next_typing)
+    for (auto& ptr_typing : typings)
     {
-        if (user == ptr_typing->user)
-            return ptr_typing;
+        if (user == ptr_typing.user)
+            return &ptr_typing;
     }
 
-    return NULL;
+    return nullptr;
 }
 
-int channel__add_self_typing(struct t_channel *channel,
-                             struct t_user *user)
+int weechat::channel::add_self_typing(weechat::user *user)
 {
-    struct t_channel_typing *new_typing;
+    weechat::channel::typing *new_typing;
     int ret = 0;
 
-    new_typing = channel__self_typing_search(channel, user);
+    new_typing = self_typing_search(user);
     if (!new_typing)
     {
-        new_typing = (struct t_channel_typing*)malloc(sizeof(*new_typing));
+        new_typing = (weechat::channel::typing*)malloc(sizeof(*new_typing));
         new_typing->user = user;
         new_typing->name = user ? strdup(user->profile.display_name) : NULL;
-
-        new_typing->prev_typing = channel->last_self_typing;
-        new_typing->next_typing = NULL;
-        new_typing->ts = time(NULL);
-        if (channel->last_self_typing)
-            (channel->last_self_typing)->next_typing = new_typing;
-        else
-            channel->self_typings = new_typing;
-        channel->last_self_typing = new_typing;
 
         ret = 1;
     }
 
-    channel__self_typing_cb(channel, NULL, 0);
+    self_typing_cb(this, nullptr, 0);
 
     return ret;
 }
 
-void channel__unread_free(struct t_channel_unread *unread)
+weechat::channel::~channel()
 {
-    if (!unread)
-        return;
+    if (typing_hook_timer)
+        weechat_unhook(typing_hook_timer);
+    if (self_typing_hook_timer)
+        weechat_unhook(self_typing_hook_timer);
 
-    if (unread->id)
-        free(unread->id);
-    if (unread->thread)
-        free(unread->thread);
-    free(unread);
+    if (members_speaking[0])
+        weechat_list_free(members_speaking[0]);
+    if (members_speaking[1])
+        weechat_list_free(members_speaking[1]);
 }
 
-void channel__unread_free_all(struct t_channel *channel)
+void weechat::channel::update_topic(const char* topic, const char* creator, int last_set)
 {
-    if (channel->unreads)
-    {
-        int list_size = weechat_list_size(channel->unreads);
+    if (this->topic.value)
+        ::free(this->topic.value);
+    if (this->topic.creator)
+        ::free(this->topic.creator);
+    this->topic.value = (topic) ? strdup(topic) : NULL;
+    this->topic.creator = (creator) ? strdup(creator) : NULL;
+    this->topic.last_set = last_set;
 
-        for (int i = 0; i < list_size; i++)
-        {
-            struct t_weelist_item *ptr_item = weechat_list_get(channel->unreads, i);
-            if (ptr_item)
-            {
-                struct t_channel_unread *unread = (struct t_channel_unread *)weechat_list_user_data(ptr_item);
-
-                channel__unread_free(unread);
-
-                weechat_list_remove(channel->unreads, ptr_item);
-            }
-        }
-
-        weechat_list_free(channel->unreads);
-    }
-}
-
-void channel__member_free(struct t_channel *channel,
-                          struct t_channel_member *member)
-{
-    struct t_channel_member *new_members;
-
-    if (!channel || !member)
-        return;
-
-    /* remove member from members list */
-    if (channel->last_member == member)
-        channel->last_member = member->prev_member;
-    if (member->prev_member)
-    {
-        (member->prev_member)->next_member = member->next_member;
-        new_members = channel->members;
-    }
+    if (this->topic.value)
+        weechat_buffer_set(buffer, "title", topic);
     else
-        new_members = member->next_member;
-
-    if (member->next_member)
-        (member->next_member)->prev_member = member->prev_member;
-
-    /* free member data */
-    if (member->id)
-        free(member->id);
-    if (member->role)
-        free(member->role);
-    if (member->affiliation)
-        free(member->affiliation);
-
-    free(member);
-
-    channel->members = new_members;
+        weechat_buffer_set(buffer, "title", "");
 }
 
-void channel__member_free_all(struct t_channel *channel)
-{
-    while (channel->members)
-        channel__member_free(channel, channel->members);
-}
-
-void channel__free(struct t_account *account,
-                   struct t_channel *channel)
-{
-    struct t_channel *new_channels;
-
-    if (!account || !channel)
-        return;
-
-    /* remove channel from channels list */
-    if (account->last_channel == channel)
-        account->last_channel = channel->prev_channel;
-    if (channel->prev_channel)
-    {
-        (channel->prev_channel)->next_channel = channel->next_channel;
-        new_channels = account->channels;
-    }
-    else
-        new_channels = channel->next_channel;
-
-    if (channel->next_channel)
-        (channel->next_channel)->prev_channel = channel->prev_channel;
-
-    /* free hooks */
-    if (channel->typing_hook_timer)
-        weechat_unhook(channel->typing_hook_timer);
-    if (channel->self_typing_hook_timer)
-        weechat_unhook(channel->self_typing_hook_timer);
-
-    /* free linked lists */
-    channel__self_typing_free_all(channel);
-    channel__typing_free_all(channel);
-    channel__member_free_all(channel);
-    channel__unread_free_all(channel);
-
-    /* free channel data */
-    if (channel->id)
-        free(channel->id);
-    if (channel->name)
-        free(channel->name);
-    if (channel->pgp.ids)
-    {
-        delete channel->pgp.ids;
-        channel->pgp.ids = nullptr;
-    }
-    if (channel->topic.value)
-        free(channel->topic.value);
-    if (channel->topic.creator)
-        free(channel->topic.creator);
-    if (channel->creator)
-        free(channel->creator);
-    if (channel->members_speaking[0])
-        weechat_list_free(channel->members_speaking[0]);
-    if (channel->members_speaking[1])
-        weechat_list_free(channel->members_speaking[1]);
-    if (channel->buffer_as_string)
-        free(channel->buffer_as_string);
-
-    free(channel);
-
-    account->channels = new_channels;
-}
-
-void channel__free_all(struct t_account *account)
-{
-    while (account->channels)
-        channel__free(account, account->channels);
-}
-
-void channel__update_topic(struct t_channel *channel,
-                           const char* topic,
-                           const char* creator,
-                           int last_set)
-{
-    if (channel->topic.value)
-        free(channel->topic.value);
-    if (channel->topic.creator)
-        free(channel->topic.creator);
-    channel->topic.value = (topic) ? strdup(topic) : NULL;
-    channel->topic.creator = (creator) ? strdup(creator) : NULL;
-    channel->topic.last_set = last_set;
-
-    if (channel->topic.value)
-        weechat_buffer_set(channel->buffer, "title", topic);
-    else
-        weechat_buffer_set(channel->buffer, "title", "");
-}
-
-void channel__update_name(struct t_channel *channel,
-                          const char* name)
+void weechat::channel::update_name(const char* name)
 {
     if (name)
-        weechat_buffer_set(channel->buffer, "short_name", name);
+        weechat_buffer_set(buffer, "short_name", name);
     else
-        weechat_buffer_set(channel->buffer, "short_name", "");
+        weechat_buffer_set(buffer, "short_name", "");
 }
 
-struct t_channel_member *channel__add_member(struct t_account *account,
-                                             struct t_channel *channel,
-                                             const char *id, const char *client)
+weechat::channel::member *weechat::channel::add_member(const char *id, const char *client)
 {
-    struct t_channel_member *member;
-    struct t_user *user;
+    weechat::channel::member *member;
+    weechat::user *user;
 
-    user = user__search(account, id);
+    user = user::search(&account, id);
 
-    if (user && weechat_strcasecmp(user->id, channel->id) == 0
-        && channel->type == CHANNEL_TYPE_MUC)
+    if (user && weechat_strcasecmp(user->id, id) == 0
+        && type == weechat::channel::chat_type::MUC)
     {
-        weechat_printf_date_tags(channel->buffer, 0, "log2", "%sMUC: %s",
-                                 weechat_prefix("network"),
-                                 id);
-        return NULL;
+        weechat_printf_date_tags(buffer, 0, "log2", "%sMUC: %s",
+                                 weechat_prefix("network"), id);
+        return nullptr;
     }
 
-    if (!(member = channel__member_search(channel, id)))
+    if (!(member = member_search(id)))
     {
-        member = (struct t_channel_member*)malloc(sizeof(struct t_channel_member));
+        member = (weechat::channel::member*)malloc(sizeof(weechat::channel::member));
         member->id = strdup(id);
 
         member->role = NULL;
         member->affiliation = NULL;
-
-        member->prev_member = channel->last_member;
-        member->next_member = NULL;
-        if (channel->last_member)
-            (channel->last_member)->next_member = member;
-        else
-            channel->members = member;
-        channel->last_member = member;
     }
     else if (user)
-        user__nicklist_remove(account, channel, user);
+        user->nicklist_remove(&account, this);
 
     if (user)
-        user__nicklist_add(account, channel, user);
+        user->nicklist_add(&account, this);
+    else return member; // TODO: !!
 
-    char *jid_bare = xmpp_jid_bare(account->context, user->id);
-    char *jid_resource = xmpp_jid_resource(account->context, user->id);
-    if (weechat_strcasecmp(jid_bare, channel->id) == 0
-             && channel->type == CHANNEL_TYPE_MUC)
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s%s%s%s %s%s%s%s %s%s%s%s%s%s%s%s%s%s%s%s%s%s",
+    char *jid_bare = xmpp_jid_bare(account.context, user->id);
+    char *jid_resource = xmpp_jid_resource(account.context, user->id);
+    if (weechat_strcasecmp(jid_bare, id) == 0
+             && type == weechat::channel::chat_type::MUC)
+        weechat_printf_date_tags(buffer, 0, "xmpp_presence,enter,log4", "%s%s%s%s%s %s%s%s%s %s%s%s%s%s%s%s%s%s%s%s%s%s%s",
                                  weechat_prefix("join"),
-                                 user__as_prefix_raw(account, jid_resource),
+                                 user->as_prefix_raw(),
                                  client ? " (" : "",
                                  client ? client : "",
                                  client ? ")" : "",
@@ -957,7 +547,7 @@ struct t_channel_member *channel__add_member(struct t_account *account,
                                  weechat_color("irc.color.message_join"),
                                  user->profile.status ? user->profile.status : (user->profile.idle ? "idle" : "entered"),
                                  weechat_color("reset"),
-                                 channel->id,
+                                 id,
                                  user->profile.status_text ? " [" : "",
                                  user->profile.status_text ? user->profile.status_text : "",
                                  user->profile.status_text ? "]" : "",
@@ -970,10 +560,10 @@ struct t_channel_member *channel__add_member(struct t_account *account,
                                  user->profile.pgp_id ? user->profile.pgp_id : "",
                                  user->profile.pgp_id ? weechat_color("reset") : "");
     else
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,enter,log4", "%s%s (%s) %s%s%s%s %s%s%s%s%s%s%s%s%s",
+        weechat_printf_date_tags(buffer, 0, "xmpp_presence,enter,log4", "%s%s (%s) %s%s%s%s %s%s%s%s%s%s%s%s%s",
                                  weechat_prefix("join"),
-                                 jid_resource ? user__as_prefix_raw(account, jid_bare) : "You",
-                                 jid_resource ? jid_resource : user__as_prefix_raw(account, jid_bare),
+                                 jid_resource ? user->as_prefix_raw() : "You",
+                                 jid_resource ? jid_resource : user->as_prefix_raw(),
                                  user->profile.status ? "is " : "",
                                  weechat_color("irc.color.message_join"),
                                  user->profile.status ? user->profile.status : (user->profile.idle ? "idle" : "entered"),
@@ -994,60 +584,54 @@ struct t_channel_member *channel__add_member(struct t_account *account,
     return member;
 }
 
-struct t_channel_member *channel__member_search(struct t_channel *channel,
-                                                const char *id)
+weechat::channel::member *weechat::channel::member_search(const char *id)
 {
-    struct t_channel_member *ptr_member;
+    if (!id)
+        return nullptr;
 
-    if (!channel || !id)
-        return NULL;
-
-    for (ptr_member = channel->members; ptr_member;
-         ptr_member = ptr_member->next_member)
+    for (auto& ptr_member : members)
     {
-        if (weechat_strcasecmp(ptr_member->id, id) == 0)
-            return ptr_member;
+        if (weechat_strcasecmp(ptr_member.second.id, id) == 0)
+            return &ptr_member.second;
     }
 
-    return NULL;
+    return nullptr;
 }
 
-struct t_channel_member *channel__remove_member(struct t_account *account,
-                                                struct t_channel *channel,
-                                                const char *id, const char *reason)
+weechat::channel::member *weechat::channel::remove_member(const char *id, const char *reason)
 {
-    struct t_channel_member *member;
-    struct t_user *user;
+    weechat::channel::member *member;
+    weechat::user *user;
 
-    user = user__search(account, id);
+    user = user::search(&account, id);
     if (user)
-        user__nicklist_remove(account, channel, user);
+        user->nicklist_remove(&account, this);
 
-    member = channel__member_search(channel, id);
-    if (member)
-        channel__member_free(channel, member);
+    member = member_search(id);
 
-    char *jid_bare = xmpp_jid_bare(account->context, user->id);
-    char *jid_resource = xmpp_jid_resource(account->context, user->id);
-    if (weechat_strcasecmp(jid_bare, channel->id) == 0
-        && channel->type == CHANNEL_TYPE_MUC)
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,leave,log4", "%s%s %sleft%s %s %s%s%s",
+    char *jid_bare = xmpp_jid_bare(account.context, user->id);
+    char *jid_resource = xmpp_jid_resource(account.context, user->id);
+    if (weechat_strcasecmp(jid_bare, id) == 0
+        && type == weechat::channel::chat_type::MUC)
+        weechat_printf_date_tags(buffer, 0, "xmpp_presence,leave,log4",
+                                 "%s%s %sleft%s %s %s%s%s",
                                  weechat_prefix("quit"),
                                  jid_resource,
                                  weechat_color("irc.color.message_quit"),
                                  weechat_color("reset"),
-                                 channel->id,
+                                 id,
                                  reason ? "[" : "",
                                  reason ? reason : "",
                                  reason ? "]" : "");
     else
-        weechat_printf_date_tags(channel->buffer, 0, "xmpp_presence,leave,log4", "%s%s (%s) %sleft%s %s %s%s%s",
+        weechat_printf_date_tags(buffer, 0, "xmpp_presence,leave,log4",
+                                 "%s%s (%s) %sleft%s %s %s%s%s",
                                  weechat_prefix("quit"),
-                                 xmpp_jid_bare(account->context, user->id),
-                                 xmpp_jid_resource(account->context, user->id),
+                                 xmpp_jid_bare(account.context, user->id),
+                                 xmpp_jid_resource(account.context, user->id),
                                  weechat_color("irc.color.message_quit"),
                                  weechat_color("reset"),
-                                 channel->id,
+                                 id,
                                  reason ? "[" : "",
                                  reason ? reason : "",
                                  reason ? "]" : "");
@@ -1055,30 +639,29 @@ struct t_channel_member *channel__remove_member(struct t_account *account,
     return member;
 }
 
-int channel__send_message(struct t_account *account, struct t_channel *channel,
-                          std::string to, std::string body,
-                          tl::optional<std::string> oob = {})
+int weechat::channel::send_message(std::string to, std::string body,
+                                   tl::optional<std::string> oob)
 {
-    xmpp_stanza_t *message = xmpp_message_new(account->context,
-                    channel->type == CHANNEL_TYPE_MUC
+    xmpp_stanza_t *message = xmpp_message_new(account.context,
+                    type == weechat::channel::chat_type::MUC
                     ? "groupchat" : "chat",
                     to.data(), NULL);
 
-    char *id = xmpp_uuid_gen(account->context);
+    char *id = xmpp_uuid_gen(account.context);
     xmpp_stanza_set_id(message, id);
-    xmpp_free(account->context, id);
+    xmpp_free(account.context, id);
     xmpp_message_set_body(message, body.data());
 
     if (oob)
     {
-        xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
+        xmpp_stanza_t *message__x = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(message__x, "x");
         xmpp_stanza_set_ns(message__x, "jabber:x:oob");
 
-        xmpp_stanza_t *message__x__url = xmpp_stanza_new(account->context);
+        xmpp_stanza_t *message__x__url = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(message__x__url, "url");
 
-        xmpp_stanza_t *message__x__url__text = xmpp_stanza_new(account->context);
+        xmpp_stanza_t *message__x__url__text = xmpp_stanza_new(account.context);
         xmpp_stanza_set_text(message__x__url__text, oob->data());
         xmpp_stanza_add_child(message__x__url, message__x__url__text);
         xmpp_stanza_release(message__x__url__text);
@@ -1090,71 +673,70 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
         xmpp_stanza_release(message__x);
     }
 
-    xmpp_stanza_t *message__active = xmpp_stanza_new(account->context);
+    xmpp_stanza_t *message__active = xmpp_stanza_new(account.context);
     xmpp_stanza_set_name(message__active, "active");
     xmpp_stanza_set_ns(message__active, "http://jabber.org/protocol/chatstates");
     xmpp_stanza_add_child(message, message__active);
     xmpp_stanza_release(message__active);
 
-    xmpp_stanza_t *message__request = xmpp_stanza_new(account->context);
+    xmpp_stanza_t *message__request = xmpp_stanza_new(account.context);
     xmpp_stanza_set_name(message__request, "request");
     xmpp_stanza_set_ns(message__request, "urn:xmpp:receipts");
     xmpp_stanza_add_child(message, message__request);
     xmpp_stanza_release(message__request);
 
-    xmpp_stanza_t *message__markable = xmpp_stanza_new(account->context);
+    xmpp_stanza_t *message__markable = xmpp_stanza_new(account.context);
     xmpp_stanza_set_name(message__markable, "markable");
     xmpp_stanza_set_ns(message__markable, "urn:xmpp:chat-markers:0");
     xmpp_stanza_add_child(message, message__markable);
     xmpp_stanza_release(message__markable);
 
-    xmpp_stanza_t *message__store = xmpp_stanza_new(account->context);
+    xmpp_stanza_t *message__store = xmpp_stanza_new(account.context);
     xmpp_stanza_set_name(message__store, "store");
     xmpp_stanza_set_ns(message__store, "urn:xmpp:hints");
     xmpp_stanza_add_child(message, message__store);
     xmpp_stanza_release(message__store);
 
-    xmpp_send(account->connection, message);
+    xmpp_send(account.connection, message);
     xmpp_stanza_release(message);
-    if (channel->type != CHANNEL_TYPE_MUC)
-        weechat_printf_date_tags(channel->buffer, 0,
+    if (type != weechat::channel::chat_type::MUC)
+        weechat_printf_date_tags(buffer, 0,
                                  "xmpp_message,message,private,notify_none,self_msg,log1",
                                  "%s\t%s",
-                                 user__as_prefix_raw(account, account_jid(account)),
+                                 user::search(&account, account.jid().data())->as_prefix_raw().data(),
                                  body.data());
 
     return WEECHAT_RC_OK;
 }
 
-int channel__send_message(struct t_account *account, struct t_channel *channel,
-                          const char *to, const char *body)
+int weechat::channel::send_message(const char *to, const char *body)
 {
-    channel__send_reads(account, channel);
+    send_reads();
 
-    xmpp_stanza_t *message = xmpp_message_new(account->context,
-                    channel->type == CHANNEL_TYPE_MUC
+    xmpp_stanza_t *message = xmpp_message_new(account.context,
+                    type == weechat::channel::chat_type::MUC
                     ? "groupchat" : "chat",
                     to, NULL);
 
-    char *id = xmpp_uuid_gen(account->context);
+    char *id = xmpp_uuid_gen(account.context);
     xmpp_stanza_set_id(message, id);
-    xmpp_free(account->context, id);
+    xmpp_free(account.context, id);
 
-    if (account->omemo && channel->omemo.enabled)
+    if (account.omemo && omemo.enabled)
     {
-        xmpp_stanza_t *encrypted = account->omemo.encode(account, to, body);
+        xmpp_stanza_t *encrypted = account.omemo.encode(&account, to, body);
         if (!encrypted)
         {
-            weechat_printf_date_tags(channel->buffer, 0, "notify_none", "%s%s",
+            weechat_printf_date_tags(buffer, 0, "notify_none", "%s%s",
                                      weechat_prefix("error"), "OMEMO Encryption Error");
-            channel__set_transport(channel, CHANNEL_TRANSPORT_PLAIN, 1);
+            set_transport(weechat::channel::transport::PLAIN, 1);
             xmpp_stanza_release(message);
             return WEECHAT_RC_ERROR;
         }
         xmpp_stanza_add_child(message, encrypted);
         xmpp_stanza_release(encrypted);
 
-        xmpp_stanza_t *message__encryption = xmpp_stanza_new(account->context);
+        xmpp_stanza_t *message__encryption = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(message__encryption, "encryption");
         xmpp_stanza_set_ns(message__encryption, "urn:xmpp:eme:0");
         xmpp_stanza_set_attribute(message__encryption, "namespace",
@@ -1165,27 +747,27 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
 
         xmpp_message_set_body(message, OMEMO_ADVICE);
 
-        channel__set_transport(channel, CHANNEL_TRANSPORT_OMEMO, 0);
+        set_transport(weechat::channel::transport::OMEMO, 0);
     }
-    else if (channel->pgp.enabled && channel->pgp.ids)
+    else if (pgp.enabled && !pgp.ids.empty())
     {
-        xmpp_stanza_t *message__x = xmpp_stanza_new(account->context);
+        xmpp_stanza_t *message__x = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(message__x, "x");
         xmpp_stanza_set_ns(message__x, "jabber:x:encrypted");
 
-        xmpp_stanza_t *message__x__text = xmpp_stanza_new(account->context);
-        char *ciphertext = pgp__encrypt(channel->buffer, account->pgp, account_pgp_keyid(account), std::vector(channel->pgp.ids->begin(), channel->pgp.ids->end()), body);
+        xmpp_stanza_t *message__x__text = xmpp_stanza_new(account.context);
+        char *ciphertext = account.pgp.encrypt(buffer, account.pgp_keyid().data(), std::vector(pgp.ids.begin(), pgp.ids.end()), body);
         if (ciphertext)
             xmpp_stanza_set_text(message__x__text, ciphertext);
         else
         {
-            weechat_printf_date_tags(channel->buffer, 0, "notify_none", "%s%s",
+            weechat_printf_date_tags(buffer, 0, "notify_none", "%s%s",
                                      weechat_prefix("error"), "PGP Error");
-            channel__set_transport(channel, CHANNEL_TRANSPORT_PLAIN, 1);
+            set_transport(weechat::channel::transport::PLAIN, 1);
             xmpp_stanza_release(message);
             return WEECHAT_RC_ERROR;
         }
-        free(ciphertext);
+        ::free(ciphertext);
 
         xmpp_stanza_add_child(message__x, message__x__text);
         xmpp_stanza_release(message__x__text);
@@ -1193,7 +775,7 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
         xmpp_stanza_add_child(message, message__x);
         xmpp_stanza_release(message__x);
 
-        xmpp_stanza_t *message__encryption = xmpp_stanza_new(account->context);
+        xmpp_stanza_t *message__encryption = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(message__encryption, "encryption");
         xmpp_stanza_set_ns(message__encryption, "urn:xmpp:eme:0");
         xmpp_stanza_set_attribute(message__encryption, "namespace", "jabber:x:encryption");
@@ -1201,20 +783,20 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
         xmpp_stanza_add_child(message, message__encryption);
         xmpp_stanza_release(message__encryption);
 
-        xmpp_message_set_body(message, PGP_ADVICE);
+        xmpp_message_set_body(message, weechat::xmpp::PGP_ADVICE);
 
-        channel__set_transport(channel, CHANNEL_TRANSPORT_PGP, 0);
+        set_transport(weechat::channel::transport::PGP, 0);
     }
     else
     {
         xmpp_message_set_body(message, body);
 
-        channel__set_transport(channel, CHANNEL_TRANSPORT_PLAIN, 0);
+        set_transport(weechat::channel::transport::PLAIN, 0);
     }
 
     static const std::regex pattern("https?:[^ ]*");
     std::cmatch match;
-    if (channel->transport == CHANNEL_TRANSPORT_PLAIN &&
+    if (transport == weechat::channel::transport::PLAIN &&
             std::regex_search(body, match, pattern)
             && match[0].matched && !match.prefix().length())
     {
@@ -1230,13 +812,12 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
             auto command = "url:" + url;
             const int timeout = 30000;
             struct message_task {
-                struct t_account *account;
-                struct t_channel *channel;
+                weechat::channel& channel;
                 std::string to;
                 std::string body;
                 std::string url;
             };
-            auto *task = new message_task { account, channel, to, body, url };
+            auto *task = new message_task { *this, to, body, url };
             auto callback = [](const void *pointer, void *,
                     const char *, int ret, const char *out, const char *err) {
                 auto task = static_cast<const message_task*>(pointer);
@@ -1257,25 +838,22 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
                     }
                     if (mime.starts_with("image") || mime.starts_with("video"))
                     {
-                        weechat_printf_date_tags(task->channel->buffer, 0,
+                        weechat_printf_date_tags(task->channel.buffer, 0,
                                 "notify_none,no_log", "[oob]\t%s%s",
                                 weechat_color("gray"), mime.data());
-                        channel__send_message(task->account, task->channel,
-                                task->to, task->body, { task->url });
+                        task->channel.send_message(task->to, task->body, { task->url });
                     }
                     else
                     {
-                        weechat_printf_date_tags(task->channel->buffer, 0,
+                        weechat_printf_date_tags(task->channel.buffer, 0,
                                 "notify_none,no_log", "[curl]\t%s%s",
                                 weechat_color("red"), err);
-                        channel__send_message(task->account, task->channel,
-                                task->to, task->body);
+                        task->channel.send_message(task->to.data(), task->body.data());
                     }
                 }
                 else
                 {
-                    channel__send_message(task->account, task->channel,
-                            task->to, task->body);
+                    task->channel.send_message(task->to.data(), task->body.data());
                 }
 
                 delete task;
@@ -1290,143 +868,130 @@ int channel__send_message(struct t_account *account, struct t_channel *channel,
         } while(0);
     }
 
-    xmpp_stanza_t *message__active = xmpp_stanza_new(account->context);
+    xmpp_stanza_t *message__active = xmpp_stanza_new(account.context);
     xmpp_stanza_set_name(message__active, "active");
     xmpp_stanza_set_ns(message__active, "http://jabber.org/protocol/chatstates");
     xmpp_stanza_add_child(message, message__active);
     xmpp_stanza_release(message__active);
 
-    xmpp_stanza_t *message__request = xmpp_stanza_new(account->context);
+    xmpp_stanza_t *message__request = xmpp_stanza_new(account.context);
     xmpp_stanza_set_name(message__request, "request");
     xmpp_stanza_set_ns(message__request, "urn:xmpp:receipts");
     xmpp_stanza_add_child(message, message__request);
     xmpp_stanza_release(message__request);
 
-    xmpp_stanza_t *message__markable = xmpp_stanza_new(account->context);
+    xmpp_stanza_t *message__markable = xmpp_stanza_new(account.context);
     xmpp_stanza_set_name(message__markable, "markable");
     xmpp_stanza_set_ns(message__markable, "urn:xmpp:chat-markers:0");
     xmpp_stanza_add_child(message, message__markable);
     xmpp_stanza_release(message__markable);
 
-    xmpp_stanza_t *message__store = xmpp_stanza_new(account->context);
+    xmpp_stanza_t *message__store = xmpp_stanza_new(account.context);
     xmpp_stanza_set_name(message__store, "store");
     xmpp_stanza_set_ns(message__store, "urn:xmpp:hints");
     xmpp_stanza_add_child(message, message__store);
     xmpp_stanza_release(message__store);
 
-    xmpp_send(account->connection, message);
+    xmpp_send(account.connection, message);
     xmpp_stanza_release(message);
-    if (channel->type != CHANNEL_TYPE_MUC)
-        weechat_printf_date_tags(channel->buffer, 0,
+    if (type != weechat::channel::chat_type::MUC)
+        weechat_printf_date_tags(buffer, 0,
                                  "xmpp_message,message,private,notify_none,self_msg,log1",
                                  "%s\t%s",
-                                 user__as_prefix_raw(account, account_jid(account)),
+                                 user::search(&account, account.jid().data())->as_prefix_raw().data(),
                                  body);
 
     return WEECHAT_RC_OK;
 }
 
-void channel__send_reads(struct t_account *account, struct t_channel *channel)
+void weechat::channel::send_reads()
 {
-    if (channel && channel->unreads)
+    auto i = std::begin(unreads);
+
+    while (i != std::end(unreads))
     {
-        int list_size = weechat_list_size(channel->unreads);
+        auto* unread = &*i;
 
-        for (int i = 0; i < list_size; i++)
+        xmpp_stanza_t *message = xmpp_message_new(account.context, NULL,
+                                                    id.data(), NULL);
+
+        xmpp_stanza_t *message__displayed = xmpp_stanza_new(account.context);
+        xmpp_stanza_set_name(message__displayed, "displayed");
+        xmpp_stanza_set_ns(message__displayed, "urn:xmpp:chat-markers:0");
+        xmpp_stanza_set_id(message__displayed, unread->id);
+        if (unread->thread)
         {
-            struct t_weelist_item *ptr_item = weechat_list_get(channel->unreads, 0);
-            if (ptr_item)
-            {
-                const char *unread_id = weechat_list_string(ptr_item);
-                struct t_channel_unread *unread = (struct t_channel_unread*)weechat_list_user_data(ptr_item);
+            xmpp_stanza_t *message__thread = xmpp_stanza_new(account.context);
+            xmpp_stanza_set_name(message__thread, "thread");
 
-                xmpp_stanza_t *message = xmpp_message_new(account->context, NULL,
-                                                          channel->id, NULL);
+            xmpp_stanza_t *message__thread__text = xmpp_stanza_new(account.context);
+            xmpp_stanza_set_text(message__thread__text, unread->thread);
+            xmpp_stanza_add_child(message__thread, message__thread__text);
+            xmpp_stanza_release(message__thread__text);
 
-                xmpp_stanza_t *message__displayed = xmpp_stanza_new(account->context);
-                xmpp_stanza_set_name(message__displayed, "displayed");
-                xmpp_stanza_set_ns(message__displayed, "urn:xmpp:chat-markers:0");
-                xmpp_stanza_set_id(message__displayed, unread->id ? unread->id : unread_id);
-                if (unread->thread)
-                {
-                    xmpp_stanza_t *message__thread = xmpp_stanza_new(account->context);
-                    xmpp_stanza_set_name(message__thread, "thread");
-
-                    xmpp_stanza_t *message__thread__text = xmpp_stanza_new(account->context);
-                    xmpp_stanza_set_text(message__thread__text, unread->thread);
-                    xmpp_stanza_add_child(message__thread, message__thread__text);
-                    xmpp_stanza_release(message__thread__text);
-
-                    xmpp_stanza_add_child(message, message__thread);
-                    xmpp_stanza_release(message__thread);
-                }
-
-                xmpp_stanza_add_child(message, message__displayed);
-                xmpp_stanza_release(message__displayed);
-
-                xmpp_send(account->connection, message);
-                xmpp_stanza_release(message);
-
-                channel__unread_free(unread);
-
-                weechat_list_remove(channel->unreads, ptr_item);
-            }
+            xmpp_stanza_add_child(message, message__thread);
+            xmpp_stanza_release(message__thread);
         }
+
+        xmpp_stanza_add_child(message, message__displayed);
+        xmpp_stanza_release(message__displayed);
+
+        xmpp_send(account.connection, message);
+        xmpp_stanza_release(message);
+
+        i = unreads.erase(i);
     }
 }
 
-void channel__send_typing(struct t_account *account, struct t_channel *channel,
-                          struct t_user *user)
+void weechat::channel::send_typing(weechat::user *user)
 {
-    if (channel__add_self_typing(channel, user))
+    if (add_self_typing(user))
     {
-        xmpp_stanza_t *message = xmpp_message_new(account->context,
-                                                  channel->type == CHANNEL_TYPE_MUC
+        xmpp_stanza_t *message = xmpp_message_new(account.context,
+                                                  type == weechat::channel::chat_type::MUC
                                                   ? "groupchat" : "chat",
-                                                  user ? user->id : channel->id, NULL);
+                                                  (user ? user->id : id).data(), NULL);
 
-        xmpp_stanza_t *message__composing = xmpp_stanza_new(account->context);
+        xmpp_stanza_t *message__composing = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(message__composing, "composing");
         xmpp_stanza_set_ns(message__composing, "http://jabber.org/protocol/chatstates");
 
         xmpp_stanza_add_child(message, message__composing);
         xmpp_stanza_release(message__composing);
 
-        xmpp_send(account->connection, message);
+        xmpp_send(account.connection, message);
         xmpp_stanza_release(message);
     }
 }
 
-void channel__send_paused(struct t_account *account, struct t_channel *channel,
-                          struct t_user *user)
+void weechat::channel::send_paused(weechat::user *user)
 {
-    xmpp_stanza_t *message = xmpp_message_new(account->context,
-                                              channel->type == CHANNEL_TYPE_MUC
+    xmpp_stanza_t *message = xmpp_message_new(account.context,
+                                              type == weechat::channel::chat_type::MUC
                                               ? "groupchat" : "chat",
-                                              user ? user->id : channel->id, NULL);
+                                              (user ? user->id : id).data(), NULL);
 
-    xmpp_stanza_t *message__paused = xmpp_stanza_new(account->context);
+    xmpp_stanza_t *message__paused = xmpp_stanza_new(account.context);
     xmpp_stanza_set_name(message__paused, "paused");
     xmpp_stanza_set_ns(message__paused, "http://jabber.org/protocol/chatstates");
 
     xmpp_stanza_add_child(message, message__paused);
     xmpp_stanza_release(message__paused);
 
-    xmpp_send(account->connection, message);
+    xmpp_send(account.connection, message);
     xmpp_stanza_release(message);
 }
 
-void channel__fetch_mam(struct t_account *account, struct t_channel *channel,
-                        const char *id, time_t *start, time_t *end, const char* after)
+void weechat::channel::fetch_mam(const char *id, time_t *start, time_t *end, const char* after)
 {
-    xmpp_stanza_t *iq = xmpp_iq_new(account->context, "set", "juliet1");
-    xmpp_stanza_set_id(iq, id ? id : xmpp_uuid_gen(account->context));
+    xmpp_stanza_t *iq = xmpp_iq_new(account.context, "set", "juliet1");
+    xmpp_stanza_set_id(iq, id ? id : xmpp_uuid_gen(account.context));
 
-    xmpp_stanza_t *query = xmpp_stanza_new(account->context);
+    xmpp_stanza_t *query = xmpp_stanza_new(account.context);
     xmpp_stanza_set_name(query, "query");
     xmpp_stanza_set_ns(query, "urn:xmpp:mam:2");
 
-    xmpp_stanza_t *x = xmpp_stanza_new(account->context);
+    xmpp_stanza_t *x = xmpp_stanza_new(account.context);
     xmpp_stanza_set_name(x, "x");
     xmpp_stanza_set_ns(x, "jabber:x:data");
     xmpp_stanza_set_attribute(x, "type", "result");
@@ -1434,15 +999,15 @@ void channel__fetch_mam(struct t_account *account, struct t_channel *channel,
     xmpp_stanza_t *field, *value, *text;
 
     {
-        field = xmpp_stanza_new(account->context);
+        field = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(field, "field");
         xmpp_stanza_set_attribute(field, "var", "FORM_TYPE");
         xmpp_stanza_set_attribute(field, "type", "hidden");
 
-        value = xmpp_stanza_new(account->context);
+        value = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(value, "value");
 
-        text = xmpp_stanza_new(account->context);
+        text = xmpp_stanza_new(account.context);
         xmpp_stanza_set_text(text, "urn:xmpp:mam:2");
         xmpp_stanza_add_child(value, text);
         xmpp_stanza_release(text);
@@ -1455,15 +1020,15 @@ void channel__fetch_mam(struct t_account *account, struct t_channel *channel,
     }
 
     {
-        field = xmpp_stanza_new(account->context);
+        field = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(field, "field");
         xmpp_stanza_set_attribute(field, "var", "with");
 
-        value = xmpp_stanza_new(account->context);
+        value = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(value, "value");
 
-        text = xmpp_stanza_new(account->context);
-        xmpp_stanza_set_text(text, channel->id);
+        text = xmpp_stanza_new(account.context);
+        xmpp_stanza_set_text(text, id);
         xmpp_stanza_add_child(value, text);
         xmpp_stanza_release(text);
 
@@ -1476,14 +1041,14 @@ void channel__fetch_mam(struct t_account *account, struct t_channel *channel,
 
     if (start)
     {
-        field = xmpp_stanza_new(account->context);
+        field = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(field, "field");
         xmpp_stanza_set_attribute(field, "var", "start");
 
-        value = xmpp_stanza_new(account->context);
+        value = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(value, "value");
 
-        text = xmpp_stanza_new(account->context);
+        text = xmpp_stanza_new(account.context);
         char time[256] = {0};
         strftime(time, sizeof(time), "%Y-%m-%dT%H:%M:%SZ", gmtime(start));
         xmpp_stanza_set_text(text, time);
@@ -1499,14 +1064,14 @@ void channel__fetch_mam(struct t_account *account, struct t_channel *channel,
 
     if (end)
     {
-        field = xmpp_stanza_new(account->context);
+        field = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(field, "field");
         xmpp_stanza_set_attribute(field, "var", "end");
 
-        value = xmpp_stanza_new(account->context);
+        value = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(value, "value");
 
-        text = xmpp_stanza_new(account->context);
+        text = xmpp_stanza_new(account.context);
         char time[256] = {0};
         strftime(time, sizeof(time), "%Y-%m-%dT%H:%M:%SZ", gmtime(end));
         xmpp_stanza_set_text(text, time);
@@ -1527,14 +1092,14 @@ void channel__fetch_mam(struct t_account *account, struct t_channel *channel,
     {
         xmpp_stanza_t *set, *set__after, *set__after__text;
 
-        set = xmpp_stanza_new(account->context);
+        set = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(set, "set");
         xmpp_stanza_set_ns(set, "http://jabber.org/protocol/rsm");
 
-        set__after = xmpp_stanza_new(account->context);
+        set__after = xmpp_stanza_new(account.context);
         xmpp_stanza_set_name(set__after, "after");
 
-        set__after__text = xmpp_stanza_new(account->context);
+        set__after__text = xmpp_stanza_new(account.context);
         xmpp_stanza_set_text(set__after__text, after);
         xmpp_stanza_add_child(set__after, set__after__text);
         xmpp_stanza_release(set__after__text);
@@ -1546,12 +1111,11 @@ void channel__fetch_mam(struct t_account *account, struct t_channel *channel,
         xmpp_stanza_release(set);
     }
     else
-        account__add_mam_query(account, channel,
-                               xmpp_stanza_get_id(iq), start, end);
+        account.add_mam_query(id, xmpp_stanza_get_id(iq), { *start }, { *end });
 
     xmpp_stanza_add_child(iq, query);
     xmpp_stanza_release(query);
 
-    xmpp_send(account->connection, iq);
+    xmpp_send(account.connection, iq);
     xmpp_stanza_release(iq);
 }

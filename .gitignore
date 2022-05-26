@@ -1,6 +1,7 @@
 .direnv
 *~
 compile_commands.json
+launch.json
 .cache
 cscope*
 *.d

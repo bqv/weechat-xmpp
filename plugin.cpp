@@ -51,19 +51,19 @@ int weechat_plugin_init(struct t_weechat_plugin *plugin, int argc, char *argv[])
 
     weechat_xmpp_plugin = plugin;
 
-    if (!config__init())
+    if (!weechat::config::init())
         return WEECHAT_RC_ERROR;
 
-    config__read();
+    weechat::config::read();
 
-    connection__init();
+    weechat::connection::init();
 
     command__init();
 
     completion__init();
 
     weechat_xmpp_process_timer = weechat_hook_timer(TIMER_INTERVAL_SEC * 1000, 0, 0,
-                                                    &account__timer_cb,
+                                                    &weechat::account::timer_cb,
                                                     NULL, NULL);
 
     if (!weechat_bar_search("typing"))
@@ -95,11 +95,11 @@ int weechat_plugin_end(struct t_weechat_plugin *plugin)
     if (weechat_xmpp_process_timer)
         weechat_unhook(weechat_xmpp_process_timer);
 
-    config__write();
+    weechat::config::write();
 
-    account__disconnect_all();
+    weechat::account::disconnect_all();
 
-    account__free_all();
+    weechat::accounts.clear();
 
     xmpp_shutdown();
 

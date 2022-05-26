@@ -16,8 +16,8 @@
 
 int input__data(struct t_gui_buffer *buffer, const char *text)
 {
-    struct t_account *account = NULL;
-    struct t_channel *channel = NULL;
+    weechat::account *account = NULL;
+    weechat::channel *channel = NULL;
 
     buffer__get_account_and_channel(buffer, &account, &channel);
 
@@ -26,7 +26,7 @@ int input__data(struct t_gui_buffer *buffer, const char *text)
 
     if (channel)
     {
-        if (!account->is_connected)
+        if (!account->connected())
         {
             weechat_printf(buffer,
                            _("%s%s: you are not connected to server"),
@@ -34,7 +34,7 @@ int input__data(struct t_gui_buffer *buffer, const char *text)
             return WEECHAT_RC_OK;
         }
 
-        if (channel__send_message(account, channel, channel->id, text) == WEECHAT_RC_OK)
+        if (channel->send_message(channel->id, text) == WEECHAT_RC_OK)
             return WEECHAT_RC_OK;
         else
         {
@@ -62,15 +62,15 @@ int input__data_cb(const void *pointer, void *data,
 
 int input__typing(struct t_gui_buffer *buffer)
 {
-    struct t_account *account = NULL;
-    struct t_channel *channel = NULL;
+    weechat::account *account = NULL;
+    weechat::channel *channel = NULL;
 
     buffer__get_account_and_channel(buffer, &account, &channel);
 
-    if (account && account->is_connected && channel)
+    if (account && account->connected() && channel)
     {
-        channel__send_reads(account, channel);
-        channel__send_typing(account, channel, NULL);
+        channel->send_reads();
+        channel->send_typing(NULL);
     }
 
     return WEECHAT_RC_OK;

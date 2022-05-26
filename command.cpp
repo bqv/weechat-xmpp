@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <iostream>
 #include <sstream>
+#include <utility>
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
@@ -24,27 +25,27 @@
 #define MAM_DEFAULT_DAYS 2
 #define STR(X) #X
 
-void command__display_account(struct t_account *account)
+void command__display_account(weechat::account *account)
 {
     int num_channels, num_pv;
 
-    if (account->is_connected)
+    if (account->connected())
     {
         num_channels = 0;//xmpp_account_get_channel_count(account);
         num_pv = 0;//xmpp_account_get_pv_count(account);
         weechat_printf(
             NULL,
             " %s %s%s%s %s(%s%s%s) [%s%s%s]%s, %d %s, %d pv",
-            (account->is_connected) ? "*" : " ",
+            (account->connected()) ? "*" : " ",
             weechat_color("chat_server"),
-            account->name,
+            account->name.data(),
             weechat_color("reset"),
             weechat_color("chat_delimiters"),
             weechat_color("chat_server"),
-            account_jid(account),
+            account->jid().data(),
             weechat_color("chat_delimiters"),
             weechat_color("reset"),
-            (account->is_connected) ? _("connected") : _("not connected"),
+            (account->connected()) ? _("connected") : _("not connected"),
             weechat_color("chat_delimiters"),
             weechat_color("reset"),
             num_channels,
@@ -57,11 +58,11 @@ void command__display_account(struct t_account *account)
             NULL,
             "   %s%s%s %s(%s%s%s)%s",
             weechat_color("chat_server"),
-            account->name,
+            account->name.data(),
             weechat_color("reset"),
             weechat_color("chat_delimiters"),
             weechat_color("chat_server"),
-            account_jid(account),
+            account->jid().data(),
             weechat_color("chat_delimiters"),
             weechat_color("reset"));
     }
@@ -70,7 +71,6 @@ void command__display_account(struct t_account *account)
 void command__account_list(int argc, char **argv)
 {
     int i, one_account_found;
-    struct t_account *ptr_account2;
     char *account_name = NULL;
 
     for (i = 2; i < argc; i++)
@@ -80,13 +80,13 @@ void command__account_list(int argc, char **argv)
     }
     if (!account_name)
     {
-        if (!accounts.empty())
+        if (!weechat::accounts.empty())
         {
             weechat_printf(NULL, "");
             weechat_printf(NULL, _("All accounts:"));
-            for (auto ptr_account2 : accounts)
+            for (auto& ptr_account2 : weechat::accounts)
             {
-                command__display_account(ptr_account2.second);
+                command__display_account(&ptr_account2.second);
             }
         }
         else
@@ -95,9 +95,9 @@ void command__account_list(int argc, char **argv)
     else
     {
         one_account_found = 0;
-        for (auto ptr_account2 : accounts)
+        for (auto& ptr_account2 : weechat::accounts)
         {
-            if (weechat_strcasestr(ptr_account2.second->name, account_name))
+            if (weechat_strcasestr(ptr_account2.second.name.data(), account_name))
             {
                 if (!one_account_found)
                 {
@@ -107,7 +107,7 @@ void command__account_list(int argc, char **argv)
                                    account_name);
                 }
                 one_account_found = 1;
-                command__display_account(ptr_account2.second);
+                command__display_account(&ptr_account2.second);
             }
         }
         if (!one_account_found)
@@ -119,10 +119,8 @@ void command__account_list(int argc, char **argv)
 
 void command__add_account(const char *name, const char *jid, const char *password)
 {
-    struct t_account *account;
-
-    account = account__casesearch(name);
-    if (account)
+    weechat::account *account = nullptr;
+    if (weechat::account::search(account, name, true))
     {
         weechat_printf(
             NULL,
@@ -132,7 +130,10 @@ void command__add_account(const char *name, const char *jid, const char *passwor
         return;
     }
 
-    account = account__alloc(name);
+    ;
+    account = &weechat::accounts.emplace(
+        std::piecewise_construct, std::forward_as_tuple(name),
+        std::forward_as_tuple(weechat::config::instance->file, name)).first->second;
     if (!account)
     {
         weechat_printf(
@@ -144,19 +145,18 @@ void command__add_account(const char *name, const char *jid, const char *passwor
 
     account->name = strdup(name);
     if (jid)
-        account_option_set(account, ACCOUNT_OPTION_JID, strdup(jid));
+        account->jid(jid);
     if (password)
-        account_option_set(account, ACCOUNT_OPTION_PASSWORD, strdup(password));
+        account->password(password);
     if (jid)
-        account_option_set(account, ACCOUNT_OPTION_NICKNAME,
-                           strdup(xmpp_jid_node(account->context, jid)));
+        account->nickname(xmpp_jid_node(account->context, jid));
 
     weechat_printf(
         NULL,
         _("%s: account %s%s%s %s(%s%s%s)%s added"),
         WEECHAT_XMPP_PLUGIN_NAME,
         weechat_color("chat_server"),
-        account->name,
+        account->name.data(),
         weechat_color("reset"),
         weechat_color("chat_delimiters"),
         weechat_color("chat_server"),
@@ -189,21 +189,21 @@ void command__account_add(struct t_gui_buffer *buffer, int argc, char **argv)
     }
 }
 
-int command__connect_account(struct t_account *account)
+int command__connect_account(weechat::account *account)
 {
     if (!account)
         return 0;
 
-    if (account->is_connected)
+    if (account->connected())
     {
         weechat_printf(
             NULL,
             _("%s%s: already connected to account \"%s\"!"),
             weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME,
-            account->name);
+            account->name.data());
     }
 
-    account__connect(account);
+    account->connect();
 
     return 1;
 }
@@ -211,7 +211,7 @@ int command__connect_account(struct t_account *account)
 int command__account_connect(struct t_gui_buffer *buffer, int argc, char **argv)
 {
     int i, nb_connect, connect_ok;
-    struct t_account *ptr_account;
+    weechat::account *ptr_account = nullptr;
 
     (void) buffer;
     (void) argc;
@@ -223,8 +223,7 @@ int command__account_connect(struct t_gui_buffer *buffer, int argc, char **argv)
     for (i = 2; i < argc; i++)
     {
         nb_connect++;
-        ptr_account = account__search(argv[i]);
-        if (ptr_account)
+        if (weechat::account::search(ptr_account, argv[i]))
         {
             if (!command__connect_account(ptr_account))
             {
@@ -245,21 +244,21 @@ int command__account_connect(struct t_gui_buffer *buffer, int argc, char **argv)
     return (connect_ok) ? WEECHAT_RC_OK : WEECHAT_RC_ERROR;
 }
 
-int command__disconnect_account(struct t_account *account)
+int command__disconnect_account(weechat::account *account)
 {
     if (!account)
         return 0;
 
-    if (!account->is_connected)
+    if (!account->connected())
     {
         weechat_printf(
             NULL,
             _("%s%s: not connected to account \"%s\"!"),
             weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME,
-            account->name);
+            account->name.data());
     }
 
-    account__disconnect(account, 0);
+    account->disconnect(0);
 
     return 1;
 }
@@ -267,7 +266,7 @@ int command__disconnect_account(struct t_account *account)
 int command__account_disconnect(struct t_gui_buffer *buffer, int argc, char **argv)
 {
     int i, nb_disconnect, disconnect_ok;
-    struct t_account *ptr_account;
+    weechat::account *ptr_account;
 
     (void) argc;
     (void) argv;
@@ -277,7 +276,7 @@ int command__account_disconnect(struct t_gui_buffer *buffer, int argc, char **ar
     nb_disconnect = 0;
     if (argc < 2)
     {
-        struct t_channel *ptr_channel;
+        weechat::channel *ptr_channel;
 
         buffer__get_account_and_channel(buffer, &ptr_account, &ptr_channel);
 
@@ -292,8 +291,7 @@ int command__account_disconnect(struct t_gui_buffer *buffer, int argc, char **ar
     for (i = 2; i < argc; i++)
     {
         nb_disconnect++;
-        ptr_account = account__search(argv[i]);
-        if (ptr_account)
+        if (weechat::account::search(ptr_account, argv[i]))
         {
             if (!command__disconnect_account(ptr_account))
             {
@@ -323,9 +321,6 @@ void command__account_delete(struct t_gui_buffer *buffer, int argc, char **argv)
 {
     (void) buffer;
 
-    struct t_account *account;
-    char *account_name;
-
     if (argc < 3)
     {
         weechat_printf(
@@ -337,8 +332,9 @@ void command__account_delete(struct t_gui_buffer *buffer, int argc, char **argv)
         return;
     }
 
-    account = account__search(argv[2]);
-    if (!account)
+    weechat::account *account = nullptr;
+
+    if (!weechat::account::search(account, argv[2]))
     {
         weechat_printf(
             NULL,
@@ -347,7 +343,7 @@ void command__account_delete(struct t_gui_buffer *buffer, int argc, char **argv)
             argv[2], "xmpp delete");
         return;
     }
-    if (account->is_connected)
+    if (account->connected())
     {
         weechat_printf(
             NULL,
@@ -358,17 +354,15 @@ void command__account_delete(struct t_gui_buffer *buffer, int argc, char **argv)
         return;
     }
 
-    account_name = strdup(account->name);
-    account__free(account);
+    std::string account_name = account->name;
+    weechat::accounts.erase(account->name);
     weechat_printf(
         NULL,
         _("%s: account %s%s%s has been deleted"),
         WEECHAT_XMPP_PLUGIN_NAME,
         weechat_color("chat_server"),
-        (account_name) ? account_name : "???",
+        !account_name.empty() ? account_name.data() : "???",
         weechat_color("reset"));
-    if (account_name)
-        free(account_name);
 }
 
 int command__account(const void *pointer, void *data,
@@ -428,8 +422,8 @@ int command__enter(const void *pointer, void *data,
                    struct t_gui_buffer *buffer, int argc,
                    char **argv, char **argv_eol)
 {
-    struct t_account *ptr_account = NULL;
-    struct t_channel *ptr_channel = NULL;
+    weechat::account *ptr_account = NULL;
+    weechat::channel *ptr_channel = NULL;
     xmpp_stanza_t *pres;
     char *jid, *pres_jid, *text;
 
@@ -442,7 +436,7 @@ int command__enter(const void *pointer, void *data,
     if (!ptr_account)
         return WEECHAT_RC_ERROR;
 
-    if (!ptr_account->is_connected)
+    if (!ptr_account->connected())
     {
         weechat_printf(buffer,
                         _("%s%s: you are not connected to server"),
@@ -464,19 +458,21 @@ int command__enter(const void *pointer, void *data,
                     ptr_account->context,
                     xmpp_jid_node(ptr_account->context, jid),
                     xmpp_jid_domain(ptr_account->context, jid),
-                    account_nickname(ptr_account)
-                    && strlen(account_nickname(ptr_account))
-                    ? account_nickname(ptr_account)
+                    ptr_account->nickname().data()
+                    && strlen(ptr_account->nickname().data())
+                    ? ptr_account->nickname().data()
                     : xmpp_jid_node(ptr_account->context,
-                                    account_jid(ptr_account)));
+                                    ptr_account->jid().data()));
 
-            ptr_channel = channel__search(ptr_account, jid);
-            if (!ptr_channel)
-                ptr_channel = channel__new(ptr_account, CHANNEL_TYPE_MUC, jid, jid);
+            if (!ptr_account->channels.contains(jid))
+                ptr_channel = &ptr_account->channels.emplace(
+                    std::make_pair(jid, weechat::channel {
+                            *ptr_account, weechat::channel::chat_type::MUC, jid, jid
+                        })).first->second;
 
             pres = xmpp_presence_new(ptr_account->context);
             xmpp_stanza_set_to(pres, pres_jid);
-            xmpp_stanza_set_from(pres, account_jid(ptr_account));
+            xmpp_stanza_set_from(pres, ptr_account->jid().data());
 
             xmpp_stanza_t *pres__x = xmpp_stanza_new(ptr_account->context);
             xmpp_stanza_set_name(pres__x, "x");
@@ -491,7 +487,7 @@ int command__enter(const void *pointer, void *data,
             {
                 text = argv_eol[2];
 
-                channel__send_message(ptr_account, ptr_channel, jid, text);
+                ptr_channel->send_message(jid, text);
             }
 
             char buf[16];
@@ -511,13 +507,15 @@ int command__enter(const void *pointer, void *data,
             xmpp_jid_domain(ptr_account->context, buffer_jid),
             weechat_buffer_get_string(buffer, "localvar_nick"));
 
-        ptr_channel = channel__search(ptr_account, buffer_jid);
-        if (!ptr_channel)
-            ptr_channel = channel__new(ptr_account, CHANNEL_TYPE_MUC, buffer_jid, buffer_jid);
+        if (!ptr_account->channels.contains(buffer_jid))
+            ptr_channel = &ptr_account->channels.emplace(
+                std::make_pair(jid, weechat::channel {
+                        *ptr_account, weechat::channel::chat_type::MUC, buffer_jid, buffer_jid
+                    })).first->second;
 
         pres = xmpp_presence_new(ptr_account->context);
         xmpp_stanza_set_to(pres, pres_jid);
-        xmpp_stanza_set_from(pres, account_jid(ptr_account));
+        xmpp_stanza_set_from(pres, ptr_account->jid().data());
 
         xmpp_stanza_t *pres__x = xmpp_stanza_new(ptr_account->context);
         xmpp_stanza_set_name(pres__x, "x");
@@ -536,8 +534,8 @@ int command__open(const void *pointer, void *data,
                   struct t_gui_buffer *buffer, int argc,
                   char **argv, char **argv_eol)
 {
-    struct t_account *ptr_account = NULL;
-    struct t_channel *ptr_channel = NULL;
+    weechat::account *ptr_account = NULL;
+    weechat::channel *ptr_channel = NULL;
     xmpp_stanza_t *pres;
     char *jid, *text;
 
@@ -550,7 +548,7 @@ int command__open(const void *pointer, void *data,
     if (!ptr_account)
         return WEECHAT_RC_ERROR;
 
-    if (!ptr_account->is_connected)
+    if (!ptr_account->connected())
     {
         weechat_printf(buffer,
                         _("%s%s: you are not connected to server"),
@@ -569,30 +567,33 @@ int command__open(const void *pointer, void *data,
             {
                 jid = xmpp_jid_new(
                     ptr_account->context,
-                    xmpp_jid_node(ptr_account->context, ptr_channel->name),
-                    xmpp_jid_domain(ptr_account->context, ptr_channel->name),
+                    xmpp_jid_node(ptr_account->context, ptr_channel->name.data()),
+                    xmpp_jid_domain(ptr_account->context, ptr_channel->name.data()),
                     jid);
             }
 
             pres = xmpp_presence_new(ptr_account->context);
             xmpp_stanza_set_to(pres, jid);
-            xmpp_stanza_set_from(pres, account_jid(ptr_account));
+            xmpp_stanza_set_from(pres, ptr_account->jid().data());
             xmpp_send(ptr_account->connection, pres);
             xmpp_stanza_release(pres);
 
-            struct t_channel *channel = channel__search(ptr_account, jid);
-            if (!channel)
-                channel = channel__new(ptr_account, CHANNEL_TYPE_PM, jid, jid);
+            auto channel = ptr_account->channels.find(jid);
+            if (channel == ptr_account->channels.end())
+                channel = ptr_account->channels.emplace(
+                    std::make_pair(jid, weechat::channel {
+                            *ptr_account, weechat::channel::chat_type::PM, jid, jid
+                        })).first;
 
             if (argc > 2)
             {
                 text = argv_eol[2];
 
-                channel__send_message(ptr_account, channel, jid, text);
+                channel->second.send_message(jid, text);
             }
 
             char buf[16];
-            int num = weechat_buffer_get_integer(channel->buffer, "number");
+            int num = weechat_buffer_get_integer(channel->second.buffer, "number");
             snprintf(buf, sizeof(buf), "/buffer %d", num);
             weechat_command(ptr_account->buffer, buf);
         }
@@ -606,8 +607,8 @@ int command__msg(const void *pointer, void *data,
                  struct t_gui_buffer *buffer, int argc,
                  char **argv, char **argv_eol)
 {
-    struct t_account *ptr_account = NULL;
-    struct t_channel *ptr_channel = NULL;
+    weechat::account *ptr_account = NULL;
+    weechat::channel *ptr_channel = NULL;
     xmpp_stanza_t *message;
     char *text;
 
@@ -629,7 +630,7 @@ int command__msg(const void *pointer, void *data,
         return WEECHAT_RC_OK;
     }
 
-    if (!ptr_account->is_connected)
+    if (!ptr_account->connected())
     {
         weechat_printf(buffer,
                         _("%s%s: you are not connected to server"),
@@ -642,16 +643,17 @@ int command__msg(const void *pointer, void *data,
         text = argv_eol[1];
 
         message = xmpp_message_new(ptr_account->context,
-                                   ptr_channel->type == CHANNEL_TYPE_MUC ? "groupchat" : "chat",
-                                   ptr_channel->name, NULL);
+                                   ptr_channel->type == weechat::channel::chat_type::MUC ? "groupchat" : "chat",
+                                   ptr_channel->name.data(), NULL);
         xmpp_message_set_body(message, text);
         xmpp_send(ptr_account->connection, message);
         xmpp_stanza_release(message);
-        if (ptr_channel->type != CHANNEL_TYPE_MUC)
+        if (ptr_channel->type != weechat::channel::chat_type::MUC)
             weechat_printf_date_tags(ptr_channel->buffer, 0,
                                      "xmpp_message,message,private,notify_none,self_msg,log1",
                                      "%s\t%s",
-                                     user__as_prefix_raw(ptr_account, account_jid(ptr_account)), text);
+                                     weechat::user::search(ptr_account, ptr_account->jid().data())->as_prefix_raw().data(),
+                                     text);
     }
 
     return WEECHAT_RC_OK;
@@ -661,8 +663,8 @@ int command__me(const void *pointer, void *data,
                 struct t_gui_buffer *buffer, int argc,
                 char **argv, char **argv_eol)
 {
-    struct t_account *ptr_account = NULL;
-    struct t_channel *ptr_channel = NULL;
+    weechat::account *ptr_account = NULL;
+    weechat::channel *ptr_channel = NULL;
     xmpp_stanza_t *message;
     char *text;
 
@@ -684,7 +686,7 @@ int command__me(const void *pointer, void *data,
         return WEECHAT_RC_OK;
     }
 
-    if (!ptr_account->is_connected)
+    if (!ptr_account->connected())
     {
         weechat_printf(buffer,
                         _("%s%s: you are not connected to server"),
@@ -697,17 +699,17 @@ int command__me(const void *pointer, void *data,
         text = argv_eol[0];
 
         message = xmpp_message_new(ptr_account->context,
-                                   ptr_channel->type == CHANNEL_TYPE_MUC ? "groupchat" : "chat",
-                                   ptr_channel->name, NULL);
+                                   ptr_channel->type == weechat::channel::chat_type::MUC ? "groupchat" : "chat",
+                                   ptr_channel->name.data(), NULL);
         xmpp_message_set_body(message, text);
         xmpp_send(ptr_account->connection, message);
         xmpp_stanza_release(message);
-        if (ptr_channel->type != CHANNEL_TYPE_MUC)
+        if (ptr_channel->type != weechat::channel::chat_type::MUC)
             weechat_printf_date_tags(ptr_channel->buffer, 0,
                                      "xmpp_message,message,action,private,notify_none,self_msg,log1",
                                      "%s%s %s",
                                      weechat_prefix("action"),
-                                     user__as_prefix_raw(ptr_account, account_jid(ptr_account)),
+                                     weechat::user::search(ptr_account, ptr_account->jid().data())->as_prefix_raw().data(),
                                      strlen(text) > strlen("/me ") ? text+4 : "");
     }
 
@@ -718,8 +720,8 @@ int command__mam(const void *pointer, void *data,
                  struct t_gui_buffer *buffer, int argc,
                  char **argv, char **argv_eol)
 {
-    struct t_account *ptr_account = NULL;
-    struct t_channel *ptr_channel = NULL;
+    weechat::account *ptr_account = NULL;
+    weechat::channel *ptr_channel = NULL;
     int days;
 
     (void) pointer;
@@ -761,7 +763,7 @@ int command__mam(const void *pointer, void *data,
     else
         ago->tm_mday -= MAM_DEFAULT_DAYS;
     start = mktime(ago);
-    channel__fetch_mam(ptr_account, ptr_channel, NULL, &start, NULL, NULL);
+    ptr_channel->fetch_mam(NULL, &start, NULL, NULL);
 
     return WEECHAT_RC_OK;
 }
@@ -770,8 +772,8 @@ int command__omemo(const void *pointer, void *data,
                    struct t_gui_buffer *buffer, int argc,
                    char **argv, char **argv_eol)
 {
-    struct t_account *ptr_account = NULL;
-    struct t_channel *ptr_channel = NULL;
+    weechat::account *ptr_account = NULL;
+    weechat::channel *ptr_channel = NULL;
 
     (void) pointer;
     (void) data;
@@ -796,7 +798,7 @@ int command__omemo(const void *pointer, void *data,
     ptr_channel->omemo.enabled = 1;
     ptr_channel->pgp.enabled = 0;
 
-    channel__set_transport(ptr_channel, CHANNEL_TRANSPORT_OMEMO, 0);
+    ptr_channel->set_transport(weechat::channel::transport::OMEMO, 0);
 
     return WEECHAT_RC_OK;
 }
@@ -805,8 +807,8 @@ int command__pgp(const void *pointer, void *data,
                  struct t_gui_buffer *buffer, int argc,
                  char **argv, char **argv_eol)
 {
-    struct t_account *ptr_account = NULL;
-    struct t_channel *ptr_channel = NULL;
+    weechat::account *ptr_account = NULL;
+    weechat::channel *ptr_channel = NULL;
     char *keyid;
 
     (void) pointer;
@@ -831,12 +833,12 @@ int command__pgp(const void *pointer, void *data,
     {
         keyid = argv_eol[1];
 
-        ptr_channel->pgp.ids->emplace(keyid);
+        ptr_channel->pgp.ids.emplace(keyid);
     }
     ptr_channel->omemo.enabled = 0;
     ptr_channel->pgp.enabled = 1;
 
-    channel__set_transport(ptr_channel, CHANNEL_TRANSPORT_PGP, 0);
+    ptr_channel->set_transport(weechat::channel::transport::PGP, 0);
 
     return WEECHAT_RC_OK;
 }
@@ -845,8 +847,8 @@ int command__plain(const void *pointer, void *data,
                    struct t_gui_buffer *buffer, int argc,
                    char **argv, char **argv_eol)
 {
-    struct t_account *ptr_account = NULL;
-    struct t_channel *ptr_channel = NULL;
+    weechat::account *ptr_account = NULL;
+    weechat::channel *ptr_channel = NULL;
 
     (void) pointer;
     (void) data;
@@ -871,7 +873,7 @@ int command__plain(const void *pointer, void *data,
     ptr_channel->omemo.enabled = 0;
     ptr_channel->pgp.enabled = 0;
 
-    channel__set_transport(ptr_channel, CHANNEL_TRANSPORT_PLAIN, 0);
+    ptr_channel->set_transport(weechat::channel::transport::PLAIN, 0);
 
     return WEECHAT_RC_OK;
 }
@@ -880,8 +882,8 @@ int command__xml(const void *pointer, void *data,
                  struct t_gui_buffer *buffer, int argc,
                  char **argv, char **argv_eol)
 {
-    struct t_account *ptr_account = NULL;
-    struct t_channel *ptr_channel = NULL;
+    weechat::account *ptr_account = NULL;
+    weechat::channel *ptr_channel = NULL;
     xmpp_stanza_t *stanza;
 
     (void) pointer;
@@ -893,7 +895,7 @@ int command__xml(const void *pointer, void *data,
     if (!ptr_account)
         return WEECHAT_RC_ERROR;
 
-    if (!ptr_account->is_connected)
+    if (!ptr_account->connected())
     {
         weechat_printf(buffer,
                         _("%s%s: you are not connected to server"),
@@ -947,13 +949,12 @@ int command__xmpp(const void *pointer, void *data,
                   struct t_gui_buffer *buffer, int argc,
                   char **argv, char **argv_eol)
 {
-    struct t_account *ptr_account = NULL;
-    struct t_channel *ptr_channel = NULL;
-    xmpp_stanza_t *stanza;
-
     (void) pointer;
     (void) data;
+    (void) buffer;
+    (void) argc;
     (void) argv;
+    (void) argv_eol;
 
     weechat_printf(nullptr,
                    _("%s%s %s [%s]"),

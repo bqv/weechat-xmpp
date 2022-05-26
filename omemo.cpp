@@ -2125,7 +2125,7 @@ void omemo::handle_bundle(const char *jid, uint32_t device_id,
         key_signature, identity_key, omemo);
 }
 
-char *omemo::decode(struct t_account *account, const char *jid,
+char *omemo::decode(weechat::account *account, const char *jid,
                     xmpp_stanza_t *encrypted)
 {
     auto omemo = &account->omemo;
@@ -2267,7 +2267,7 @@ char *omemo::decode(struct t_account *account, const char *jid,
     return NULL;
 }
 
-xmpp_stanza_t *omemo::encode(struct t_account *account, const char *jid,
+xmpp_stanza_t *omemo::encode(weechat::account *account, const char *jid,
                              const char *unencrypted)
 {
     auto omemo = &account->omemo;
@@ -2362,7 +2362,7 @@ xmpp_stanza_t *omemo::encode(struct t_account *account, const char *jid,
             session_cipher_free(cipher);
         }
         signal_int_list_free(devicelist);
-        target = account_jid(account);
+        target = account->jid().data();
     }
     free(key_and_tag);
 

@@ -6,5 +6,5 @@
 
 #define MESSAGE_MAX_LENGTH 40000
 
-char *message__decode(struct t_account *account,
+char *message__decode(weechat::account *account,
                       const char *text);
