@@ -50,19 +50,19 @@ void weechat::log_emit(void *const userdata, const xmpp_log_level_t level,
             return;
         }
         xmlNodePtr root = xmlDocGetRootElement(doc);
-        const char *tag = root ? (const char*)root->name : "";
-        const char *colour = weechat_color("blue");
-        if (weechat_strcasecmp(tag, "message"))
-        {
-            colour = weechat_color("green");
-        }
-        else if (weechat_strcasecmp(tag, "presence"))
+        std::string tag = root ? (const char*)root->name : "";
+        const char *colour = weechat_color("red");
+        if (tag == "message")
         {
             colour = weechat_color("yellow");
         }
-        else if (weechat_strcasecmp(tag, "iq"))
+        else if (tag == "presence")
         {
-            colour = weechat_color("red");
+            colour = weechat_color("green");
+        }
+        else if (tag == "iq")
+        {
+            colour = weechat_color("blue");
         }
         xmlChar *buf = (xmlChar*)malloc(strlen(xml) * 2);
         if (buf == NULL) {

@@ -606,6 +606,7 @@ weechat::channel::member *weechat::channel::remove_member(const char *id, const 
     user = user::search(&account, id);
     if (user)
         user->nicklist_remove(&account, this);
+    else return nullptr; // TODO !!
 
     member = member_search(id);
 
