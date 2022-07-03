@@ -29,5 +29,6 @@
   (eval . (setq-local tags-table-list (expand-file-name ".git/tags" (projectile-project-root))))
   (flycheck-clang-warnings . ("all" "extra" "error-implicit-function-declaration" "no-missing-field-initializers"))
   (flycheck-clang-language-standard . "c++20")
-  (flycheck-checker . c/c++-clang)
+  ;(flycheck-checker . c/c++-clang)
+  (flycheck-checker . lsp)
   (projectile-project-compilation-cmd . "bear -- make -j8")))
