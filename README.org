@@ -52,6 +52,8 @@
   - lmdb (dynamic, dependency)
   - libomemo-c (libsignal-protocol-c) (dynamic, dependency)
   - gpgme (dynamic, dependency)
+  - bison (build)
+  - flex (build)
   - weechat (>= v3.0)
 
   .. or just use the guix spec in .envrc
