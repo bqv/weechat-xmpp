@@ -57,6 +57,9 @@ namespace weechat
                               if (file != config_file) throw std::invalid_argument("file != config_file");
                               if (!file.reload) return 1;
                               return file.reload() ? 1 : 0;
+                              // WEECHAT_CONFIG_READ_OK == 0
+                              // WEECHAT_CONFIG_READ_MEMORY_ERROR == -1
+                              // WEECHAT_CONFIG_READ_FILE_NOT_FOUND == -2
                           }, nullptr, this), config, name) {
             this->reload = std::bind(cb_reload, std::ref(*this));
         }
@@ -90,8 +93,17 @@ namespace weechat
                                  auto& section = *reinterpret_cast<config_section*>(data);
                                  if (section != sect) throw std::invalid_argument("section != sect");
                                  if (section.file != config_file) throw std::invalid_argument("section.file != config_file");
-                                 if (!section.read) return 0;
-                                 return section.read(option_name, value) ? 0 : -1;
+                                 if (!section.read) return 1;
+                                 return section.read(option_name, value) ? 2 : 0;
+                                 /// dev manual indicates:
+                                 // WEECHAT_CONFIG_READ_OK == 0
+                                 // WEECHAT_CONFIG_READ_MEMORY_ERROR == -1
+                                 // WEECHAT_CONFIG_READ_FILE_NOT_FOUND == -2
+                                 /// code indicates:
+                                 // WEECHAT_CONFIG_OPTION_SET_OK_CHANGED == 2
+                                 // WEECHAT_CONFIG_OPTION_SET_OK_SAME_VALUE == 1
+                                 // WEECHAT_CONFIG_OPTION_SET_ERROR == 0
+                                 // WEECHAT_CONFIG_OPTION_SET_OPTION_NOT_FOUND == -1
                              }, nullptr, this,
                              [](const void *, void *data, struct t_config_file *config_file,
                                 const char *section_name) {
@@ -99,6 +111,9 @@ namespace weechat
                                  if (section.file != config_file) throw std::invalid_argument("section.file != config_file");
                                  if (!section.write) return 0;
                                  return section.write(section_name) ? 0 : -1;
+                                 // WEECHAT_CONFIG_WRITE_OK == 0
+                                 // WEECHAT_CONFIG_WRITE_ERROR == -1
+                                 // WEECHAT_CONFIG_WRITE_FILE_NOT_FOUND == -2
                              }, nullptr, this,
                              [](const void *, void *data, struct t_config_file *config_file,
                                 const char *section_name) {
@@ -106,14 +121,21 @@ namespace weechat
                                  if (section.file != config_file) throw std::invalid_argument("section.file != config_file");
                                  if (!section.write_default) return 0;
                                  return section.write_default(section_name) ? 0 : -1;
+                                 // WEECHAT_CONFIG_WRITE_OK == 0
+                                 // WEECHAT_CONFIG_WRITE_ERROR == -1
+                                 // WEECHAT_CONFIG_WRITE_FILE_NOT_FOUND == -2
                              }, nullptr, this,
                              [](const void *, void *data, struct t_config_file *config_file,
                                 struct t_config_section *sect, const char *option_name, const char *value) {
                                  auto& section = *reinterpret_cast<config_section*>(data);
                                  if (section != sect) throw std::invalid_argument("section != sect");
                                  if (section.file != config_file) throw std::invalid_argument("section.file != config_file");
-                                 if (!section.create_option) return 0;
-                                 return section.create_option(option_name, value) ? 0 : -1;
+                                 if (!section.create_option) return 1;
+                                 return section.create_option(option_name, value) ? 2 : 0;
+                                 // WEECHAT_CONFIG_OPTION_SET_OK_CHANGED == 2
+                                 // WEECHAT_CONFIG_OPTION_SET_OK_SAME_VALUE == 1
+                                 // WEECHAT_CONFIG_OPTION_SET_ERROR == 0
+                                 // WEECHAT_CONFIG_OPTION_SET_OPTION_NOT_FOUND == -1
                              }, nullptr, this,
                              [](const void *, void *data, struct t_config_file *config_file,
                                 struct t_config_section *sect, struct t_config_option *opt) {
@@ -123,7 +145,11 @@ namespace weechat
                                  if (!section.delete_option) return 0;
                                  auto option = section.options.find(opt);
                                  if (option == section.options.end()) throw std::invalid_argument("unknown option");
-                                 return section.delete_option(option->second) ? 0 : -1;
+                                 return section.delete_option(option->second) ? 1 : -1;
+                                 // WEECHAT_CONFIG_OPTION_UNSET_OK_NO_RESET == 0
+                                 // WEECHAT_CONFIG_OPTION_UNSET_OK_RESET == 1
+                                 // WEECHAT_CONFIG_OPTION_UNSET_OK_REMOVED == 2
+                                 // WEECHAT_CONFIG_OPTION_UNSET_ERROR == -1
                              }, nullptr, this), config_file, name) {
             if (cb_read)
                 this->read = std::bind(cb_read, std::ref(*this), _1, _2);

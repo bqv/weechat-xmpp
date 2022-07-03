@@ -13,8 +13,8 @@
 #include "account.hh"
 #include "config.hh"
 
-int account_read_cb(weechat::config_section& section,
-                    const char *option_name, const char *value)
+bool account_read_cb(weechat::config_section& section,
+                     const char *option_name, const char *value)
 {
     if (!option_name)
         return WEECHAT_CONFIG_READ_MEMORY_ERROR;
@@ -23,14 +23,16 @@ int account_read_cb(weechat::config_section& section,
     std::getline(breadcrumbs, account_name, '.');
     std::getline(breadcrumbs, option_id, '.');
     if (account_name.empty())
-        return WEECHAT_CONFIG_READ_MEMORY_ERROR;
+        return false;
 
-    int rc = WEECHAT_CONFIG_READ_OK;
+    bool rc = true;
     weechat::account* account = nullptr;
     if (!weechat::account::search(account, account_name))
+    {
         account = &weechat::accounts.emplace(
             std::piecewise_construct, std::forward_as_tuple(account_name),
             std::forward_as_tuple(weechat::config::instance->file, account_name)).first->second;
+    }
     if (account)
     {
         auto options = {
@@ -53,15 +55,20 @@ int account_read_cb(weechat::config_section& section,
 
         account->reloading_from_config %= options.size();
 
-        if (option_id == "jid") rc |= (account->option_jid = value) == WEECHAT_CONFIG_OPTION_SET_ERROR;
-        if (option_id == "password") rc |= (account->option_password = value) == WEECHAT_CONFIG_OPTION_SET_ERROR;
-        if (option_id == "tls") rc |= (account->option_tls = value) == WEECHAT_CONFIG_OPTION_SET_ERROR;
-        if (option_id == "nickname") rc |= (account->option_nickname = value) == WEECHAT_CONFIG_OPTION_SET_ERROR;
-        if (option_id == "autoconnect") rc |= (account->option_autoconnect = value) == WEECHAT_CONFIG_OPTION_SET_ERROR;
-        if (option_id == "resource") rc |= (account->option_resource = value) == WEECHAT_CONFIG_OPTION_SET_ERROR;
-        if (option_id == "status") rc |= (account->option_status = value) == WEECHAT_CONFIG_OPTION_SET_ERROR;
-        if (option_id == "pgp_path") rc |= (account->option_pgp_path = value) == WEECHAT_CONFIG_OPTION_SET_ERROR;
-        if (option_id == "pgp_keyid") rc |= (account->option_pgp_keyid = value) == WEECHAT_CONFIG_OPTION_SET_ERROR;
+        auto rc_ok = [](int rc) {
+            return rc == WEECHAT_CONFIG_OPTION_SET_OK_CHANGED
+                || rc == WEECHAT_CONFIG_OPTION_SET_OK_SAME_VALUE;
+        };
+
+        if (option_id == "jid") rc &= rc_ok(account->option_jid = value);
+        if (option_id == "password") rc &= rc_ok(account->option_password = value);
+        if (option_id == "tls") rc &= rc_ok(account->option_tls = value);
+        if (option_id == "nickname") rc &= rc_ok(account->option_nickname = value);
+        if (option_id == "autoconnect") rc &= rc_ok(account->option_autoconnect = value);
+        if (option_id == "resource") rc &= rc_ok(account->option_resource = value);
+        if (option_id == "status") rc &= rc_ok(account->option_status = value);
+        if (option_id == "pgp_path") rc &= rc_ok(account->option_pgp_path = value);
+        if (option_id == "pgp_keyid") rc &= rc_ok(account->option_pgp_keyid = value);
 
         if (!account->reloading_from_config)
         {
@@ -81,7 +88,7 @@ int account_read_cb(weechat::config_section& section,
             account_name.data());
     }
 
-    if (rc != WEECHAT_CONFIG_READ_OK)
+    if (!rc)
     {
         weechat_printf(
             NULL,
@@ -91,7 +98,7 @@ int account_read_cb(weechat::config_section& section,
     return rc;
 }
 
-int account_write_cb(weechat::config_section& section, const char *section_name)
+bool account_write_cb(weechat::config_section& section, const char *section_name)
 {
     if (!weechat_config_write_line(section.file, section_name, NULL))
         return WEECHAT_CONFIG_WRITE_ERROR;
@@ -105,7 +112,7 @@ int account_write_cb(weechat::config_section& section, const char *section_name)
     return WEECHAT_CONFIG_WRITE_OK;
 }
 
-int config_reload(weechat::config_file &file)
+bool config_reload(weechat::config_file &file)
 {
   //weechat_config_section_free_options(file.configuration.section_account_default);
   //weechat_config_section_free_options(file.configuration.section_account);
