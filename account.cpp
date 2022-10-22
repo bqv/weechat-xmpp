@@ -209,7 +209,7 @@ xmpp_stanza_t *weechat::account::get_devicelist()
 }
 
 void weechat::account::add_mam_query(const std::string id, const std::string with,
-                                     tl::optional<time_t> start, tl::optional<time_t> end)
+                                     std::optional<time_t> start, std::optional<time_t> end)
 {
     if (!mam_queries.contains(id))
     {

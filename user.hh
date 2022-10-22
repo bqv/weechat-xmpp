@@ -6,7 +6,7 @@
 
 #include <memory>
 #include <string>
-#include <tl/optional.hpp>
+#include <optional>
 
 namespace weechat
 {
@@ -21,7 +21,7 @@ namespace weechat
             char *avatar_hash = nullptr;
             char *status_text = nullptr;
             char *status = nullptr;
-            tl::optional<std::string> idle;
+            std::optional<std::string> idle;
             char *display_name = nullptr;
             char *email = nullptr;
             char *role = nullptr;

@@ -15,12 +15,12 @@
 #include <chrono>
 #include <variant>
 #include <fmt/core.h>
-#include <tl/optional.hpp>
+#include <optional>
 #include <strophe.h>
 
 std::string get_name(xmpp_stanza_t *stanza);
 
-tl::optional<std::string> get_attribute(xmpp_stanza_t *stanza, const char *name);
+std::optional<std::string> get_attribute(xmpp_stanza_t *stanza, const char *name);
 
 std::string get_text(xmpp_stanza_t *stanza);
 
@@ -60,10 +60,10 @@ namespace xml {
 
         xmpp_ctx_t *context;
 
-        tl::optional<std::string> name;
+        std::optional<std::string> name;
 
-        tl::optional<std::string> id;
-        tl::optional<std::string> ns;
+        std::optional<std::string> id;
+        std::optional<std::string> ns;
 
         std::map<std::string, std::string> attributes;
         std::vector<node> children;
@@ -72,7 +72,7 @@ namespace xml {
 
         virtual void bind(xmpp_ctx_t *context, xmpp_stanza_t *stanza);
 
-        inline tl::optional<std::string>
+        inline std::optional<std::string>
         get_attr(const std::string& name) {
             auto attribute = attributes.find(name);
             if (attribute != attributes.end())
@@ -233,10 +233,10 @@ namespace xml {
             bind(context, stanza);
         }
 
-        tl::optional<jid> from;
-        tl::optional<jid> to;
+        std::optional<jid> from;
+        std::optional<jid> to;
 
-        tl::optional<std::string> type;
+        std::optional<std::string> type;
 
         void bind(xmpp_ctx_t *context, xmpp_stanza_t *stanza) override;
     };
@@ -248,13 +248,13 @@ namespace xml {
             bind(context, stanza);
         }
 
-        tl::optional<jid> from;
-        tl::optional<jid> to;
+        std::optional<jid> from;
+        std::optional<jid> to;
 
-        tl::optional<std::string> type;
+        std::optional<std::string> type;
 
-        tl::optional<std::string> show();
-        tl::optional<std::string> status();
+        std::optional<std::string> show();
+        std::optional<std::string> status();
 
         void bind(xmpp_ctx_t *context, xmpp_stanza_t *stanza) override;
     };
@@ -265,10 +265,10 @@ namespace xml {
             bind(context, stanza);
         }
 
-        tl::optional<jid> from;
-        tl::optional<jid> to;
+        std::optional<jid> from;
+        std::optional<jid> to;
 
-        tl::optional<std::string> type;
+        std::optional<std::string> type;
 
         void bind(xmpp_ctx_t *context, xmpp_stanza_t *stanza) override;
     };
@@ -279,8 +279,8 @@ namespace xml {
             bind(context, stanza);
         }
 
-        tl::optional<jid> from;
-        tl::optional<jid> to;
+        std::optional<jid> from;
+        std::optional<jid> to;
 
         void bind(xmpp_ctx_t *context, xmpp_stanza_t *stanza) override;
     };

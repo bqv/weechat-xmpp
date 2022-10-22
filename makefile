@@ -28,7 +28,7 @@ endif
 CPPFLAGS+=$(DBGCFLAGS) -O0 \
 	  -fno-omit-frame-pointer -fPIC \
 	  -fvisibility=hidden -fvisibility-inlines-hidden \
-	  -std=c++20 -gdwarf-4 \
+	  -std=c++23 -gdwarf-4 \
 	  -Wall -Wextra -pedantic \
 	  -Wno-missing-field-initializers \
 	  $(INCLUDES)
@@ -177,7 +177,7 @@ debug: xmpp.so
 		weechat -a -P 'alias,buflist,exec,irc,relay' -r '/plugin load ./xmpp.so'
 
 .PHONY: depend
-depend: $(SRCS) $(HDRS)
+depend: $(DEPS) $(SRCS) $(HDRS)
 	$(RM) -f ./.depend
 	echo > ./.depend
 	for src in $(SRCS) ; do \

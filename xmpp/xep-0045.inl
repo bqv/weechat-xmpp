@@ -108,8 +108,8 @@ namespace xml {
                 };
 
                 std::string reason;
-                tl::optional<jid> from;
-                tl::optional<jid> to;
+                std::optional<jid> from;
+                std::optional<jid> to;
             };
 
             struct destroy {
@@ -121,7 +121,7 @@ namespace xml {
                 };
 
                 std::string reason;
-                tl::optional<jid> target;
+                std::optional<jid> target;
             };
 
             struct invite {
@@ -135,8 +135,8 @@ namespace xml {
                 };
 
                 std::string reason;
-                tl::optional<jid> from;
-                tl::optional<jid> to;
+                std::optional<jid> from;
+                std::optional<jid> to;
             };
 
             class item {
@@ -152,7 +152,7 @@ namespace xml {
                     }
 
                     std::string reason;
-                    tl::optional<jid> target;
+                    std::optional<jid> target;
                     std::string nick;
                 };
 
@@ -186,10 +186,10 @@ namespace xml {
                 std::vector<actor> actors;
                 std::vector<continue_> continues;
                 std::string reason;
-                tl::optional<enum affiliation> affiliation;
-                tl::optional<jid> target;
-                tl::optional<std::string> nick;
-                tl::optional<enum role> role;
+                std::optional<enum affiliation> affiliation;
+                std::optional<jid> target;
+                std::optional<std::string> nick;
+                std::optional<enum role> role;
             };
 
         public:
@@ -300,10 +300,10 @@ namespace xml {
                     description = child.get().text;
             }
 
-            tl::optional<jid> by;
-            tl::optional<enum action> type;
-            tl::optional<enum condition> condition;
-            tl::optional<std::string> description;
+            std::optional<jid> by;
+            std::optional<enum action> type;
+            std::optional<enum condition> condition;
+            std::optional<std::string> description;
 
             const char* reason() {
                 if (condition)
@@ -331,9 +331,9 @@ namespace xml {
         };
 
     private:
-        tl::optional<bool> _muc;
-        tl::optional<tl::optional<x>> _muc_user;
-        tl::optional<tl::optional<error>> _error;
+        std::optional<bool> _muc;
+        std::optional<std::optional<x>> _muc_user;
+        std::optional<std::optional<error>> _error;
     public:
         bool muc() {
             if (!_muc)
@@ -344,26 +344,26 @@ namespace xml {
             return *_muc;
         }
 
-        tl::optional<x>& muc_user() {
+        std::optional<x>& muc_user() {
             if (!_muc_user)
             {
                 auto child = get_children<jabber_org::protocol::muc::user>("x");
                 if (child.size() > 0)
                     _muc_user = child.front().get();
                 else
-                    _muc_user.emplace(tl::nullopt);
+                    _muc_user.emplace(std::nullopt);
             }
             return *_muc_user;
         }
 
-        tl::optional<error>& error() {
+        std::optional<error>& error() {
             if (!_error)
             {
                 auto child = get_children("error");
                 if (child.size() > 0)
                     _error = child.front().get();
                 else
-                    _error.emplace(tl::nullopt);
+                    _error.emplace(std::nullopt);
             }
             return *_error;
         }

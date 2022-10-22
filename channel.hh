@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <tl/optional.hpp>
+#include <optional>
 
 #define CHANNEL_MEMBERS_SPEAKING_LIMIT 128
 
@@ -155,7 +155,7 @@ namespace weechat
         member *remove_member(const char *id, const char *reason);
 
         int send_message(std::string to, std::string body,
-                         tl::optional<std::string> oob = {});
+                         std::optional<std::string> oob = {});
         int send_message(const char *to, const char *body);
 
         void send_reads();

@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include <stdexcept>
+#include <optional>
 #include <strophe.h>
 #include <time.h>
 #include <stdlib.h>
@@ -26,6 +27,7 @@
 #include "omemo.hh"
 #include "pgp.hh"
 #include "util.hh"
+
 extern "C" {
 #include "diff/diff.h"
 }
@@ -844,7 +846,7 @@ xmpp_stanza_t *weechat::connection::get_caps(xmpp_stanza_t *reply, char **hash)
     }
 
     xmpp_stanza_t *field, *value, *text;
-    // This->is utter bullshit, TODO: anything but this->
+    // This is utter bullshit, TODO: anything but this
 #define FEATURE1(VAR, TYPE, VALUE)                            \
     field = xmpp_stanza_new(account.context);                 \
     xmpp_stanza_set_name(field, "field");                     \
@@ -1199,8 +1201,8 @@ bool weechat::connection::iq_handler(xmpp_stanza_t *stanza)
             if (channel != account.channels.end() && set__last__text)
             {
                 channel->second.fetch_mam(id,
-                                   *mam_query.start.map([](time_t& t){ return &t; }).disjunction(nullptr),
-                                   *mam_query.end.map([](time_t& t){ return &t; }).disjunction(nullptr),
+                                   mam_query.start.transform([](time_t& t) { return &t; }).value_or(nullptr),
+                                   mam_query.end.transform([](time_t& t) { return &t; }).value_or(nullptr),
                                    set__last__text);
             }
             else if (!set__last)

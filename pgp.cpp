@@ -7,6 +7,7 @@
 #include <cstring>
 #include <ctime>
 #include <string_view>
+#include <memory>
 #include <numeric>
 #include <fmt/core.h>
 #include <gpgme.h>

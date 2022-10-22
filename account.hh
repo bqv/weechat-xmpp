@@ -10,7 +10,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include <tl/optional.hpp>
+#include <optional>
 
 #include "fmt/core.h"
 #include "strophe.h"
@@ -43,8 +43,8 @@ namespace weechat
         {
             std::string id;
             std::string with;
-            tl::optional<time_t> start;
-            tl::optional<time_t> end;
+            std::optional<time_t> start;
+            std::optional<time_t> end;
         };
 
     public:
@@ -99,7 +99,7 @@ namespace weechat
         xmpp_stanza_t *get_devicelist();
 
         void add_mam_query(const std::string id, const std::string with,
-                           tl::optional<time_t> start, tl::optional<time_t> end);
+                           std::optional<time_t> start, std::optional<time_t> end);
         bool mam_query_search(mam_query* out, const std::string id);
         void mam_query_remove(const std::string id);
         void mam_query_free_all();

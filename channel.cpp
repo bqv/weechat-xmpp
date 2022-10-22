@@ -9,7 +9,7 @@
 #include <time.h>
 #include <regex>
 #include <fmt/core.h>
-#include <tl/optional.hpp>
+#include <optional>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
@@ -641,7 +641,7 @@ weechat::channel::member *weechat::channel::remove_member(const char *id, const 
 }
 
 int weechat::channel::send_message(std::string to, std::string body,
-                                   tl::optional<std::string> oob)
+                                   std::optional<std::string> oob)
 {
     xmpp_stanza_t *message = xmpp_message_new(account.context,
                     type == weechat::channel::chat_type::MUC

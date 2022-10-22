@@ -19,24 +19,24 @@ namespace xml {
     /* Last User Interaction in Presence */
     class xep0319 : virtual public node {
     private:
-        tl::optional<tl::optional<std::chrono::system_clock::time_point>> _idle_since;
+        std::optional<std::optional<std::chrono::system_clock::time_point>> _idle_since;
     public:
-        tl::optional<std::chrono::system_clock::time_point> idle_since() {
+        std::optional<std::chrono::system_clock::time_point> idle_since() {
             if (!_idle_since)
             {
                 auto children = get_children<urn::xmpp::idle::_1>("idle");
                 if (children.size() <= 0)
-                    _idle_since.emplace(tl::nullopt);
+                    _idle_since.emplace(std::nullopt);
                 else {
                     auto since = children.front().get().get_attr("since");
                     if (!since)
-                        _idle_since.emplace(tl::nullopt);
+                        _idle_since.emplace(std::nullopt);
                     else {
                         try {
                             _idle_since = get_time(*since);
                         }
                         catch (const std::invalid_argument& ex) {
-                            _idle_since.emplace(tl::nullopt);
+                            _idle_since.emplace(std::nullopt);
                         }
                     }
                 }

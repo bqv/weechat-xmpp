@@ -9,7 +9,7 @@
 #include <string>
 #include <functional>
 #include <unordered_map>
-#include <tl/optional.hpp>
+#include <optional>
 #include <weechat/weechat-plugin.h>
 #include "fmt/core.h"
 #include "plugin.hh"
@@ -32,13 +32,13 @@ namespace weechat
 
     struct config_breadcrumb {
         config_breadcrumb(std::string name)
-            : name(name), parent(tl::nullopt) {}
+            : name(name), parent(std::nullopt) {}
 
         config_breadcrumb(std::string name, config_breadcrumb& parent)
             : name(name), parent(parent) {}
 
         std::string name;
-        tl::optional<config_breadcrumb&> parent;
+        std::optional<std::reference_wrapper<config_breadcrumb>> parent;
     };
 
     struct config_free { void operator() (struct t_config_file *ptr) { weechat_config_free(ptr); } };
@@ -381,7 +381,7 @@ namespace weechat
         config();
         ~config();
 
-        static tl::optional<config> instance;
+        static std::optional<config> instance;
 
     public:
         static bool init();

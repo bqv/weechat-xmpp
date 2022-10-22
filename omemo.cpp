@@ -14,7 +14,7 @@
 #include <time.h>
 #include <math.h>
 #include <limits.h>
-#include <tl/optional.hpp>
+#include <optional>
 #include <range/v3/all.hpp>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
@@ -1691,7 +1691,7 @@ int bks_store_bundle(struct signal_protocol_address *address,
     return 0;
 }
 
-tl::optional<libsignal::pre_key_bundle> bks_load_bundle(struct signal_protocol_address *address, t_omemo *omemo)
+std::optional<libsignal::pre_key_bundle> bks_load_bundle(struct signal_protocol_address *address, t_omemo *omemo)
 {
     std::string k_bundle_pk = fmt::format("bundle_pk_{}_{}", address->name, address->device_id);
     std::string k_bundle_sk = fmt::format("bundle_sk_{}_{}", address->name, address->device_id);

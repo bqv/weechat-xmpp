@@ -154,7 +154,7 @@ weechat::config::config()
 
 weechat::config::~config() {}
 
-tl::optional<weechat::config> weechat::config::instance;
+std::optional<weechat::config> weechat::config::instance;
 
 bool weechat::config::init() { instance.emplace(); return true; }
 bool weechat::config::read() { return instance->file.read(); }

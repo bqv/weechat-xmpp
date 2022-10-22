@@ -17,29 +17,29 @@ namespace xml {
     /* Current Jabber OpenPGP Usage */
     class xep0027 : virtual public node {
     private:
-        tl::optional<tl::optional<std::string>> _signature;
-        tl::optional<tl::optional<std::string>> _encrypted;
+        std::optional<std::optional<std::string>> _signature;
+        std::optional<std::optional<std::string>> _encrypted;
     public:
-        tl::optional<std::string>& signature() {
+        std::optional<std::string>& signature() {
             if (!_signature)
             {
                 auto child = get_children<jabber::x::signed_>("x");
                 if (child.size() > 0)
                     _signature = child.front().get().text;
                 else
-                    _signature.emplace(tl::nullopt);
+                    _signature.emplace(std::nullopt);
             }
             return *_signature;
         }
 
-        tl::optional<std::string>& encrypted() {
+        std::optional<std::string>& encrypted() {
             if (!_encrypted)
             {
                 auto child = get_children<jabber::x::encrypted>("x");
                 if (child.size() > 0)
                     _encrypted = child.front().get().text;
                 else
-                    _encrypted.emplace(tl::nullopt);
+                    _encrypted.emplace(std::nullopt);
             }
             return *_encrypted;
         }
