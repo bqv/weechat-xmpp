@@ -19,20 +19,19 @@
 [[https://inverse.chat/#converse/room?jid=weechat@muc.xa0.uk][file:https://img.shields.io/badge/xmpp-weechat%40muc.xa0.uk-yellow]]
 
  | Status:     | XMPP for power users and digital masochists |
- | Location:   | [[http://github.com/bqv/weechat-xmpp]]      |
+ | Location:   | [[http://github.com/bqv/weechat-xmpp]]          |
  | Version:    | 0.2.1                                       |
  | Disclaimer: | I'm lazy and unashamedly clinically insane  |
 
 * Description
 
-  A weechat plugin in C to extend the chat client to
+  A weechat plugin in C/++ to extend the chat client to
   support XMPP and a currently minimal but ideally maximal
   set of XEPs.
   My priority here is to have an android-available XMPP client
   that hides as little as possible from the user. To use this with
   android, set up a relay (`/relay`) and see weechat-android.
-  I might rewrite this in C++ at some point when I feel like I
-  can do it without burning out.
+  I am rewriting this in C++, slowly...
 
 * Usage
 
@@ -56,8 +55,6 @@
   - flex (build)
   - weechat (>= v3.0)
 
-  .. or just use the guix spec in .envrc
-
 * Building
 
   #+begin_src sh
@@ -80,10 +77,8 @@
   =-ex "handle SIGPIPE nostop noprint pass" --args weechat -a 2>asan.log=
   since part of weechat and it's default plugins use SIGPIPE as control.
 
-  I have no real requests for style of pull requests besides a wish that
-  you keep vaguely to the indentation style I use for this project.
-
-  Happy coding!
+  I don't expect any, but I have no real requests for style of pull requests
+  besides a wish that you keep vaguely to the indentation style I use.
 
 * Tasks
 
