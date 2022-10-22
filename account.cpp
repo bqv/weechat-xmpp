@@ -178,7 +178,7 @@ xmpp_stanza_t *weechat::account::get_devicelist()
     device.name = fmt::format("%u", device.id);
     device.label = "weechat";
 
-    auto children = (xmpp_stanza_t **)malloc(sizeof(xmpp_stanza_t *) * 128);
+    auto children = new xmpp_stanza_t*[128];
     children[i++] = stanza__iq_pubsub_publish_item_list_device(
         context, NULL, with_noop(device.name.data()), NULL);
 
@@ -203,7 +203,7 @@ xmpp_stanza_t *weechat::account::get_devicelist()
     xmpp_stanza_t * parent = stanza__iq(context, NULL,
                                         children, NULL, strdup("announce1"),
                                         NULL, NULL, strdup("set"));
-    free(children);
+    delete[] children;
 
     return parent;
 }

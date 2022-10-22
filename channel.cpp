@@ -395,7 +395,7 @@ int weechat::channel::add_typing(weechat::user *user)
     new_typing = weechat::channel::typing_search(user->id);
     if (!new_typing)
     {
-        new_typing = (weechat::channel::typing*)malloc(sizeof(*new_typing));
+        new_typing = new weechat::channel::typing();
         new_typing->id = strdup(user->id);
         new_typing->name = strdup(user->profile.display_name);
 
@@ -454,7 +454,7 @@ int weechat::channel::add_self_typing(weechat::user *user)
     new_typing = self_typing_search(user);
     if (!new_typing)
     {
-        new_typing = (weechat::channel::typing*)malloc(sizeof(*new_typing));
+        new_typing = new weechat::channel::typing();
         new_typing->user = user;
         new_typing->name = user ? strdup(user->profile.display_name) : NULL;
 
@@ -520,7 +520,7 @@ weechat::channel::member *weechat::channel::add_member(const char *id, const cha
 
     if (!(member = member_search(id)))
     {
-        member = (weechat::channel::member*)malloc(sizeof(weechat::channel::member));
+        member = new weechat::channel::member();
         member->id = strdup(id);
 
         member->role = NULL;

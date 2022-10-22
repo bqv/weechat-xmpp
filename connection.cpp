@@ -1373,7 +1373,7 @@ bool weechat::connection::conn_handler(event status, int error, xmpp_stream_erro
 
 char* rand_string(int length)
 {
-    char *string = (char*)malloc(length);
+    char *string = new char[length];
     for(int i = 0; i < length; ++i){
         string[i] = '0' + rand()%72; // starting on '0', ending on '}'
         if (!((string[i] >= '0' && string[i] <= '9') ||
@@ -1398,7 +1398,7 @@ int weechat::connection::connect(std::string jid, std::string password, weechat:
         char *const rand = rand_string(8);
         char ident[64] = {0};
         snprintf(ident, sizeof(ident), "weechat.%s", rand);
-        free(rand);
+        delete[] rand;
 
         account.resource(ident);
         resource = account.resource().data();

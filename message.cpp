@@ -96,7 +96,7 @@ char *message__translate_code(weechat::account *account,
 
     free(identifier);
     resultlen = snprintf(NULL, 0, "%s%s%s%s", weechat_color("chat_nick"), prefix, symbol, weechat_color("reset")) + 1;
-    result = (char*)malloc(resultlen);
+    result = new char[resultlen];
     snprintf(result, resultlen, "%s%s%s%s", weechat_color("chat_nick"), prefix, symbol, weechat_color("reset"));
     free(symbol);
 
@@ -170,7 +170,7 @@ char *message__decode(weechat::account *account,
         return strdup(text);
     }
 
-    decoded_text = (char*)malloc(MESSAGE_MAX_LENGTH);
+    decoded_text = new char[MESSAGE_MAX_LENGTH];
     if (!decoded_text)
     {
         regfree(&reg);
@@ -190,7 +190,7 @@ char *message__decode(weechat::account *account,
         if (!copy)
         {
             regfree(&reg);
-            free(decoded_text);
+            delete[] decoded_text;
             weechat_printf(
                 account->buffer,
                 _("%s%s: error allocating space for message"),
@@ -204,7 +204,7 @@ char *message__decode(weechat::account *account,
         {
             free(copy);
             regfree(&reg);
-            free(decoded_text);
+            delete[] decoded_text;
             weechat_printf(
                 account->buffer,
                 _("%s%s: error allocating space for message"),
@@ -219,7 +219,7 @@ char *message__decode(weechat::account *account,
             free(match);
             free(copy);
             regfree(&reg);
-            free(decoded_text);
+            delete[] decoded_text;
             weechat_printf(
                 account->buffer,
                 _("%s%s: error allocating space for message"),
@@ -237,7 +237,7 @@ char *message__decode(weechat::account *account,
 
         strncat(decoded_text, replacement,
                 MESSAGE_MAX_LENGTH - strlen(decoded_text) - 1);
-        free(replacement);
+        delete[] replacement;
     }
     strncat(decoded_text, cursor,
             MESSAGE_MAX_LENGTH - strlen(decoded_text) - 1);

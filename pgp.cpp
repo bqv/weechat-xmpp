@@ -171,22 +171,22 @@ encrypt_finish:
 char *weechat::xmpp::pgp::decrypt(struct t_gui_buffer *buffer, const char *ciphertext)
 {
     std::string decrypted;
-    uint8_t *    buf = NULL;
-    size_t       buf_len = 0;
-    char *       result = NULL;
+    std::unique_ptr<char> buf;
+    size_t buf_len = 0;
+    char * result = NULL;
 
     int ret;
 
     buf_len = strlen(PGP_MESSAGE_HEADER) + strlen(ciphertext) + strlen(PGP_MESSAGE_FOOTER) + 1;
-    buf = (uint8_t*)malloc(sizeof(char) * buf_len);
-    buf_len = snprintf((char *)buf, buf_len, PGP_MESSAGE_HEADER "%s" PGP_MESSAGE_FOOTER, ciphertext);
+    buf = std::unique_ptr<char>(new char[buf_len]);
+    buf_len = snprintf(&*buf, buf_len, PGP_MESSAGE_HEADER "%s" PGP_MESSAGE_FOOTER, ciphertext);
 
     std::string keyids;
     gpgme_error_t err;
     gpgme_data_t in, out;
 
     /* Initialize input buffer. */
-    err = gpgme_data_new_from_mem(&in, (char *)buf, buf_len, false);
+    err = gpgme_data_new_from_mem(&in, &*buf, buf_len, false);
     if (err) {
         goto decrypt_finish;
     }
@@ -236,13 +236,13 @@ decrypt_finish:
 
 char *weechat::xmpp::pgp::verify(struct t_gui_buffer *buffer, const char *certificate)
 {
-    uint8_t *       buf = NULL;
-    size_t          buf_len = 0;
-    char *          result = NULL;
+    std::unique_ptr<char> buf;
+    size_t buf_len = 0;
+    char * result = NULL;
 
     buf_len = strlen(PGP_SIGNATURE_HEADER) + strlen(certificate) + strlen(PGP_SIGNATURE_FOOTER) + 1;
-    buf = (uint8_t*)malloc(sizeof(char) * buf_len);
-    buf_len = snprintf((char *)buf, buf_len, PGP_SIGNATURE_HEADER "%s" PGP_SIGNATURE_FOOTER, certificate);
+    buf = std::unique_ptr<char>(new char[buf_len]);
+    buf_len = snprintf(&*buf, buf_len, PGP_SIGNATURE_HEADER "%s" PGP_SIGNATURE_FOOTER, certificate);
 
     gpgme_verify_result_t vrf_result;
     gpgme_error_t err;
@@ -250,7 +250,7 @@ char *weechat::xmpp::pgp::verify(struct t_gui_buffer *buffer, const char *certif
     gpgme_key_t key;
 
     /* Initialize input buffer. */
-    err = gpgme_data_new_from_mem(&in, (char *)buf, buf_len, false);
+    err = gpgme_data_new_from_mem(&in, &*buf, buf_len, false);
     if (err) {
         goto verify_finish;
     }
