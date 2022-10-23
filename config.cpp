@@ -72,8 +72,8 @@ bool account_read_cb(weechat::config_section& section,
 
         if (!account->reloading_from_config)
         {
-            bool ac_global = std::stoul(std::unique_ptr<char>(
-                                            weechat_info_get("auto_connect", NULL)).get());
+            bool ac_global = std::stoul(std::unique_ptr<char, decltype(free)*>(
+                                            weechat_info_get("auto_connect", NULL), &free).get());
             bool ac_local = account->autoconnect();
             if (ac_local && ac_global)
                 account->connect();

@@ -510,8 +510,7 @@ weechat::channel::member *weechat::channel::add_member(const char *id, const cha
 
     user = user::search(&account, id);
 
-    if (user && weechat_strcasecmp(user->id, id) == 0
-        && type == weechat::channel::chat_type::MUC)
+    if (this->id == id && type == weechat::channel::chat_type::MUC)
     {
         weechat_printf_date_tags(buffer, 0, "log2", "%sMUC: %s",
                                  weechat_prefix("network"), id);

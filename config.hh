@@ -172,7 +172,7 @@ namespace weechat
         std::unordered_map<struct t_config_option *, config_option&> options;
     };
 
-    struct config_option_free { void operator() (struct t_config_option *ptr) { weechat_config_option_free(ptr); } };
+    struct config_option_free { void operator() (struct t_config_option *ptr) { /* weechat_config_option_free(ptr); */ } };
     struct config_option : public std::unique_ptr<struct t_config_option, config_option_free>, public config_breadcrumb {
         config_option(struct t_config_option *ptr, config_section& section, std::string name)
             : std::unique_ptr<struct t_config_option, config_option_free>(ptr)

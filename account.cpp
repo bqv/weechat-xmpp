@@ -299,16 +299,6 @@ weechat::account::~account()
      */
     if (buffer)
         weechat_buffer_close(buffer);
-
-    accounts.erase(name);
-
-    /* close xmpp context */
-    if (connection)
-        xmpp_conn_release(connection);
-    if (context)
-        xmpp_ctx_free(context);
-
-    delete this;
 }
 
 void weechat::account::disconnect(int reconnect)
