@@ -66,6 +66,11 @@ HDRS=plugin.hh \
 	 pgp.hh \
 	 user.hh \
 	 util.hh \
+	 config/breadcrumb.hh \
+	 config/file.hh \
+	 config/section.hh \
+	 config/account.hh \
+	 config/option.hh \
 	 xmpp/stanza.hh \
 	 xmpp/ns.hh \
 	 xmpp/node.hh \
@@ -84,6 +89,11 @@ SRCS=plugin.cpp \
 	 pgp.cpp \
 	 user.cpp \
 	 util.cpp \
+	 config/breadcrumb.cpp \
+	 config/file.cpp \
+	 config/section.cpp \
+	 config/account.cpp \
+	 config/option.cpp \
 	 xmpp/presence.cpp \
 	 xmpp/iq.cpp \
 	 xmpp/node.cpp \
@@ -92,8 +102,8 @@ DEPS=deps/diff/libdiff.a \
 	 deps/fmt/libfmt.a \
 	 sexp/sexp.a \
 
-OBJS=$(patsubst %.cpp,.%.o,$(patsubst %.c,.%.o,$(patsubst xmpp/%.cpp,xmpp/.%.o,$(SRCS))))
-COVS=$(patsubst %.cpp,.%.cov.o,$(patsubst xmpp/%.cpp,xmpp/.%.cov.o,$(SRCS)))
+OBJS=$(patsubst %.cpp,.%.o,$(patsubst %.c,.%.o,$(patsubst config/%.cpp,config/.%.o,$(patsubst xmpp/%.cpp,xmpp/.%.o,$(SRCS)))))
+COVS=$(patsubst %.cpp,.%.cov.o,$(patsubst config/%.cpp,config/.%.cov.o,$(patsubst xmpp/%.cpp,xmpp/.%.cov.o,$(SRCS))))
 
 SUFFIX=$(shell date +%s)
 
@@ -138,6 +148,12 @@ sexp/driver.o: sexp/driver.cpp
 .%.cov.o: %.cpp
 	@$(CXX) --coverage $(CPPFLAGS) -O0 -c $< -o $@
 
+config/.%.o: config/%.cpp
+	$(CXX) $(CPPFLAGS) -c $< -o $@
+
+config/.%.cov.o: config/%.cpp
+	@$(CXX) --coverage $(CPPFLAGS) -O0 -c $< -o $@
+
 xmpp/.%.o: xmpp/%.cpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@
 
@@ -169,7 +185,7 @@ test: tests/run
 
 .PHONY: coverage
 coverage: tests/run
-	gcov -m -abcfu -rqk -i .*.gcda xmpp/.*.gcda
+	gcov -m -abcfu -rqk -i .*.gcda config/.*.gcda xmpp/.*.gcda
 
 .PHONY: debug
 debug: xmpp.so
