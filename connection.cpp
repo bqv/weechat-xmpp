@@ -14,6 +14,7 @@
 #include <fmt/core.h>
 #include <fmt/chrono.h>
 #include <libxml/uri.h>
+#include <utility>
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"
@@ -188,10 +189,15 @@ bool weechat::connection::presence_handler(xmpp_stanza_t *stanza)
 
             user = weechat::user::search(&account, binding.from->full.data());
             if (!user)
-                user = new weechat::user(&account, binding.from->full.data(),
-                                channel && binding.from->bare.data() == channel->id
-                                 ? (binding.from->resource.size() ? binding.from->resource.data() : "")
-                                 : binding.from->full.data());
+            {
+                auto name = binding.from->full.data();
+                user = &account.users.emplace(std::piecewise_construct,
+                                              std::forward_as_tuple(name),
+                                              std::forward_as_tuple(&account, channel, name,
+                                                                    channel && binding.from->bare.data() == channel->id
+                                                                    ? (binding.from->resource.size() ? binding.from->resource.data() : "")
+                                                                    : binding.from->full.data())).first->second;
+            }
             auto status = binding.status();
             auto show = binding.show();
             auto idle = binding.idle_since();
@@ -222,10 +228,15 @@ bool weechat::connection::presence_handler(xmpp_stanza_t *stanza)
     {
         user = user::search(&account, binding.from->full.data());
         if (!user)
-            user = new weechat::user(&account, binding.from->full.data(),
-                                     channel && binding.from->bare.data() == channel->id
-                                     ? (binding.from->resource.size() ? binding.from->resource.data() : "")
-                                     : binding.from->full.data());
+        {
+            auto name = binding.from->full.data();
+            user = &account.users.emplace(std::piecewise_construct,
+                                          std::forward_as_tuple(name),
+                                          std::forward_as_tuple(&account, channel, name,
+                                                                channel && binding.from->bare.data() == channel->id
+                                                                ? (binding.from->resource.size() ? binding.from->resource.data() : "")
+                                                                : binding.from->full.data())).first->second;
+        }
         auto status = binding.status();
         auto show = binding.show();
         auto idle = binding.idle_since();
@@ -308,9 +319,14 @@ bool weechat::connection::message_handler(xmpp_stanza_t *stanza)
                 return 1;
             auto user = user::search(&account, from);
             if (!user)
-                user = new weechat::user(&account, from,
-                                         weechat_strcasecmp(from_bare, channel->id.data()) == 0
-                                         ? nick : from);
+            {
+                auto name = from;
+                user = &account.users.emplace(std::piecewise_construct,
+                                              std::forward_as_tuple(name),
+                                              std::forward_as_tuple(&account, channel, name,
+                                                                    weechat_strcasecmp(from_bare, channel->id.data()) == 0
+                                                                    ? nick : from)).first->second;
+            }
             channel->add_typing(user);
             weechat_printf(channel->buffer, "...\t%s%s typing",
                            weechat_color("gray"),
@@ -743,15 +759,15 @@ bool weechat::connection::message_handler(xmpp_stanza_t *stanza)
     }
     if (channel_id == from_bare && to == channel->id)
         weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s\t[to %s]: %s",
-                                 edit, user::as_prefix_raw(&account, nick).data(),
+                                 edit, user::as_prefix_raw(&account, from).data(),
                                  to, difftext ? difftext : text ? text : "");
     else if (weechat_string_match(text, "/me *", 0))
         weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s\t%s %s",
-                                 edit, weechat_prefix("action"), user::as_prefix_raw(&account, nick).data(),
+                                 edit, weechat_prefix("action"), user::as_prefix_raw(&account, from).data(),
                                  difftext ? difftext+4 : text ? text+4 : "");
     else
         weechat_printf_date_tags(channel->buffer, date, *dyn_tags, "%s%s\t%s",
-                                 edit, user::as_prefix_raw(&account, nick).data(),
+                                 edit, user::as_prefix_raw(&account, from).data(),
                                  difftext ? difftext : text ? text : "");
 
     weechat_string_dyn_free(dyn_tags, 1);

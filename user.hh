@@ -41,7 +41,7 @@ namespace weechat
         struct profile profile;
 
     public:
-        user(weechat::account *account, const char *id, const char *display_name);
+        user(weechat::account *account, weechat::channel *channel, const char *id, const char *display_name);
 
         static std::string get_colour(const char *name);
         static std::string get_colour_for_nicklist(const char *name);
@@ -53,11 +53,11 @@ namespace weechat
         std::string as_prefix();
 
         static std::string as_prefix_raw(weechat::account *account, const char *id) {
-            auto found = std::unique_ptr<user>(search(account, id));
+            auto found = search(account, id);
             return found ? found->as_prefix_raw() : "";
         }
         static std::string as_prefix(weechat::account *account, const char *id) {
-            auto found = std::unique_ptr<user>(search(account, id));
+            auto found = search(account, id);
             return found ? found->as_prefix() : "";
         }
 

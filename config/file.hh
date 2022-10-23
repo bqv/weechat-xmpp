@@ -18,7 +18,6 @@
 namespace weechat
 {
     class config;
-    struct config_file;
     struct config_section;
 
     struct config_free { void operator() (struct t_config_file *ptr) { weechat_config_free(ptr); } };

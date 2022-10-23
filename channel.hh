@@ -104,7 +104,7 @@ namespace weechat
         } pgp;
         struct {
             int enabled = 0;
-        } otr;
+       } otr;
         struct t_weelist *members_speaking[2] = { nullptr };
         std::vector<typing> self_typings;
         std::vector<typing> typings;

@@ -147,7 +147,7 @@ void weechat::user::nicklist_remove(weechat::account *account,
         weechat_nicklist_remove_nick(ptr_buffer, ptr_nick);
 }
 
-weechat::user::user(weechat::account *account,
+weechat::user::user(weechat::account *account, weechat::channel *channel,
                     const char *id, const char *display_name)
 {
     if (!account || !id)
@@ -155,16 +155,14 @@ weechat::user::user(weechat::account *account,
         throw nullptr;
     }
 
-  //if (account->users.empty())
-  //    channel::add_nicklist_groups(account, nullptr);
+    if (account->users.empty() && channel)
+        channel->add_nicklist_groups();
 
     weechat::user *ptr_user = user::search(account, id);
     if (ptr_user)
     {
         throw nullptr;
     }
-
-  //account->users += this;
 
     this->id = strdup(id);
 

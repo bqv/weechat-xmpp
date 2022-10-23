@@ -538,7 +538,7 @@ weechat::channel::member *weechat::channel::add_member(const char *id, const cha
              && type == weechat::channel::chat_type::MUC)
         weechat_printf_date_tags(buffer, 0, "xmpp_presence,enter,log4", "%s%s%s%s%s %s%s%s%s %s%s%s%s%s%s%s%s%s%s%s%s%s%s",
                                  weechat_prefix("join"),
-                                 user->as_prefix_raw(),
+                                 user->as_prefix_raw().data(),
                                  client ? " (" : "",
                                  client ? client : "",
                                  client ? ")" : "",
@@ -561,8 +561,8 @@ weechat::channel::member *weechat::channel::add_member(const char *id, const cha
     else
         weechat_printf_date_tags(buffer, 0, "xmpp_presence,enter,log4", "%s%s (%s) %s%s%s%s %s%s%s%s%s%s%s%s%s",
                                  weechat_prefix("join"),
-                                 jid_resource ? user->as_prefix_raw() : "You",
-                                 jid_resource ? jid_resource : user->as_prefix_raw(),
+                                 jid_resource ? user->as_prefix_raw().data() : "You",
+                                 jid_resource ? jid_resource : user->as_prefix_raw().data(),
                                  user->profile.status ? "is " : "",
                                  weechat_color("irc.color.message_join"),
                                  user->profile.status ? user->profile.status : (user->profile.idle ? "idle" : "entered"),
