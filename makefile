@@ -6,7 +6,7 @@ endif
 RM ?= rm -f
 FIND ?= find
 
-INCLUDES=-Ilibstrophe -Ideps -Ideps/optional/include -Ideps/range-v3/include -Ideps/fmt/include \
+INCLUDES=-Ilibstrophe -Ideps -Ideps/optional/include -Ideps/fmt/include \
 	 $(shell xml2-config --cflags) \
 	 $(shell pkg-config --cflags gpgme) \
 	 $(shell pkg-config --cflags libsignal-protocol-c)

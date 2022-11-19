@@ -4,6 +4,3 @@
 [submodule "diff"]
 	path = deps/diff
 	url = https://github.com/kristapsdz/libdiff
-[submodule "deps/range-v3"]
-	path = deps/range-v3
-	url = https://github.com/ericniebler/range-v3
