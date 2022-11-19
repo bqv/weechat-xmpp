@@ -54,6 +54,7 @@
   - g++ (build, >= GCC12)
   - bison (build)
   - flex (build)
+  - doctest (test)
   - weechat (>= v3.0)
 
 * Building
