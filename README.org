@@ -51,6 +51,7 @@
   - lmdb (dynamic, dependency)
   - libomemo-c (libsignal-protocol-c) (dynamic, dependency)
   - gpgme (dynamic, dependency)
+  - g++ (build, >= GCC12)
   - bison (build)
   - flex (build)
   - weechat (>= v3.0)
