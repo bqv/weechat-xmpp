@@ -1076,7 +1076,7 @@ void command__init()
 
     hook = weechat_hook_command(
         "xmpp",
-        N_("get xmpp plugin version"),
+        N_("get xmpp plugin version (see /help for general help)"),
         N_(""),
         N_(""),
         NULL, &command__xmpp, NULL, NULL);
