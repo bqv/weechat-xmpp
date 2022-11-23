@@ -150,7 +150,7 @@ bool weechat::account::search_device(weechat::account::device* out, std::uint32_
     }
 
     (void) out;
-    return NULL;
+    return false;
 }
 
 void weechat::account::add_device(weechat::account::device *device)

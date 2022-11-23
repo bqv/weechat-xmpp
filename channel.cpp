@@ -249,7 +249,7 @@ weechat::channel::channel(weechat::account& account,
         struct tm *ago = gmtime(&start);
         ago->tm_mday -= 7;
         start = mktime(ago);
-        fetch_mam(nullptr, &start, nullptr, nullptr);
+        fetch_mam(id, &start, nullptr, nullptr);
     }
 }
 
