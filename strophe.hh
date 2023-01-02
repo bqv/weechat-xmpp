@@ -83,6 +83,7 @@ namespace libstrophe {
     };
 
     inline auto initialize = xmpp_initialize;
+    inline auto shutdown = xmpp_shutdown;
 
     typedef type<xmpp_ctx_t,
         decltype(xmpp_ctx_new), decltype(xmpp_ctx_free),

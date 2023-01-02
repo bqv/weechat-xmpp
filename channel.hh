@@ -44,11 +44,8 @@ namespace weechat
 
         struct typing
         {
-            union {
-                char *id;
-                weechat::user *user;
-            };
-            char *name;
+            weechat::user *user;
+            std::string name;
             time_t ts;
         };
 
@@ -132,7 +129,7 @@ namespace weechat
         void member_speaking_rename_if_present(const char *nick);
 
         static int typing_cb(const void *pointer, void *data, int remaining_calls);
-        typing *typing_search(const char *id);
+        typing *typing_search(weechat::user *user);
         int add_typing(weechat::user *user);
 
         static int self_typing_cb(const void *pointer, void *data, int remaining_calls);

@@ -4,7 +4,6 @@
 
 #include <stdexcept>
 #include <optional>
-#include <strophe.h>
 #include <time.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -1128,7 +1127,7 @@ bool weechat::connection::iq_handler(xmpp_stanza_t *stanza)
                             xmpp_stanza_release(children[0]);
                         }
 
-                        if (account.jid() == from)
+                        if (from && account.jid() == from)
                         {
                             weechat::account::device dev;
                             char id[64] = {0};

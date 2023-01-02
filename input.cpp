@@ -70,7 +70,7 @@ int input__typing(struct t_gui_buffer *buffer)
     if (account && account->connected() && channel)
     {
         channel->send_reads();
-        channel->send_typing(NULL);
+        channel->send_typing(weechat::user::search(account, account->jid_device().data()));
     }
 
     return WEECHAT_RC_OK;

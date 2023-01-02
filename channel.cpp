@@ -354,12 +354,14 @@ int weechat::channel::typing_cb(const void *pointer, void *data, int remaining_c
     typecount = 0;
 
     for (auto ptr_typing = channel->typings.begin();
-         ptr_typing != channel->typings.end(); ptr_typing++)
+         ptr_typing != channel->typings.end();)
     {
         if (now - ptr_typing->ts > 5)
         {
-            channel->typings.erase(ptr_typing);
+            ptr_typing = channel->typings.erase(ptr_typing);
         }
+        else
+            ptr_typing++;
 
         typecount++;
     }
@@ -373,14 +375,14 @@ int weechat::channel::typing_cb(const void *pointer, void *data, int remaining_c
     return WEECHAT_RC_OK;
 }
 
-weechat::channel::typing *weechat::channel::typing_search(const char *id)
+weechat::channel::typing *weechat::channel::typing_search(weechat::user *user)
 {
-    if (!id)
+    if (!user)
         return nullptr;
 
     for (auto& ptr_typing : typings)
     {
-        if (weechat_strcasecmp(ptr_typing.id, id) == 0)
+        if (user == ptr_typing.user)
             return &ptr_typing;
     }
 
@@ -389,19 +391,20 @@ weechat::channel::typing *weechat::channel::typing_search(const char *id)
 
 int weechat::channel::add_typing(weechat::user *user)
 {
-    weechat::channel::typing *new_typing;
+    weechat::channel::typing *the_typing;
     int ret = 0;
 
-    new_typing = weechat::channel::typing_search(user->id);
-    if (!new_typing)
+    the_typing = weechat::channel::typing_search(user);
+    if (!the_typing)
     {
-        new_typing = new weechat::channel::typing();
-        new_typing->id = strdup(user->id);
-        new_typing->name = strdup(user->profile.display_name);
+        weechat::channel::typing& new_typing = typings.emplace_back();
+        new_typing.user = user;
+        new_typing.name = user->profile.display_name;
 
+        the_typing = &new_typing;
         ret = 1;
     }
-    new_typing->ts = time(nullptr);
+    the_typing->ts = time(nullptr);
 
     weechat::channel::typing_cb(this, nullptr, 0);
 
@@ -423,13 +426,15 @@ int weechat::channel::self_typing_cb(const void *pointer, void *data, int remain
     now = time(NULL);
 
     for (auto ptr_typing = channel->self_typings.begin();
-         ptr_typing != channel->self_typings.end(); ptr_typing++)
+         ptr_typing != channel->self_typings.end();)
     {
         if (now - ptr_typing->ts > 10)
         {
             channel->send_paused(ptr_typing->user);
-            channel->self_typings.erase(ptr_typing);
+            ptr_typing = channel->self_typings.erase(ptr_typing);
         }
+        else
+            ptr_typing++;
     }
 
     return WEECHAT_RC_OK;
@@ -437,7 +442,7 @@ int weechat::channel::self_typing_cb(const void *pointer, void *data, int remain
 
 weechat::channel::typing *weechat::channel::self_typing_search(weechat::user *user)
 {
-    for (auto& ptr_typing : typings)
+    for (auto& ptr_typing : self_typings)
     {
         if (user == ptr_typing.user)
             return &ptr_typing;
@@ -448,16 +453,17 @@ weechat::channel::typing *weechat::channel::self_typing_search(weechat::user *us
 
 int weechat::channel::add_self_typing(weechat::user *user)
 {
-    weechat::channel::typing *new_typing;
+    weechat::channel::typing *the_typing;
     int ret = 0;
 
-    new_typing = self_typing_search(user);
-    if (!new_typing)
+    the_typing = weechat::channel::self_typing_search(user);
+    if (!the_typing)
     {
-        new_typing = new weechat::channel::typing();
-        new_typing->user = user;
-        new_typing->name = user ? strdup(user->profile.display_name) : NULL;
+        weechat::channel::typing& new_typing = self_typings.emplace_back();
+        new_typing.user = user;
+        new_typing.name = user ? user->profile.display_name : "";
 
+        the_typing = &new_typing;
         ret = 1;
     }
 
@@ -1111,7 +1117,9 @@ void weechat::channel::fetch_mam(const char *id, time_t *start, time_t *end, con
         xmpp_stanza_release(set);
     }
     else
-        account.add_mam_query(id, xmpp_stanza_get_id(iq), { *start }, { *end });
+        account.add_mam_query(id, xmpp_stanza_get_id(iq),
+                start ? std::optional(*start) : std::optional<time_t>(),
+                end ? std::optional(*end) : std::optional<time_t>());
 
     xmpp_stanza_add_child(iq, query);
     xmpp_stanza_release(query);

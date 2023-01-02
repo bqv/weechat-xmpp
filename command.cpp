@@ -469,6 +469,10 @@ int command__enter(const void *pointer, void *data,
                     std::make_pair(jid, weechat::channel {
                             *ptr_account, weechat::channel::chat_type::MUC, jid, jid
                         })).first->second;
+	    if (!ptr_channel) {
+		weechat_string_free_split(jids); // raii unique_ptr?
+		return WEECHAT_RC_ERROR;
+	    }
 
             pres = xmpp_presence_new(ptr_account->context);
             xmpp_stanza_set_to(pres, pres_jid);
@@ -964,6 +968,29 @@ int command__xmpp(const void *pointer, void *data,
     return WEECHAT_RC_OK;
 }
 
+int command__trap(const void *pointer, void *data,
+                  struct t_gui_buffer *buffer, int argc,
+                  char **argv, char **argv_eol)
+{
+    (void) pointer;
+    (void) data;
+    (void) buffer;
+    (void) argc;
+    (void) argv;
+    (void) argv_eol;
+
+    weechat::account *account = NULL;
+    weechat::channel *channel = NULL;
+    weechat::user *user = NULL;
+
+    buffer__get_account_and_channel(buffer, &account, &channel);
+    weechat::user::search(account, account->jid_device().data());
+
+    __asm("int3");
+
+    return WEECHAT_RC_OK;
+}
+
 void command__init()
 {
     struct t_hook *hook;
@@ -1082,4 +1109,13 @@ void command__init()
         NULL, &command__xmpp, NULL, NULL);
     if (!hook)
         weechat_printf(NULL, "Failed to setup command /xmpp");
+
+    hook = weechat_hook_command(
+        "trap",
+        N_("debug trap (int3)"),
+        N_(""),
+        N_(""),
+        NULL, &command__trap, NULL, NULL);
+    if (!hook)
+        weechat_printf(NULL, "Failed to setup command /trap");
 }

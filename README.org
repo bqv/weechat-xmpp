@@ -51,6 +51,7 @@
   - lmdb (dynamic, dependency)
   - libomemo-c (libsignal-protocol-c) (dynamic, dependency)
   - gpgme (dynamic, dependency)
+  - libfmt (dynamic, dependency)
   - g++ (build, >= GCC12)
   - bison (build)
   - flex (build)
@@ -132,6 +133,7 @@
      * [X] Single media on a line
      * [ ] [#D] Multiple media inline (protocol?)
      * [ ] [#C] Encrypted (pgp/omemo)
+   * [ ] Join and handle events asynchronously
    * [ ] Handle wide errors gracefully
      * [ ] [#C] Event-driven MUC entrance
    * [ ] XMPP Ping (xep-199)

@@ -31,15 +31,15 @@ namespace weechat
         config_file(config& config, std::string name, std::function<int(config_file&)> cb_reload)
             : config_file(weechat_config_new(
                           name.data(),
-                          [](const void *, void *data, struct t_config_file *config_file) {
-                              auto& file = *reinterpret_cast<struct config_file*>(data);
+                          [](const void *data, void *, struct t_config_file *config_file) {
+                              auto& file = *reinterpret_cast<struct config_file*>(const_cast<void*>(data));
                               if (file != config_file) throw std::invalid_argument("file != config_file");
                               if (!file.reload) return 1;
                               return file.reload() ? 1 : 0;
                               // WEECHAT_CONFIG_READ_OK == 0
                               // WEECHAT_CONFIG_READ_MEMORY_ERROR == -1
                               // WEECHAT_CONFIG_READ_FILE_NOT_FOUND == -2
-                          }, nullptr, this), config, name) {
+                          }, this, nullptr), config, name) {
             this->reload = std::bind(cb_reload, std::ref(*this));
         }
         operator struct t_config_file *() { return get(); }

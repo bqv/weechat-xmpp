@@ -6,7 +6,7 @@ endif
 RM ?= rm -f
 FIND ?= find
 
-INCLUDES=-Ilibstrophe -Ideps -Ideps/optional/include -Ideps/fmt/include \
+INCLUDES=-Ilibstrophe -Ideps \
 	 $(shell xml2-config --cflags) \
 	 $(shell pkg-config --cflags gpgme) \
 	 $(shell pkg-config --cflags libsignal-protocol-c)
@@ -20,12 +20,12 @@ CFLAGS+=$(DBGCFLAGS) \
 	-Wno-missing-field-initializers \
 	-D_XOPEN_SOURCE=700 \
 	$(INCLUDES)
-ifeq ($(CC),gcc)
-	CFLAGS+= -fkeep-inline-functions
-else ifeq ($(CC),clang)
+ifeq ($(CC),clang)
 	CFLAGS+=
+else
+	CFLAGS+= -fkeep-inline-functions
 endif
-CPPFLAGS+=$(DBGCFLAGS) -O0 \
+CPPFLAGS+=$(DBGCFLAGS) \
 	  -fno-omit-frame-pointer -fPIC \
 	  -fvisibility=hidden -fvisibility-inlines-hidden \
 	  -std=c++23 -gdwarf-4 \
@@ -33,13 +33,14 @@ CPPFLAGS+=$(DBGCFLAGS) -O0 \
 	  -Wno-missing-field-initializers \
 	  $(INCLUDES)
 # -DDOCTEST_CONFIG_DISABLE
-ifeq ($(CXX),g++)
-	CPPFLAGS+= -fkeep-inline-functions
-else ifeq ($(CXX),clang)
+ifeq ($(CXX),clang)
 	CPPFLAGS+=
+else
+	CPPFLAGS+= -fkeep-inline-functions
 endif
 LDFLAGS+=$(DBGLDFLAGS) \
-	 -shared -gdwarf-4 \
+	 -gdwarf-4 \
+	 -fuse-ld=mold \
 	 $(DBGCFLAGS)
 LDLIBS=-lstrophe \
 	   -lpthread \
@@ -47,7 +48,7 @@ LDLIBS=-lstrophe \
 	   $(shell pkg-config --libs gpgme) \
 	   $(shell pkg-config --libs libsignal-protocol-c) \
 	   -lgcrypt \
-	   -llmdb -lfl
+	   -llmdb -lfl -lfmt
 
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
@@ -99,7 +100,6 @@ SRCS=plugin.cpp \
 	 xmpp/node.cpp \
 
 DEPS=deps/diff/libdiff.a \
-	 deps/fmt/libfmt.a \
 	 sexp/sexp.a \
 
 OBJS=$(patsubst %.cpp,.%.o,$(patsubst %.c,.%.o,$(patsubst config/%.cpp,config/.%.o,$(patsubst xmpp/%.cpp,xmpp/.%.o,$(SRCS)))))
@@ -119,7 +119,7 @@ release: xmpp.so
 	ln -sf .xmpp.so.$(SUFFIX) .xmpp.so
 
 xmpp.so: $(DEPS) $(OBJS) $(HDRS)
-	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(DEPS) $(LDLIBS)
+	$(CXX) -shared $(LDFLAGS) -o $@ -Wl,--as-needed $(OBJS) $(DEPS) $(LDLIBS)
 	git ls-files | xargs ls -d | xargs tar cz | objcopy --add-section .source=/dev/stdin xmpp.so
 	#objcopy --dump-section .source=/dev/stdout xmpp.so | tar tz
 
@@ -146,46 +146,40 @@ sexp/driver.o: sexp/driver.cpp
 	$(CXX) -DGIT_COMMIT=$(GIT_REF) $(CPPFLAGS) -c $< -o $@
 
 .%.cov.o: %.cpp
-	@$(CXX) --coverage $(CPPFLAGS) -O0 -c $< -o $@
+	@$(CXX) --coverage $(CPPFLAGS) -c $< -o $@
 
 config/.%.o: config/%.cpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 config/.%.cov.o: config/%.cpp
-	@$(CXX) --coverage $(CPPFLAGS) -O0 -c $< -o $@
+	@$(CXX) --coverage $(CPPFLAGS) -c $< -o $@
 
 xmpp/.%.o: xmpp/%.cpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 xmpp/.%.cov.o: xmpp/%.cpp
-	@$(CXX) --coverage $(CPPFLAGS) -O0 -c $< -o $@
+	@$(CXX) --coverage $(CPPFLAGS) -c $< -o $@
 
-.PHONY: diff fmt
+.PHONY: diff
 deps/diff/libdiff.a:
-	git submodule update --init --recursive
+	git submodule update --init --recursive deps/diff
 	cd deps/diff && env -u MAKEFLAGS ./configure
 	$(MAKE) -C deps/diff CFLAGS=-fPIC
 diff: deps/diff/libdiff.a
-deps/fmt/libfmt.a:
-	git submodule update --init --recursive
-	env -u MAKEFLAGS cmake -S deps/fmt -B deps/fmt \
-		-DCMAKE_POSITION_INDEPENDENT_CODE=ON
-	$(MAKE) -C deps/fmt fmt
-fmt: deps/fmt/libfmt.a
 
 tests/xmpp.cov.so: $(COVS) $(DEPS) $(HDRS)
-	$(CXX) --coverage -O0 $(LDFLAGS) -o tests/xmpp.cov.so $(COVS) $(DEPS) $(LDLIBS) -lstdc++
+	$(CXX) --coverage -shared $(LDFLAGS) -o tests/xmpp.cov.so -Wl,--as-needed $(DEPS) $(LDLIBS) $(COVS)
 
-tests/run: $(COVS) tests/main.cc tests/xmpp.cov.so
-	env --chdir tests $(CXX) $(CPPFLAGS) -o run ./xmpp.cov.so main.cc $(LDLIBS)
+tests/run: $(COVS) tests/main.cc tests/xmpp.cov.so $(wildcard tests/*.inl)
+	env --chdir tests $(CXX) $(CPPFLAGS) $(LDFLAGS) -o run -Wl,--as-needed ./xmpp.cov.so main.cc $(patsubst %,../%,$(DEPS)) $(LDLIBS) -lstdc++
 
 .PHONY: test
 test: tests/run
-	env --chdir tests ./run -s
+	env --chdir tests ./run -sm
 
 .PHONY: coverage
 coverage: tests/run
-	gcov -m -abcfu -rqk -i .*.gcda config/.*.gcda xmpp/.*.gcda
+	gcovr --txt -s
 
 .PHONY: debug
 debug: xmpp.so
@@ -196,16 +190,22 @@ debug: xmpp.so
 depend: $(DEPS) $(SRCS) $(HDRS)
 	$(RM) -f ./.depend
 	echo > ./.depend
-	for src in $(SRCS) ; do \
+	for src in $(SRCS) tests/main.cc; do \
+		dir="$$(dirname $$src)"; \
+		src="$$(basename $$src)"; \
 		if [[ $$src == *.cpp ]]; then \
+			echo "g++ $(CPPFLAGS) -MM -MMD -MP -MF - \
+				-MT $$dir/.$${src/.cpp/.o} $$dir/$$src >> ./.depend"; \
 			g++ $(CPPFLAGS) -MM -MMD -MP -MF - \
-				-MT .$${src/.cpp/.o} $$src >> ./.depend || true ; \
+				-MT $$dir/.$${src/.cpp/.o} $$dir/$$src >> ./.depend || true ; \
 		elif [[ $$src == *.c ]]; then \
+			echo "gcc $(CFLAGS) -MM -MMD -MP -MF - \
+				-MT $$dir/.$${src/.c/.o} $$dir/$$src >> ./.depend"; \
 			gcc $(CFLAGS) -MM -MMD -MP -MF - \
-				-MT .$${src/.c/.o} $$src >> ./.depend || true ; \
-		fi \
+				-MT $$dir/.$${src/.c/.o} $$dir/$$src >> ./.depend || true ; \
+		else continue; \
+		fi; \
 	done
-	sed -i 's/\.\([a-z]*\/\)/\1./' .depend
 
 .PHONY: tidy
 tidy:
@@ -214,14 +214,13 @@ tidy:
 	$(FIND) . -name "*.gcda" -delete
 
 .PHONY: clean
-clean:
+clean: tidy
 	$(RM) -f $(OBJS) $(COVS) \
 		sexp/parser.tab.cc sexp/parser.tab.hh \
 		sexp/location.hh sexp/position.hh \
 		sexp/stack.hh sexp/parser.output sexp/parser.o \
 		sexp/lexer.o sexp/lexer.yy.cc sexp/sexp.a
 	$(MAKE) -C deps/diff clean || true
-	$(MAKE) -C deps/fmt clean || true
 	git submodule foreach --recursive git clean -xfd || true
 	git submodule foreach --recursive git reset --hard || true
 

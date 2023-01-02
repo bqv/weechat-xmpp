@@ -78,11 +78,11 @@ char *buffer__typing_bar_cb(const void *pointer, void *data,
         switch (++typecount)
         {
             case 1:
-                strcpy(notification, ptr_typing.name);
+                strcpy(notification, ptr_typing.name.data());
                 break;
             case 2:
                 strcat(notification, ", ");
-                strcat(notification, ptr_typing.name);
+                strcat(notification, ptr_typing.name.data());
                 break;
             case 3:
             default:

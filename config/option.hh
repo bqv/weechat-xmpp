@@ -22,7 +22,7 @@ namespace weechat
     struct config_file;
     struct config_section;
 
-    struct config_option_free { void operator() (struct t_config_option *ptr) { /* weechat_config_option_free(ptr); */ } };
+    struct config_option_free { void operator() (struct t_config_option *ptr) { weechat_config_option_free(ptr); } };
     struct config_option : public std::unique_ptr<struct t_config_option, config_option_free>, public config_breadcrumb {
         config_option(struct t_config_option *ptr, config_section& section, std::string name)
             : std::unique_ptr<struct t_config_option, config_option_free>(ptr)
@@ -40,22 +40,22 @@ namespace weechat
                             config_file, section,
                             name.data(), type, description, string_values,
                             min, max, default_value, value, null_value_allowed,
-                            [](const void *, void *data, struct t_config_option *opt, const char *value) {
-                                auto& option = *reinterpret_cast<config_option*>(data);
+                            [](const void *data, void *, struct t_config_option *opt, const char *value) {
+                                auto& option = *reinterpret_cast<config_option*>(const_cast<void*>(data));
                                 if (option != opt) throw std::invalid_argument("option != opt");
                                 if (!option.check_value) return 1;
                                 return option.check_value(value) ? 1 : 0;
-                            }, nullptr, this,
-                            [](const void *, void *data, struct t_config_option *opt) {
-                                auto& option = *reinterpret_cast<config_option*>(data);
+                            }, this, nullptr,
+                            [](const void *data, void *, struct t_config_option *opt) {
+                                auto& option = *reinterpret_cast<config_option*>(const_cast<void*>(data));
                                 if (option != opt) throw std::invalid_argument("option != opt");
                                 if (option.on_changed) option.on_changed();
-                            }, nullptr, this,
-                            [](const void *, void *data, struct t_config_option *opt) {
-                                auto& option = *reinterpret_cast<config_option*>(data);
+                            }, this, nullptr,
+                            [](const void *data, void *, struct t_config_option *opt) {
+                                auto& option = *reinterpret_cast<config_option*>(const_cast<void*>(data));
                                 if (option != opt) throw std::invalid_argument("option != opt");
                                 if (option.on_deleted) option.on_deleted();
-                            }, nullptr, this), section, name) {
+                            }, this, nullptr), section, name) {
             if (cb_check_value)
                 this->check_value = std::bind(cb_check_value, std::ref(*this), _1);
             if (cb_change)
