@@ -8,14 +8,14 @@ depend: $(DEPS) $(SRCS) $(HDRS)
 		dir="$$(dirname $$src)"; \
 		src="$$(basename $$src)"; \
 		if [[ $$src == *.cpp ]]; then \
-			echo "g++ $(CPPFLAGS) -MM -MMD -MP -MF - \
+			echo "$(CXX) $(CPPFLAGS) -MM -MMD -MP -MF - \
 				-MT $$dir/.$${src/.cpp/.o} $$dir/$$src >> ./.depend"; \
-			g++ $(CPPFLAGS) -MM -MMD -MP -MF - \
+			$(CXX) $(CPPFLAGS) -MM -MMD -MP -MF - \
 				-MT $$dir/.$${src/.cpp/.o} $$dir/$$src >> ./.depend || true ; \
 		elif [[ $$src == *.c ]]; then \
-			echo "gcc $(CFLAGS) -MM -MMD -MP -MF - \
+			echo "$(CC) $(CFLAGS) -MM -MMD -MP -MF - \
 				-MT $$dir/.$${src/.c/.o} $$dir/$$src >> ./.depend"; \
-			gcc $(CFLAGS) -MM -MMD -MP -MF - \
+			$(CC) $(CFLAGS) -MM -MMD -MP -MF - \
 				-MT $$dir/.$${src/.c/.o} $$dir/$$src >> ./.depend || true ; \
 		else continue; \
 		fi; \

@@ -6,6 +6,9 @@ ifdef DEBUG
 	DBGLDFLAGS=-lasan -lrt -lasan #-lubsan -llsan
 endif
 
+CC ?= gcc
+CXX ?= g++
+SHELL ?= bash
 RM ?= rm -f
 FIND ?= find
 
