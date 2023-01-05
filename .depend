@@ -820,6 +820,8 @@ config/../channel.hh:
 config/../connection.hh:
 config/../xmpp/ns.hh:
 config/../user.hh:
+data/.omemo.o: data/omemo.cpp
+data/.capability.o: data/capability.cpp
 xmpp/.presence.o: xmpp/presence.cpp xmpp/stanza.hh
 xmpp/stanza.hh:
 xmpp/.iq.o: xmpp/iq.cpp xmpp/stanza.hh

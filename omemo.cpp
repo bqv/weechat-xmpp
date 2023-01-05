@@ -16,6 +16,7 @@
 #include <limits.h>
 #include <optional>
 #include <ranges>
+#include <filesystem>
 #include <strophe.h>
 #include <weechat/weechat-plugin.h>
 
@@ -1906,9 +1907,12 @@ void omemo::init(struct t_gui_buffer *buffer, const char *account_name)
 
     try {
         omemo->db_path = std::shared_ptr<char>(
-            weechat_string_eval_expression("${weechat_data_dir}/xmpp.omemo.db",
+            weechat_string_eval_expression("${weechat_data_dir}/xmpp/omemo.db",
                                            NULL, NULL, NULL),
             &free).get();
+        std::filesystem::path path(omemo->db_path.data());
+        std::filesystem::create_directories(
+                std::filesystem::path(omemo->db_path.data()).parent_path());
 
         omemo->db_env = lmdb::env::create();
         omemo->db_env.set_max_dbs(50);

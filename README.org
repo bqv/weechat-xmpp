@@ -133,7 +133,8 @@
      * [X] Single media on a line
      * [ ] [#D] Multiple media inline (protocol?)
      * [ ] [#C] Encrypted (pgp/omemo)
-   * [ ] Join and handle events asynchronously
+   * [X] Join and handle events asynchronously
+   * [ ] Cache caps
    * [ ] Handle wide errors gracefully
      * [ ] [#C] Event-driven MUC entrance
    * [ ] XMPP Ping (xep-199)

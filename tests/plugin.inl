@@ -10,6 +10,8 @@
 #include <iterator>
 #include <regex>
 #include <exception>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <weechat/weechat-plugin.h>
 #include "../deps/fdstream.hpp"
 #include "../plugin.hh"
