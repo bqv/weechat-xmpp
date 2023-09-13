@@ -54,7 +54,7 @@ LDLIBS=-lstrophe \
 	   $(shell pkg-config --libs gpgme) \
 	   $(shell pkg-config --libs libsignal-protocol-c) \
 	   -lgcrypt \
-	   -llmdb -lfl -lfmt
+	   -llmdb -lfmt
 
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib

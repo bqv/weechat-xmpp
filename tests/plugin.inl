@@ -62,7 +62,7 @@ std::vector<std::string> weechat_read_lines(std::vector<std::string_view> comman
 
 TEST_CASE("weechat")
 {
-    std::string plugin_api_version("20220926-01");
+    std::string plugin_api_version("20230220-01");
 
     SUBCASE("plugin api match")
     {
