@@ -53,25 +53,25 @@ const char *OMEMO_ADVICE = "[OMEMO encrypted message (XEP-0384)]";
 size_t base64_decode(const char *buffer, size_t length, uint8_t **result)
 {
     *result = (uint8_t*)calloc(length + 1, sizeof(uint8_t));
-    return weechat_string_base_decode(64, buffer, (char*)*result);
+    return weechat_string_base_decode("64", buffer, (char*)*result);
 }
 
 size_t base64_encode(const uint8_t *buffer, size_t length, char **result)
 {
     *result = (char*)calloc(length * 2, sizeof(char));
-    return weechat_string_base_encode(64, (char*)buffer, length, *result);
+    return weechat_string_base_encode("64", (char*)buffer, length, *result);
 }
 
 std::vector<std::uint8_t> base64_decode(std::string_view buffer)
 {
     auto result = std::make_unique<std::uint8_t[]>(buffer.size() + 1);
-    return std::vector<std::uint8_t>(result.get(), result.get() + weechat_string_base_decode(64, buffer.data(), (char*)result.get()));
+    return std::vector<std::uint8_t>(result.get(), result.get() + weechat_string_base_decode("64", buffer.data(), (char*)result.get()));
 }
 
 std::string base64_encode(std::vector<std::uint8_t> buffer)
 {
     auto result = std::make_unique<char[]>(buffer.size() * 2);
-    return std::string(result.get(), result.get() + weechat_string_base_encode(64, (char*)buffer.data(), buffer.size(), result.get()));
+    return std::string(result.get(), result.get() + weechat_string_base_encode("64", (char*)buffer.data(), buffer.size(), result.get()));
 }
 
 int aes_decrypt(const uint8_t *ciphertext, size_t ciphertext_len,

@@ -10,6 +10,8 @@
 #include <assert.h>
 #include <fmt/core.h>
 #include <libxml/xmlwriter.h>
+#include <libxml/xmlerror.h>
+#include <libxml/parser.h>
 #include <weechat/weechat-plugin.h>
 
 #include "plugin.hh"

@@ -1,7 +1,7 @@
 #!/usr/bin/env -S gmake install
 # vim: set noexpandtab:
 
-HOME ?=~
+WEECHATHOME ?= ~/.local/share/weechat/
 
 install: xmpp.so
 ifeq ($(shell id -u),0)
@@ -9,9 +9,9 @@ ifeq ($(shell id -u),0)
 	cp xmpp.so $(DESTDIR)$(LIBDIR)/weechat/plugins/xmpp.so
 	chmod 644 $(DESTDIR)$(LIBDIR)/weechat/plugins/xmpp.so
 else
-	mkdir -p $(HOME)/.weechat/plugins
-	cp xmpp.so $(HOME)/.weechat/plugins/xmpp.so
-	chmod 755 $(HOME)/.weechat/plugins/xmpp.so
+	mkdir -p $(WEECHATHOME)/plugins
+	cp xmpp.so $(WEECHATHOME)/plugins/xmpp.so
+	chmod 755 $(WEECHATHOME)/plugins/xmpp.so
 endif
 
 release: xmpp.so
