@@ -12,7 +12,7 @@ SHELL ?= bash
 RM ?= rm -f
 FIND ?= find
 
-INCLUDES=-Ilibstrophe -Ideps \
+INCLUDES=-Ilibstrophe -Ideps -I/usr/include/omemo/ \
 	 $(shell xml2-config --cflags) \
 	 $(shell pkg-config --cflags gpgme) \
 	 $(shell pkg-config --cflags libsignal-protocol-c)
@@ -44,9 +44,9 @@ ifeq ($(CXX),clang)
 else
 	CPPFLAGS+=
 endif
+	 #-fuse-ld=mold
 LDFLAGS+=$(DBGLDFLAGS) \
 	 -std=c++23 -gdwarf-4 \
-	 -fuse-ld=mold \
 	 $(DBGCFLAGS)
 LDLIBS=-lstrophe \
 	   -lpthread \
