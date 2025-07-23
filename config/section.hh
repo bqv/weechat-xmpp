@@ -63,7 +63,7 @@ namespace weechat
                                  auto& section = *reinterpret_cast<config_section*>(const_cast<void*>(data));
                                  if (section.file != config_file) throw std::invalid_argument("section.file != config_file");
                                  if (!section.write) return 0;
-                                 return section.write(section_name) ? 0 : -1;
+                                 return !section.write(section_name) ? 0 : -1;
                                  // WEECHAT_CONFIG_WRITE_OK == 0
                                  // WEECHAT_CONFIG_WRITE_ERROR == -1
                                  // WEECHAT_CONFIG_WRITE_FILE_NOT_FOUND == -2
