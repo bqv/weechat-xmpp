@@ -66,7 +66,7 @@ void weechat::log_emit(void *const userdata, const xmpp_log_level_t level,
         {
             colour = weechat_color("blue");
         }
-        xmlChar *buf = (xmlChar*)malloc(strlen(xml) * 2);
+        xmlChar *buf = (xmlChar*)malloc(strlen(xml) * 3);
         if (buf == NULL) {
             weechat_printf(
                 account ? account->buffer : NULL,
