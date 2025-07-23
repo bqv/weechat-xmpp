@@ -35,7 +35,7 @@
 
 * Usage
 
-  1. Start with =/account add=, use =/help account= for instructions.
+  1. Start with =/account add <name> <account-name> <password>=, use =/help account= for instructions.
 
   2. Use =/account connect <account-name>= with the name set at
      add-time.
