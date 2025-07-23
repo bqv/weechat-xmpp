@@ -130,6 +130,14 @@ void command__add_account(const char *name, const char *jid, const char *passwor
         return;
     }
 
+    if (!jid || !password) {
+        weechat_printf(
+            NULL,
+            _("%s%s: jid and password required"),
+            weechat_prefix("error"), WEECHAT_XMPP_PLUGIN_NAME);
+        return;
+    }
+
     ;
     account = &weechat::accounts.emplace(
         std::piecewise_construct, std::forward_as_tuple(name),
@@ -999,7 +1007,7 @@ void command__init()
         "account",
         N_("handle xmpp accounts"),
         N_("list"
-           " || add <account>"
+           " || add <name> <jid> <password>"
            " || connect <account>"
            " || disconnect <account>"
            " || reconnect <account>"
