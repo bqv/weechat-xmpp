@@ -767,7 +767,7 @@ int command__mam(const void *pointer, void *data,
     else
         ago->tm_mday -= MAM_DEFAULT_DAYS;
     start = mktime(ago);
-    ptr_channel->fetch_mam(NULL, &start, NULL, NULL);
+    ptr_channel->fetch_mam(xmpp_uuid_gen(ptr_account->context), &start, NULL, NULL);
 
     return WEECHAT_RC_OK;
 }

@@ -1000,7 +1000,7 @@ void weechat::channel::fetch_mam(const char *id, time_t *start, time_t *end, con
     xmpp_stanza_t *x = xmpp_stanza_new(account.context);
     xmpp_stanza_set_name(x, "x");
     xmpp_stanza_set_ns(x, "jabber:x:data");
-    xmpp_stanza_set_attribute(x, "type", "result");
+    xmpp_stanza_set_attribute(x, "type", "submit");
 
     xmpp_stanza_t *field, *value, *text;
 
