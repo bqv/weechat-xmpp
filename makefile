@@ -8,7 +8,7 @@ endif
 
 CC ?= gcc
 CXX ?= g++
-SHELL ?= bash
+SHELL = bash
 RM ?= rm -f
 FIND ?= find
 
