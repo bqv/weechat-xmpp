@@ -17,6 +17,7 @@
 [[https://github.com/bqv/weechat-xmpp/blob/master/LICENSE][file:https://img.shields.io/github/license/bqv/weechat-xmpp.svg]]
 [[https://github.com/bqv/weechat-extras/][file:https://img.shields.io/badge/weechat--extras-xmpp-blue.svg]]
 [[https://inverse.chat/#converse/room?jid=weechat@muc.xa0.uk][file:https://img.shields.io/badge/xmpp-weechat%40muc.xa0.uk-yellow]]
+[[http://unmaintained.tech/][http://unmaintained.tech/badge.svg]]
 
  | Status:     | XMPP for power users and digital masochists |
  | Location:   | [[http://github.com/bqv/weechat-xmpp]]          |
