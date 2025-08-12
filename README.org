@@ -10,13 +10,13 @@
 #+EXPORT_EXCLUDE_TAGS: exclude
 #+STARTUP:             showall
 
-[[https://travis-ci.org/bqv/weechat-xmpp][file:https://api.travis-ci.org/bqv/weechat-xmpp.svg?branch=master]]
+[[https://travis-ci.com/bqv/weechat-xmpp][file:https://api.travis-ci.com/bqv/weechat-xmpp.svg?branch=master]]
 [[https://coveralls.io/github/bqv/weechat-xmpp?branch=master][file:https://coveralls.io/repos/github/bqv/weechat-xmpp/badge.svg?branch=master]]
 [[https://github.com/bqv/weechat-xmpp/issues][file:https://img.shields.io/github/issues/bqv/weechat-xmpp.svg]]
 [[https://github.com/bqv/weechat-xmpp/issues?q=is:issue+is:closed][file:https://img.shields.io/github/issues-closed/bqv/weechat-xmpp.svg]]
 [[https://github.com/bqv/weechat-xmpp/blob/master/LICENSE][file:https://img.shields.io/github/license/bqv/weechat-xmpp.svg]]
 [[https://github.com/bqv/weechat-extras/][file:https://img.shields.io/badge/weechat--extras-xmpp-blue.svg]]
-[[https://inverse.chat/#converse/room?jid=weechat@muc.xa0.uk][file:https://img.shields.io/badge/xmpp-weechat%40muc.xa0.uk-yellow]]
+[[https://inverse.chat/#converse/room?jid=weechat@muc.xa0.uk][file:https://img.shields.io/badge/xmpp-weechat%40muc.xa0.uk-yellow.svg]]
 [[http://unmaintained.tech/][http://unmaintained.tech/badge.svg]]
 
  | Status:     | XMPP for power users and digital masochists |
