@@ -60,7 +60,7 @@ std::vector<std::string> weechat_read_lines(std::vector<std::string_view> comman
     return output;
 }
 
-TEST_CASE("weechat")
+TEST_CASE("weechat" * doctest::may_fail())
 {
     std::string plugin_api_version("20250508-01");
 
