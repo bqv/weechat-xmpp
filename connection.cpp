@@ -1422,7 +1422,8 @@ int weechat::connection::connect(std::string jid, std::string password, weechat:
                                 xmpp_jid_node(account.context, jid.data()),
                                 xmpp_jid_domain(account.context, jid.data()),
                                 resource));
-    m_conn.set_pass(password.data());
+    m_conn.set_pass(weechat_string_eval_expression(password.data(),
+                    NULL, NULL, NULL));
 
     int flags = m_conn.get_flags();
     switch (tls)
