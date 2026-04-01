@@ -188,7 +188,11 @@ getprogname(void)
 	return (__progname);
 }
 #else
-#error No getprogname available.
+const char *
+getprogname(void)
+{
+	return "libdiff";
+}
 #endif
 #endif /* !HAVE_GETPROGNAME */
 #if !HAVE_MD5
