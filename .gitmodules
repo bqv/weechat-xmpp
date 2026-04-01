@@ -1,3 +1,0 @@
-[submodule "diff"]
-	path = deps/diff
-	url = https://github.com/kristapsdz/libdiff

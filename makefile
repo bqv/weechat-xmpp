@@ -180,7 +180,6 @@ xmpp/.%.cov.o: xmpp/%.cpp
 
 .PHONY: diff
 deps/diff/libdiff.a:
-	git submodule update --init --recursive deps/diff
 	cd deps/diff && env -u MAKEFLAGS ./configure
 	$(MAKE) -C deps/diff CFLAGS=-fPIC
 diff: deps/diff/libdiff.a
