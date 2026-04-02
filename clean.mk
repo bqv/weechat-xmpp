@@ -15,8 +15,6 @@ clean: tidy
 		sexp/stack.hh sexp/parser.output sexp/parser.o \
 		sexp/lexer.o sexp/lexer.yy.cc sexp/sexp.a
 	$(MAKE) -C deps/diff clean || true
-	git submodule foreach --recursive git clean -xfd || true
-	git submodule foreach --recursive git reset --hard || true
 
 .PHONY: distclean
 distclean: clean
