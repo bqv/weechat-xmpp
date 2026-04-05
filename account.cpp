@@ -66,7 +66,9 @@ void weechat::log_emit(void *const userdata, const xmpp_log_level_t level,
         {
             colour = weechat_color("blue");
         }
-        xmlChar *buf = (xmlChar*)malloc(strlen(xml) * 2);
+        xmlChar *buf = NULL;
+        int size = -1;
+        xmlDocDumpFormatMemory(doc, &buf, &size, 1);
         if (buf == NULL) {
             weechat_printf(
                 account ? account->buffer : NULL,
@@ -74,8 +76,6 @@ void weechat::log_emit(void *const userdata, const xmpp_log_level_t level,
             fclose(nullfd);
             return;
         }
-        int size = -1;
-        xmlDocDumpFormatMemory(doc, &buf, &size, 1);
         if (size <= 0) {
             weechat_printf(
                 account ? account->buffer : NULL,
@@ -99,6 +99,7 @@ void weechat::log_emit(void *const userdata, const xmpp_log_level_t level,
                 0, tags,
                 _("%s%s"), colour, lines[i]);
 
+        xmlFree(buf);
         weechat_string_free_split(lines);
         fclose(nullfd);
     }
