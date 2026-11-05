@@ -47,7 +47,7 @@ namespace xml {
             else if (s == "owner")
                 return affiliation::owner;
             throw std::invalid_argument(
-                fmt::format("Bad affiliation: {}", s));
+                std::format("Bad affiliation: {}", s));
         }
 
         static std::string_view format_affiliation(affiliation e) {
@@ -77,7 +77,7 @@ namespace xml {
             else if (s == "visitor")
                 return role::visitor;
             throw std::invalid_argument(
-                fmt::format("Bad role: {}", s));
+                std::format("Bad role: {}", s));
         }
 
         static std::string_view format_role(role e) {
@@ -250,7 +250,7 @@ namespace xml {
                 else if (s == "wait")
                     return action::wait;
                 throw std::invalid_argument(
-                    fmt::format("Bad action: {}", s));
+                    std::format("Bad action: {}", s));
             }
 
             static std::string_view format_action(action e) {

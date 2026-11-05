@@ -101,7 +101,7 @@ struct t_gui_buffer *weechat::channel::create_buffer(weechat::channel::chat_type
 
     buffer_created = 0;
 
-    std::string buffer_name = fmt::format("{}.{}", account.name, name);
+    std::string buffer_name = std::format("{}.{}", account.name, name);
 
     ptr_buffer = weechat::channel::search_buffer(type, name);
     if (ptr_buffer)
@@ -186,21 +186,21 @@ void weechat::channel::add_nicklist_groups()
     if (type == weechat::channel::chat_type::PM)
         return;
 
-    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 000, "~").data(),
+    weechat_nicklist_add_group(buffer, NULL, std::format("%03d|%s", 000, "~").data(),
                                "weechat.color.nicklist_group", 1);
-    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 001, "&").data(),
+    weechat_nicklist_add_group(buffer, NULL, std::format("%03d|%s", 001, "&").data(),
                                "weechat.color.nicklist_group", 1);
-    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 002, "@").data(),
+    weechat_nicklist_add_group(buffer, NULL, std::format("%03d|%s", 002, "@").data(),
                                "weechat.color.nicklist_group", 1);
-    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 003, "%").data(),
+    weechat_nicklist_add_group(buffer, NULL, std::format("%03d|%s", 003, "%").data(),
                                "weechat.color.nicklist_group", 1);
-    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 004, "+").data(),
+    weechat_nicklist_add_group(buffer, NULL, std::format("%03d|%s", 004, "+").data(),
                                "weechat.color.nicklist_group", 1);
-    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 005, "?").data(),
+    weechat_nicklist_add_group(buffer, NULL, std::format("%03d|%s", 005, "?").data(),
                                "weechat.color.nicklist_group", 1);
-    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 006, "!").data(),
+    weechat_nicklist_add_group(buffer, NULL, std::format("%03d|%s", 006, "!").data(),
                                "weechat.color.nicklist_group", 1);
-    weechat_nicklist_add_group(buffer, NULL, fmt::format("%03d|%s", 999, "...").data(),
+    weechat_nicklist_add_group(buffer, NULL, std::format("%03d|%s", 999, "...").data(),
                                "weechat.color.nicklist_group", 1);
 }
 

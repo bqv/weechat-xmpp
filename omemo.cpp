@@ -1577,7 +1577,7 @@ void sks_destroy_func(void *user_data)
 int dls_store_devicelist(const char *jid, signal_int_list *devicelist, t_omemo *omemo)
 {
     auto transaction = lmdb::txn::begin(omemo->db_env);
-    std::string k_devicelist = fmt::format("devicelist_{}", jid);
+    std::string k_devicelist = std::format("devicelist_{}", jid);
     std::string v_devicelist;
 
     for (size_t i = 0; i < signal_int_list_size(devicelist); i++)
@@ -1609,7 +1609,7 @@ int dls_store_devicelist(const char *jid, signal_int_list *devicelist, t_omemo *
 int dls_load_devicelist(signal_int_list **devicelist, const char *jid, t_omemo *omemo)
 {
     auto transaction = lmdb::txn::begin(omemo->db_env);
-    std::string k_devicelist = fmt::format("devicelist_{}", jid);
+    std::string k_devicelist = std::format("devicelist_{}", jid);
     std::string_view v_devicelist;
     omemo->dbi.omemo.get(transaction, k_devicelist, v_devicelist);
 
@@ -1639,7 +1639,7 @@ int bks_store_bundle(struct signal_protocol_address *address,
     auto pre_key_buffers = std::vector<std::string>(n_pre_keys);
     for (auto pre_key : std::vector<struct t_pre_key*>(pre_keys, pre_keys + n_pre_keys))
     {
-        pre_key_buffers.push_back(fmt::format("{}.{}", pre_key->id, pre_key->public_key));
+        pre_key_buffers.push_back(std::format("{}.{}", pre_key->id, pre_key->public_key));
     }
 
     n_pre_keys = -1;
@@ -1647,7 +1647,7 @@ int bks_store_bundle(struct signal_protocol_address *address,
     auto signed_pre_key_buffers = std::vector<std::string>(n_pre_keys);
     for (auto signed_pre_key : std::vector<struct t_pre_key*>(signed_pre_keys, signed_pre_keys + n_pre_keys))
     {
-        signed_pre_key_buffers.push_back(fmt::format("{}.{}", signed_pre_key->id, signed_pre_key->public_key));
+        signed_pre_key_buffers.push_back(std::format("{}.{}", signed_pre_key->id, signed_pre_key->public_key));
 
         uint8_t *signing_key_buf;
         size_t signing_key_len = base64_decode(identity_key,
@@ -1670,10 +1670,10 @@ int bks_store_bundle(struct signal_protocol_address *address,
         }
     }
 
-    std::string k_bundle_pk = fmt::format("bundle_pk_{}_{}", address->name, address->device_id);
-    std::string k_bundle_sk = fmt::format("bundle_sk_{}_{}", address->name, address->device_id);
-    std::string k_bundle_sg = fmt::format("bundle_sg_{}_{}", address->name, address->device_id);
-    std::string k_bundle_ik = fmt::format("bundle_ik_{}_{}", address->name, address->device_id);
+    std::string k_bundle_pk = std::format("bundle_pk_{}_{}", address->name, address->device_id);
+    std::string k_bundle_sk = std::format("bundle_sk_{}_{}", address->name, address->device_id);
+    std::string k_bundle_sg = std::format("bundle_sg_{}_{}", address->name, address->device_id);
+    std::string k_bundle_ik = std::format("bundle_ik_{}_{}", address->name, address->device_id);
 
     std::string v_bundle_pk = std::accumulate(pre_key_buffers.begin(), pre_key_buffers.end(), std::string(";"));
     std::string v_bundle_sk = std::accumulate(signed_pre_key_buffers.begin(), signed_pre_key_buffers.end(), std::string(";"));
@@ -1694,10 +1694,10 @@ int bks_store_bundle(struct signal_protocol_address *address,
 
 std::optional<libsignal::pre_key_bundle> bks_load_bundle(struct signal_protocol_address *address, t_omemo *omemo)
 {
-    std::string k_bundle_pk = fmt::format("bundle_pk_{}_{}", address->name, address->device_id);
-    std::string k_bundle_sk = fmt::format("bundle_sk_{}_{}", address->name, address->device_id);
-    std::string k_bundle_sg = fmt::format("bundle_sg_{}_{}", address->name, address->device_id);
-    std::string k_bundle_ik = fmt::format("bundle_ik_{}_{}", address->name, address->device_id);
+    std::string k_bundle_pk = std::format("bundle_pk_{}_{}", address->name, address->device_id);
+    std::string k_bundle_sk = std::format("bundle_sk_{}_{}", address->name, address->device_id);
+    std::string k_bundle_sg = std::format("bundle_sg_{}_{}", address->name, address->device_id);
+    std::string k_bundle_ik = std::format("bundle_ik_{}_{}", address->name, address->device_id);
 
     std::string_view v_bundle_pk;
     std::string_view v_bundle_sk;
@@ -1922,12 +1922,12 @@ void omemo::init(struct t_gui_buffer *buffer, const char *account_name)
         lmdb::txn parentTransaction{nullptr};
         lmdb::txn transaction = lmdb::txn::begin(omemo->db_env, parentTransaction);
 
-        std::string db_name = fmt::format("omemo_{}", account_name);
+        std::string db_name = std::format("omemo_{}", account_name);
         omemo->dbi.omemo = lmdb::dbi::open(transaction, db_name.data(), MDB_CREATE);
 
         transaction.commit();
     } catch (const lmdb::error& ex) {
-        auto format = fmt::format("%sxmpp: lmdb failure - {}", ex.what());
+        auto format = std::format("%sxmpp: lmdb failure - {}", ex.what());
         weechat_printf(NULL, format.data(), weechat_prefix("error"));
         throw;
     }
@@ -2328,7 +2328,7 @@ xmpp_stanza_t *omemo::encode(weechat::account *account, const char *jid,
             {
                 try {
                     auto bundle = bks_load_bundle(&address, omemo);
-                    if (!bundle) throw std::runtime_error(fmt::format("No bundle for {}", target));
+                    if (!bundle) throw std::runtime_error(std::format("No bundle for {}", target));
 
                     libsignal::session_builder builder(omemo->store_context, &address, omemo->context);
                     builder.process_pre_key_bundle(*bundle);

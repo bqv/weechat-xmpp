@@ -178,7 +178,7 @@ xmpp_stanza_t *weechat::account::get_devicelist()
     account::device device;
 
     device.id = omemo.device_id;
-    device.name = fmt::format("%u", device.id);
+    device.name = std::format("%u", device.id);
     device.label = "weechat";
 
     auto children = new xmpp_stanza_t*[128];
@@ -380,7 +380,7 @@ void weechat::account::disconnect_all()
 
 struct t_gui_buffer *weechat::account::create_buffer()
 {
-    buffer = weechat_buffer_new(fmt::format("account.{}", name).data(),
+    buffer = weechat_buffer_new(std::format("account.{}", name).data(),
                                 &input__data_cb, NULL, NULL,
                                 &buffer__close_cb, NULL, NULL);
     if (!buffer)
@@ -392,7 +392,7 @@ struct t_gui_buffer *weechat::account::create_buffer()
     weechat_buffer_set(buffer, "localvar_set_type", "server");
     weechat_buffer_set(buffer, "localvar_set_account", name.data());
     weechat_buffer_set(buffer, "localvar_set_charset_modifier",
-                       fmt::format("account.{}", name).data());
+                       std::format("account.{}", name).data());
     weechat_buffer_set(buffer, "title", name.data());
 
     weechat_buffer_set(buffer, "nicklist", "1");

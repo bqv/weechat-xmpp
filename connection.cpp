@@ -85,7 +85,7 @@ bool weechat::connection::presence_handler(xmpp_stanza_t *stanza)
         auto node = caps->node;
         auto ver = caps->verification;
 
-        clientid = fmt::format("{}#{}", node, ver);
+        clientid = std::format("{}#{}", node, ver);
 
         account.connection.send(stanza::iq()
                     .from(binding.to ? binding.to->full : "")
@@ -202,7 +202,7 @@ bool weechat::connection::presence_handler(xmpp_stanza_t *stanza)
             auto idle = binding.idle_since();
             user->profile.status_text = status ? strdup(status->data()) : NULL;
             user->profile.status = show ? strdup(show->data()) : NULL;
-            user->profile.idle = idle ? fmt::format("{}", *idle) : std::string();
+            user->profile.idle = idle ? std::format("{}", *idle) : std::string();
             user->is_away = show ? *show == "away" : false;
             user->profile.role = role.size() ? strdup(role.data()) : NULL;
             user->profile.affiliation = affiliation.size() && affiliation == "none"
@@ -241,7 +241,7 @@ bool weechat::connection::presence_handler(xmpp_stanza_t *stanza)
         auto idle = binding.idle_since();
         user->profile.status_text = status ? strdup(status->data()) : NULL;
         user->profile.status = show ? strdup(show->data()) : NULL;
-        user->profile.idle = idle ? fmt::format("{}", *idle) : std::string();
+        user->profile.idle = idle ? std::format("{}", *idle) : std::string();
         user->is_away = show ? *show == "away" : false;
         user->profile.role = NULL;
         user->profile.affiliation = NULL;

@@ -43,7 +43,7 @@ namespace libsignal {
         inline void call(Args&&... args) {
             int ret = func(*this, std::forward<Args>(args)...);
             if (ret != success) throw std::runtime_error(
-                fmt::format("Signal Error: expected {}, was {}", success, ret));
+                std::format("Signal Error: expected {}, was {}", success, ret));
         }
 
         template<typename Fun, Fun &func, typename... Args,
