@@ -21,7 +21,7 @@ std::string format_key(weechat::xmpp::pgp &pgp, std::string_view keyid)
     gpgme_key_t key = nullptr;
     gpgme_error_t err = gpgme_get_key(pgp.gpgme, keyid.data(), &key, false);
     if (err) {
-        return fmt::format("{} (none)", keyid);
+        return std::format("{} (none)", keyid);
     }
     std::string result(keyid);
     result += '{';
@@ -42,7 +42,7 @@ std::string format_key(weechat::xmpp::pgp &pgp, std::string_view keyid)
         for (auto uid = key->uids; uid; uid = uid->next)
         {
             if (!userids.empty()) userids += ", ";
-            userids += fmt::format("{} ({})", uid->name, uid->email);
+            userids += std::format("{} ({})", uid->name, uid->email);
         }
         result += userids;
     }

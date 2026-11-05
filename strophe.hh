@@ -5,6 +5,7 @@
 #pragma once
 
 #include <fmt/core.h>
+#include <format>
 #include <memory>
 #include <functional>
 #include <type_traits>
@@ -29,7 +30,7 @@ namespace libstrophe {
         inline void call_checked(Args&&... args) {
             int ret = func(*this, std::forward<Args>(args)...);
             if (ret != success) throw std::runtime_error(
-                fmt::format("Strophe Error: expected {}, was {}", success, ret));
+                std::format("Strophe Error: expected {}, was {}", success, ret));
         }
 
         template<typename Fun, Fun &func, int success = 0, typename... Args,
